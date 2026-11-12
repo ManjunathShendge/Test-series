@@ -2,6 +2,13 @@ packages:
   - "apps/*"
   - "packages/*"
 
+# Install scripts are blocked by default. Only packages that genuinely need one are
+# allowed, and each is listed deliberately. Prisma downloads its query engine binaries
+# in a postinstall step, so it cannot work without this.
+allowBuilds:
+  '@prisma/engines': true
+  prisma: true
+
 # Shared dependency versions, resolved against the npm registry in M0 on 13 November 2026.
 # This is the single place a shared version is declared, so apps and packages cannot drift.
 # Reference from a package.json as "catalog:".
@@ -19,3 +26,7 @@ catalog:
 
 minimumReleaseAgeExclude:
   - prettier@3.10.1
+  - '@nestjs/common@12.5.0'
+  - '@nestjs/core@12.5.0'
+  - '@nestjs/platform-express@12.5.0'
+  - expo@58.0.25

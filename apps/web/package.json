@@ -1,0 +1,29 @@
+{
+  "name": "@exam-prep/web",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint app src",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@exam-prep/contracts": "workspace:*",
+    "@exam-prep/engine": "workspace:*",
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/react": "19.3.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "oxlint": "1.93.0"
+  }
+}

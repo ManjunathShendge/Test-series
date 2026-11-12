@@ -1,0 +1,31 @@
+{
+  "name": "@exam-prep/mobile",
+  "version": "0.0.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "prebuild": "expo prebuild",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint app src",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@exam-prep/contracts": "workspace:*",
+    "@exam-prep/engine": "workspace:*",
+    "@tanstack/react-query": "5.107.1",
+    "expo": "58.0.25",
+    "expo-router": "58.0.31",
+    "react": "19.3.1",
+    "react-native": "0.88.1",
+    "zustand": "5.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "oxlint": "1.93.0"
+  }
+}
