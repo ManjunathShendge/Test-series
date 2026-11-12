@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+out/
+.next/
+.turbo/
+*.tsbuildinfo
+
+# Expo and native
+.expo/
+.expo-shared/
+apps/mobile/android/
+apps/mobile/ios/
+*.keystore
+*.jks
+*.mobileprovision
+*.p8
+*.p12
+
+# Environment and secrets - never commit real values
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+service-account*.json
+google-services.json
+GoogleService-Info.plist
+
+# Local data volumes and provider state
+docker/**/data/
+.firebase/
+firebase-debug.log
+
+# Test and coverage output
+coverage/
+test-results/
+playwright-report/
+.playwright/
+*.lcov
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor and OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Python caches from local skill tooling
+__pycache__/
+*.pyc
+
+# Local archive, redundant with .claude/
+.claude.zip
+
+# Client-confidential source inputs - kept local, never published
+PRD__Exam_Prep_Marketplace.pdf
+requirement.text
+docs/PRD.md
