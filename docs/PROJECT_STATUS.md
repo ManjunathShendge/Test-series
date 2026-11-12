@@ -108,6 +108,32 @@ Next concrete action: git init plus initial commit, then M0 tooling: resolve Exp
   React Native 0.88 / Next / Nest / Prisma / pg-boss compatibility as a set and write the manifests.
 ```
 
+```text
+Date / milestone / requirement IDs: 13 November 2026 / M0 (toolchain) / R26
+Implemented behavior and changed paths:
+  - Published the repository baseline to GitHub (commit db7b43e, 284 files). Client-confidential
+    sources are gitignored and absent from history; verified the PRD PDF returns 404 on the remote
+    while CLAUDE.md returns 200. Added docs/sources/README.md. Fixed the global git user.name value.
+  - Installed Docker Desktop 4.99.0 via winget on an existing WSL2/Ubuntu setup.
+Checks run (command, outcome, evidence):
+  - docker version: client and server 29.9.3; docker compose version: v5.7.0; engine Linux, 8GB.
+  - postgres:18-alpine container: server_version 18.6; CREATE EXTENSION pg_trgm and btree_gin both
+    succeeded (pg_trgm 1.6, btree_gin 1.3); similarity('railway recruitment','railway recruitement')
+    returned 0.77272725. Container removed afterwards.
+  - npm registry dist-tags read directly: next 16.4.6, @nestjs/core 12.5.0, @prisma/client 7.10.1,
+    pg-boss 12.38.2, expo 58.0.25, expo-iap 6.4.4, zod 4.6.7, turbo 2.11.11.
+Unavailable checks and reason: no manifests yet, so typecheck/lint/test/build still cannot run.
+Open decision IDs / blocking dependency:
+  - prisma npm "latest" tag resolves to 8.0.0-rc.33, a release candidate, while @prisma/client
+    latest is 7.10.1 stable. Pin both to 7.10.1; never install prisma from the latest tag.
+  - Local Node is 22.18.0. NestJS 12 runtime needs 22.12+, but its CLI generators need 22.22.3+.
+    Bump within the 22 line before using nest CLI generators.
+  - NestJS 12 ships core packages as ESM and defaults new projects to Vitest and oxlint; TESTING.md
+    predates this and needs a decision during manifest work.
+Next concrete action: write the M0 workspace manifests, Compose file and env validation against the
+  pinned set above, then run the clean-clone flow.
+```
+
 ## Next action
 
 Continue M0 tooling per the latest log entry, using the bootstrap prompt in PROMPTS.md. Business choices in DECISIONS may proceed independently; S4 must resolve mobile SKU type and correlation before mobile checkout implementation is finalized.
