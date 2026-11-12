@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch --experimental-strip-types src/main.ts",
-    "dev:worker": "node --watch --experimental-strip-types src/worker.ts",
+    "dev": "concurrently -n tsc,api -c blue,green \"tsc -b --watch --preserveWatchOutput\" \"node --watch dist/main.js\"",
+    "dev:worker": "concurrently -n tsc,worker -c blue,magenta \"tsc -b --watch --preserveWatchOutput\" \"node --watch dist/worker.js\"",
     "build": "tsc -b",
     "start": "node dist/main.js",
     "start:worker": "node dist/worker.js",
@@ -29,8 +29,9 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "concurrently": "10.0.7",
+    "oxlint": "1.93.0",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "oxlint": "1.93.0"
+    "vitest": "catalog:"
   }
 }
