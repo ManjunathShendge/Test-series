@@ -188,6 +188,11 @@ export interface Purchase {
   purchasedAt: string;
   channel: 'Google Play' | 'App Store' | 'Web';
   invoiceNumber: string;
+  /** GST included in amountPaise, as printed on the invoice. */
+  gstPaise?: number;
+  /** Applied code and the discount it produced, for the invoice line. */
+  couponCode?: string;
+  discountPaise?: number;
 }
 
 export interface Profile {

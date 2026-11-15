@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
-import { buildPaper, getExam, getTest, type PaperQuestion, type QuestionReview, type Result } from '@/lib/demo';
+import { buildPaper, getExam, getTest, type PaperQuestion, type QuestionReview } from '@/lib/demo';
 import { formatClock, formatCount, formatDate, formatOrdinal } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
 import { useResultsStore } from '@/lib/store/results';

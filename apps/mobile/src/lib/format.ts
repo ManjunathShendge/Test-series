@@ -1,14 +1,12 @@
 /** Presentation helpers. Money arrives as integer paise and is formatted only here. */
 
-const inr = new Intl.NumberFormat('en-IN', {
-  style: 'currency',
-  currency: 'INR',
-  maximumFractionDigits: 0,
-});
+const inrWhole = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+const inrExact = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export function formatPaise(paise: number): string {
   if (paise === 0) return 'Free';
-  return inr.format(paise / 100);
+  // Whole rupees stay short (₹49); fractional amounts such as GST lines keep paise (₹7.47).
+  return (paise % 100 === 0 ? inrWhole : inrExact).format(paise / 100);
 }
 
 export function formatDuration(minutes: number): string {

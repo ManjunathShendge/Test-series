@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { pastResults, synthesizeReview, type Result } from '@/lib/demo';
+import { persistOptions } from './storage';
 
 /**
  * Results available to the student, keyed by attempt. Seeded from archived demo
@@ -17,7 +19,9 @@ const seeded: Record<string, Result> = Object.fromEntries(
   pastResults.map((r) => [r.attemptId, { ...r, review: r.review.length ? r.review : synthesizeReview(r) }]),
 );
 
-export const useResultsStore = create<ResultsState>((set) => ({
+export const useResultsStore = create<ResultsState>()(
+  persist(
+    (set) => ({
   results: seeded,
   addResult: (result) => set((s) => ({ results: { ...s.results, [result.attemptId]: result } })),
   toggleBookmark: (attemptId, questionId) =>
@@ -34,7 +38,10 @@ export const useResultsStore = create<ResultsState>((set) => ({
         },
       };
     }),
-}));
+    }),
+    persistOptions<ResultsState, Pick<ResultsState, 'results'>>('results', (s) => ({ results: s.results })),
+  ),
+);
 
 /** Newest first. */
 export function useResultsList(): Result[] {

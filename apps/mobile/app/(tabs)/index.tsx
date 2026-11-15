@@ -7,7 +7,6 @@ import { SectionHeader } from '@/features/catalogue/components/SectionHeader';
 import { TestCard } from '@/features/catalogue/components/TestCard';
 import {
   examiners,
-  exams,
   featuredFreeTests,
   getExam,
   newFromFollowed,

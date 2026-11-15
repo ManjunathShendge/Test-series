@@ -26,7 +26,7 @@ export default function InstructionsScreen() {
 
   if (!test) {
     return (
-      <Screen>
+      <Screen edges={['left', 'right']}>
         <StateView kind="error" title="Test not found" message="This test may have been unpublished." actionLabel="Go back" onAction={() => router.back()} />
       </Screen>
     );
@@ -49,7 +49,7 @@ export default function InstructionsScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Instructions' }} />
-      <Screen contentStyle={{ paddingBottom: 140 }}>
+      <Screen contentStyle={{ paddingBottom: 140 }} edges={['left', 'right']}>
         <Chip label={exam?.name ?? 'Exam'} tone="primary" icon="school-outline" />
         <Text variant="display">{test.title}</Text>
 

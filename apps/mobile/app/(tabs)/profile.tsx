@@ -53,7 +53,7 @@ export default function ProfileScreen() {
             const exam = getExam(id);
             return exam ? <Chip key={id} label={exam.name} tone="primary" icon="school-outline" onPress={() => router.push({ pathname: '/exam/[id]', params: { id } })} /> : null;
           })}
-          <Chip label="Edit" icon="create-outline" onPress={() => Alert.alert('Edit target exams', 'Exam preferences are changed during onboarding in this demo.')} />
+          <Chip label="Edit" icon="create-outline" onPress={() => router.push('/profile/edit-exams')} />
         </View>
       </View>
 
@@ -101,6 +101,11 @@ export default function ProfileScreen() {
                 <Text variant="bodySmall" tone="secondary">
                   {formatDate(p.purchasedAt)} · {p.channel} · {p.invoiceNumber}
                 </Text>
+                {p.gstPaise !== undefined || p.couponCode ? (
+                  <Text variant="caption" tone="secondary">
+                    {[p.gstPaise !== undefined ? `Includes ${formatPaise(p.gstPaise)} GST` : null, p.couponCode ? `${p.couponCode} saved ${formatPaise(p.discountPaise ?? 0)}` : null].filter(Boolean).join(' · ')}
+                  </Text>
+                ) : null}
               </View>
               <View style={{ alignItems: 'flex-end', gap: space.xs }}>
                 <Text variant="bodyStrong" tabular>

@@ -1,5 +1,4 @@
-import { usePreventRemove } from '@react-navigation/native';
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,7 +23,6 @@ const ZOOMS: ZoomLevel[] = [1, 1.15, 1.3];
 export default function AttemptScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
   const a = useAttemptStore();
@@ -35,10 +33,28 @@ export default function AttemptScreen() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const announced = useRef<Set<string>>(new Set());
-  const leavingRef = useRef(false);
+  const [leaving, setLeaving] = useState(false);
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
 
   const active = a.status === 'in_progress' && a.test?.id === id && a.paper;
+
+  // Leaving keeps the attempt in progress; the clock keeps running (decision E17/C3).
+  // usePreventRemove covers the header back button, the Android back gesture and
+  // programmatic navigation alike (design override pages/attempt.md). expo-router's
+  // contract: drop the guard, then `repeat()` the blocked action.
+  const disablePrevention = usePreventRemove(!!active && !leaving, ({ repeat }) => {
+    Alert.alert('Leave the test?', 'Your answers are saved on this device and the timer keeps running. You can continue from Home.', [
+      { text: 'Stay', style: 'cancel' },
+      {
+        text: 'Leave',
+        style: 'destructive',
+        onPress: () => {
+          setLeaving(true);
+          repeat();
+        },
+      },
+    ]);
+  });
 
   // One-second tick: drives the clock, section windows and the deadline.
   useEffect(() => {
@@ -53,10 +69,11 @@ export default function AttemptScreen() {
       if (!result) return;
       addResult(result);
       markAttempted(result.testId);
-      leavingRef.current = true;
+      setLeaving(true);
+      disablePrevention();
       router.replace({ pathname: '/result/[attemptId]', params: { attemptId: result.attemptId } });
     },
-    [a, addResult, markAttempted, router],
+    [a, addResult, markAttempted, router, disablePrevention],
   );
 
   // Sync indicator: "saved on device" becomes "synced" shortly after each change (mock).
@@ -96,23 +113,6 @@ export default function AttemptScreen() {
     }
   }, [now, active, a]);
 
-  // Leaving keeps the attempt in progress; the clock keeps running (decision E17/C3).
-  // usePreventRemove covers the header back button, the Android back gesture and
-  // programmatic navigation alike (design override pages/attempt.md).
-  usePreventRemove(!!active && !leavingRef.current, ({ data }) => {
-    Alert.alert('Leave the test?', 'Your answers are saved on this device and the timer keeps running. You can continue from Home.', [
-      { text: 'Stay', style: 'cancel' },
-      {
-        text: 'Leave',
-        style: 'destructive',
-        onPress: () => {
-          leavingRef.current = true;
-          navigation.dispatch(data.action);
-        },
-      },
-    ]);
-  });
-
   useEffect(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [a.currentIndex]);
@@ -138,8 +138,6 @@ export default function AttemptScreen() {
   if (!question) return null;
   const answer = a.answers[question.id];
   const section = test.sections.find((s) => s.id === question.sectionId);
-  const sectionWindow = a.sectionWindows?.find((w) => w.sectionId === question.sectionId);
-  const sectionRemaining = sectionWindow ? Math.max(0, Math.floor((sectionWindow.endsAt - now) / 1000)) : null;
   const total = paper.questions.length;
   const isLast = a.currentIndex === total - 1;
   const bilingual = test.languages.includes('hi');

@@ -21,7 +21,7 @@ export default function ExamScreen() {
 
   if (!exam) {
     return (
-      <Screen>
+      <Screen edges={['left', 'right']}>
         <StateView kind="error" title="Exam not found" message="This exam is not in the catalogue." actionLabel="Go back" onAction={() => router.back()} />
       </Screen>
     );
@@ -40,7 +40,7 @@ export default function ExamScreen() {
   return (
     <>
       <Stack.Screen options={{ title: exam.shortName }} />
-      <Screen>
+      <Screen edges={['left', 'right']}>
         <Chip label={exam.category} tone="primary" icon="ribbon-outline" />
         <Text variant="display">{exam.name}</Text>
         <Text tone="secondary">{exam.pattern}</Text>

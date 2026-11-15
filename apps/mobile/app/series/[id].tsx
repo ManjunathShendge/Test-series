@@ -21,7 +21,7 @@ export default function SeriesScreen() {
 
   if (!series) {
     return (
-      <Screen>
+      <Screen edges={['left', 'right']}>
         <StateView kind="error" title="Series not found" message="This series is unavailable." actionLabel="Go back" onAction={() => router.back()} />
       </Screen>
     );
@@ -35,7 +35,7 @@ export default function SeriesScreen() {
   return (
     <>
       <Stack.Screen options={{ title: exam?.shortName ?? 'Series' }} />
-      <Screen contentStyle={{ paddingBottom: 120 }}>
+      <Screen contentStyle={{ paddingBottom: 120 }} edges={['left', 'right']}>
         <View style={styles.chips}>
           <Chip label={exam?.name ?? 'Exam'} tone="primary" icon="school-outline" />
           <Chip label={`${tests.length} tests`} icon="albums-outline" />

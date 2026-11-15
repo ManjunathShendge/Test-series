@@ -7,7 +7,7 @@ import { TestCard } from '@/features/catalogue/components/TestCard';
 import { examiners, exams, searchTests, type SearchFilters, type TestSummary } from '@/lib/demo';
 import { formatCount } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
-import { Card, Chip, Icon, Screen, StateView, Text, TextField } from '@/ui/primitives';
+import { Card, Chip, Icon, Screen, StateView, Text, TextField, type IconName } from '@/ui/primitives';
 import { colors, layout, space } from '@/ui/tokens';
 
 const KINDS: { key: TestSummary['kind']; label: string }[] = [
@@ -16,10 +16,18 @@ const KINDS: { key: TestSummary['kind']; label: string }[] = [
   { key: 'pyq', label: 'Previous year' },
 ];
 
+/** Price bands (PRD 6.2 "free or paid" and "price" filters), single select. */
+const PRICES: { key: NonNullable<SearchFilters['price']>; label: string; icon?: IconName }[] = [
+  { key: 'free', label: 'Free', icon: 'gift-outline' },
+  { key: 'under50', label: 'Under ₹50' },
+  { key: '50to200', label: '₹50 to ₹200' },
+  { key: 'over200', label: 'Over ₹200' },
+];
+
 /**
- * Discover (PRD 6.2): search with filters for exam, type, free/paid and
- * language; browse exams and examiners when idle. Rating filter is Phase 2 and
- * therefore not shown.
+ * Discover (PRD 6.2): search with filters for exam, type, price band and
+ * language; browse exams and examiners when idle. Rating and "in Pass" filters
+ * arrive with Phase 2 (ratings, Pass product per DECISIONS E01).
  */
 export default function DiscoverScreen() {
   const router = useRouter();
@@ -59,11 +67,14 @@ export default function DiscoverScreen() {
         ))}
       </View>
       <View style={styles.filters}>
-        <Chip label="Free" icon="gift-outline" selected={filters.price === 'free'} onPress={() => set('price', 'free')} />
-        <Chip label="Paid" icon="pricetag-outline" selected={filters.price === 'paid'} onPress={() => set('price', 'paid')} />
         <Chip label="Hindi" icon="language-outline" selected={filters.language === 'hi'} onPress={() => set('language', 'hi')} />
         {KINDS.map((k) => (
           <Chip key={k.key} label={k.label} selected={filters.kind === k.key} onPress={() => set('kind', k.key)} />
+        ))}
+      </View>
+      <View style={styles.filters} accessibilityRole="radiogroup" accessibilityLabel="Price">
+        {PRICES.map((p) => (
+          <Chip key={p.key} label={p.label} {...(p.icon ? { icon: p.icon } : {})} selected={filters.price === p.key} onPress={() => set('price', p.key)} />
         ))}
       </View>
 

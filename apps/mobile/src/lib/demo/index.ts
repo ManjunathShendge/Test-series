@@ -5,6 +5,7 @@ import { solutions } from './solutions';
 import type { AnswerState, Exam, Examiner, Paper, PaperQuestion, QuestionReview, Result, SectionResult, Series, TestSummary } from './types';
 
 export * from './types';
+export * from './coupons';
 export { cutoffOnTrendScale, exams, examiners, pastResults, profile, purchases, scoreTrend, series, tests, topicStrengths };
 
 /**
@@ -50,7 +51,8 @@ export interface SearchFilters {
   query?: string;
   examId?: string;
   kind?: TestSummary['kind'];
-  price?: 'free' | 'paid';
+  /** Free, any paid, or a paid price band (PRD 6.2 price filter). */
+  price?: 'free' | 'paid' | 'under50' | '50to200' | 'over200';
   language?: 'hi';
   examinerId?: string;
 }
@@ -62,6 +64,9 @@ export function searchTests(filters: SearchFilters): TestSummary[] {
     if (filters.kind && t.kind !== filters.kind) return false;
     if (filters.price === 'free' && t.pricePaise !== 0) return false;
     if (filters.price === 'paid' && t.pricePaise === 0) return false;
+    if (filters.price === 'under50' && (t.pricePaise === 0 || t.pricePaise >= 50_00)) return false;
+    if (filters.price === '50to200' && (t.pricePaise < 50_00 || t.pricePaise > 200_00)) return false;
+    if (filters.price === 'over200' && t.pricePaise <= 200_00) return false;
     if (filters.language === 'hi' && !t.languages.includes('hi')) return false;
     if (filters.examinerId && t.examinerId !== filters.examinerId) return false;
     if (q) {

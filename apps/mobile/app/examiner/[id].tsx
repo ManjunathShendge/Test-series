@@ -25,7 +25,7 @@ export default function ExaminerScreen() {
 
   if (!examiner) {
     return (
-      <Screen>
+      <Screen edges={['left', 'right']}>
         <StateView kind="error" title="Examiner not found" message="This profile is unavailable." actionLabel="Go back" onAction={() => router.back()} />
       </Screen>
     );
@@ -39,7 +39,7 @@ export default function ExaminerScreen() {
   return (
     <>
       <Stack.Screen options={{ title: examiner.name }} />
-      <Screen>
+      <Screen edges={['left', 'right']}>
         <View style={styles.hero}>
           <Avatar name={examiner.name} size={72} />
           <View style={styles.heroText}>

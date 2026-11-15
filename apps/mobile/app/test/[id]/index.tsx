@@ -1,11 +1,12 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PurchaseSheet } from '@/features/commerce/PurchaseSheet';
 import { getExam, getExaminer, getSeries, getTest } from '@/lib/demo';
 import { formatCount, formatDuration, formatPaise } from '@/lib/format';
 import { useAppStore, useHasAccess } from '@/lib/store/app';
+import { useAttemptStore } from '@/lib/store/attempt';
 import { Avatar, Button, Card, Chip, Icon, Screen, StateView, Text, type IconName } from '@/ui/primitives';
 import { colors, radius, space } from '@/ui/tokens';
 
@@ -18,10 +19,12 @@ export default function TestDetailScreen() {
   const hasAccess = useHasAccess(id);
   const attempted = useAppStore((s) => s.attemptedTestIds.includes(id));
   const [buying, setBuying] = useState(false);
+  const inProgressTestId = useAttemptStore((s) => (s.status === 'in_progress' ? s.test?.id ?? null : null));
+  const inProgressTitle = useAttemptStore((s) => (s.status === 'in_progress' ? s.test?.title ?? '' : ''));
 
   if (!test) {
     return (
-      <Screen>
+      <Screen edges={['left', 'right']}>
         <StateView kind="error" title="Test not found" message="This test may have been unpublished." actionLabel="Go back" onAction={() => router.back()} />
       </Screen>
     );
@@ -32,12 +35,27 @@ export default function TestDetailScreen() {
   const series = test.seriesId ? getSeries(test.seriesId) : undefined;
   const negative = test.sections[0]?.negativeMarks ?? 0;
 
-  const startAttempt = () => router.push({ pathname: '/test/[id]/instructions', params: { id: test.id } });
+  const resuming = inProgressTestId === test.id;
+  const startAttempt = () => {
+    if (resuming) {
+      router.push({ pathname: '/test/[id]/attempt', params: { id: test.id } });
+      return;
+    }
+    // One live attempt at a time: its clock is still running (decision E17/C3).
+    if (inProgressTestId) {
+      Alert.alert('Finish your current test first', `${inProgressTitle} is still in progress and its timer is running.`, [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Continue that test', onPress: () => router.push({ pathname: '/test/[id]/attempt', params: { id: inProgressTestId } }) },
+      ]);
+      return;
+    }
+    router.push({ pathname: '/test/[id]/instructions', params: { id: test.id } });
+  };
 
   return (
     <>
       <Stack.Screen options={{ title: exam?.shortName ?? 'Test' }} />
-      <Screen contentStyle={{ paddingBottom: 120 }}>
+      <Screen contentStyle={{ paddingBottom: 120 }} edges={['left', 'right']}>
         <View style={styles.chips}>
           <Chip label={exam?.name ?? 'Exam'} tone="primary" icon="school-outline" />
           {test.languages.includes('hi') ? <Chip label="English · Hindi" icon="language-outline" /> : <Chip label="English" />}
@@ -137,7 +155,7 @@ export default function TestDetailScreen() {
           )}
         </View>
         {hasAccess ? (
-          <Button label={attempted ? 'Reattempt' : 'Start test'} icon="play" size="lg" onPress={startAttempt} />
+          <Button label={resuming ? 'Continue attempt' : attempted ? 'Reattempt' : 'Start test'} icon="play" size="lg" onPress={startAttempt} />
         ) : (
           <Button label="Buy test" icon="lock-open-outline" size="lg" onPress={() => setBuying(true)} />
         )}

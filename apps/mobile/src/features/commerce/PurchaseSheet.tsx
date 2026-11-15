@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { applyPercentOff, GST_RATE_PERCENT, resolveCoupon, splitGst, type CouponResolution } from '@/lib/demo';
 import { formatPaise } from '@/lib/format';
 import { useAppStore, type PurchaseStatus } from '@/lib/store/app';
-import { Button, Chip, Icon, Text, type ChipTone, type IconName } from '@/ui/primitives';
+import { Button, Chip, Icon, Text, TextField, type ChipTone, type IconName } from '@/ui/primitives';
 import { colors, radius, space } from '@/ui/tokens';
 
 export interface PurchaseSheetProps {
@@ -21,10 +22,11 @@ const statusMeta: Record<Exclude<PurchaseStatus, 'idle'>, { label: string; tone:
 };
 
 /**
- * Store-billing purchase sheet. The three states are kept visibly distinct:
- * pending, verifying and confirmed (MASTER: never show "purchased" for an
- * unverified transaction). Price is the store's localised price; the server
- * decides entitlement, so unlocking happens only after "confirmed".
+ * Store-billing purchase sheet (PRD 6.3). The three states are kept visibly
+ * distinct: pending, verifying and confirmed (MASTER: never show "purchased"
+ * for an unverified transaction). Coupons and examiner codes are previewed on
+ * the client and re-validated by the server; the price shows GST included.
+ * The server decides entitlement, so unlocking happens only after "confirmed".
  */
 export function PurchaseSheet({ visible, item, onClose, onUnlocked }: PurchaseSheetProps) {
   const insets = useSafeAreaInsets();
@@ -33,12 +35,43 @@ export function PurchaseSheet({ visible, item, onClose, onUnlocked }: PurchaseSh
   const reset = useAppStore((s) => s.resetPurchaseStatus);
   const busy = status === 'pending' || status === 'verifying';
 
+  const [codeOpen, setCodeOpen] = useState(false);
+  const [code, setCode] = useState('');
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [coupon, setCoupon] = useState<CouponResolution | null>(null);
+
   useEffect(() => {
-    if (!visible) reset();
+    if (!visible) {
+      reset();
+      setCodeOpen(false);
+      setCode('');
+      setCodeError(null);
+      setCoupon(null);
+    }
   }, [visible, reset]);
 
   if (!item) return null;
   const meta = status === 'idle' ? null : statusMeta[status];
+  const payable = coupon ? applyPercentOff(item.pricePaise, coupon.percentOff) : item.pricePaise;
+  const { gstPaise } = splitGst(payable);
+
+  const applyCode = () => {
+    const outcome = resolveCoupon(code, { kind: item.kind, id: item.id });
+    if (!outcome.ok) {
+      setCoupon(null);
+      setCodeError(outcome.reason);
+      return;
+    }
+    setCodeError(null);
+    setCoupon(outcome.coupon);
+    setCodeOpen(false);
+  };
+
+  const removeCode = () => {
+    setCoupon(null);
+    setCode('');
+    setCodeError(null);
+  };
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={busy ? undefined : onClose} statusBarTranslucent>
@@ -60,20 +93,80 @@ export function PurchaseSheet({ visible, item, onClose, onUnlocked }: PurchaseSh
             </Text>
           </View>
 
-          <View style={styles.priceRow}>
-            <View>
-              <Text variant="bodySmall" tone="secondary">
-                Google Play price
-              </Text>
-              <Text variant="display">{formatPaise(item.pricePaise)}</Text>
+          <View style={styles.priceBox}>
+            <View style={styles.priceRow}>
+              <View>
+                <Text variant="bodySmall" tone="secondary">
+                  {coupon ? 'You pay' : 'Google Play price'}
+                </Text>
+                <View style={styles.priceLine}>
+                  <Text variant="display" tabular>
+                    {formatPaise(payable)}
+                  </Text>
+                  {coupon ? (
+                    <Text variant="bodySmall" tone="secondary" style={styles.struck} accessibilityLabel={`Was ${formatPaise(item.pricePaise)}`}>
+                      {formatPaise(item.pricePaise)}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+              <View style={styles.channel}>
+                <Icon name="logo-google-playstore" size={18} color={colors.textSecondary} />
+                <Text variant="bodySmall" tone="secondary">
+                  Billed by Google Play
+                </Text>
+              </View>
             </View>
-            <View style={styles.channel}>
-              <Icon name="logo-google-playstore" size={18} color={colors.textSecondary} />
-              <Text variant="bodySmall" tone="secondary">
-                Billed by Google Play
-              </Text>
-            </View>
+            <Text variant="caption" tone="secondary">
+              Includes {formatPaise(gstPaise)} GST ({GST_RATE_PERCENT}%). Invoice shows the full breakdown.
+            </Text>
           </View>
+
+          {status === 'idle' || status === 'failed' ? (
+            <View style={styles.couponBlock}>
+              {coupon ? (
+                <View style={styles.appliedRow}>
+                  <Chip label={`${coupon.code} applied`} tone="success" icon="pricetag-outline" />
+                  <Text variant="bodySmall" tone="secondary" style={{ flex: 1 }}>
+                    {coupon.label}
+                  </Text>
+                  <Pressable onPress={removeCode} accessibilityRole="button" accessibilityLabel={`Remove code ${coupon.code}`} hitSlop={8} style={styles.remove}>
+                    <Text variant="bodySmall" tone="primary">
+                      Remove
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : codeOpen ? (
+                <View style={styles.couponForm}>
+                  <View style={{ flex: 1 }}>
+                    <TextField
+                      label="Coupon or examiner code"
+                      placeholder="e.g. WELCOME20"
+                      value={code}
+                      onChangeText={(v) => {
+                        setCode(v.toUpperCase());
+                        if (codeError) setCodeError(null);
+                      }}
+                      onClear={() => setCode('')}
+                      autoCapitalize="characters"
+                      autoCorrect={false}
+                      returnKeyType="done"
+                      onSubmitEditing={applyCode}
+                      {...(codeError ? { error: codeError } : {})}
+                    />
+                  </View>
+                  <Button label="Apply" variant="secondary" onPress={applyCode} />
+                </View>
+              ) : (
+                <Pressable onPress={() => setCodeOpen(true)} accessibilityRole="button" accessibilityLabel="Add a coupon or examiner code" style={styles.couponToggle}>
+                  <Icon name="pricetag-outline" size={18} color={colors.primary} />
+                  <Text variant="bodyStrong" tone="primary">
+                    Have a coupon or examiner code?
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          ) : null}
 
           {meta ? (
             <View style={styles.status} accessibilityLiveRegion="polite">
@@ -100,11 +193,11 @@ export function PurchaseSheet({ visible, item, onClose, onUnlocked }: PurchaseSh
               <Button label="Start now" icon="play" fullWidth size="lg" onPress={onUnlocked} />
             ) : (
               <Button
-                label={status === 'failed' ? 'Try again' : `Pay ${formatPaise(item.pricePaise)}`}
+                label={status === 'failed' ? 'Try again' : `Pay ${formatPaise(payable)}`}
                 fullWidth
                 size="lg"
                 loading={busy}
-                onPress={() => void purchase({ kind: item.kind, id: item.id })}
+                onPress={() => void purchase({ kind: item.kind, id: item.id, ...(coupon ? { couponCode: coupon.code } : {}) })}
               />
             )}
           </View>
@@ -129,15 +222,16 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -space.md },
   product: { gap: space.xs },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    padding: space.lg,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surfaceMuted,
-  },
+  priceBox: { padding: space.lg, borderRadius: radius.lg, backgroundColor: colors.surfaceMuted, gap: space.sm },
+  priceRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  priceLine: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
+  struck: { textDecorationLine: 'line-through' },
   channel: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  couponBlock: { gap: space.sm },
+  couponToggle: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 44 },
+  couponForm: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
+  appliedRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  remove: { minHeight: 44, justifyContent: 'center' },
   status: { gap: space.sm },
   actions: { marginTop: space.xs },
 });

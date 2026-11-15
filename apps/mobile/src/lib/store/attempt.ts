@@ -1,5 +1,7 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { buildPaper, getTest, scoreDemoAttempt, type AnswerState, type AttemptStatus, type Language, type PaletteState, type Paper, type Result, type TestSummary } from '@/lib/demo';
+import { persistOptions } from './storage';
 
 /**
  * In-progress attempt state. Mirrors the pure engine contract in
@@ -7,10 +9,15 @@ import { buildPaper, getTest, scoreDemoAttempt, type AnswerState, type AttemptSt
  * language, zoom, submit) mutate a materialised state; palette states are
  * derived, never stored; marking never erases a selection.
  *
+ * Persistence: every mutation is written to device storage, and absolute
+ * timestamps (startedAt, deadlineAt, section windows) mean a restart resumes at
+ * the same question with the same time left (PRD 6.4 autosave and resume).
+ *
  * Demo limits, stated plainly: time is anchored to the device clock at start
- * (the real client anchors to server time and re-anchors after restart), state
- * is in memory only (the real client commits to SQLite before acknowledging a
- * save), and scoring runs locally (the server is the only authority).
+ * (the real client anchors to server time and re-anchors after restart), the
+ * store is JSON in AsyncStorage (the real client commits an event log to SQLite
+ * before acknowledging a save), and scoring runs locally (the server is the
+ * only authority).
  */
 
 export type ZoomLevel = 1 | 1.15 | 1.3;
@@ -50,6 +57,12 @@ interface AttemptState {
   setZoom: (zoom: ZoomLevel) => void;
   submit: (reason: 'manual' | 'deadline') => Result | null;
   markSynced: () => void;
+  /**
+   * Called once after rehydration. Resets the per-question clock so time away
+   * from the app is not charged to the current question, and reports whether an
+   * in-progress attempt has outlived its deadline (the caller then submits it).
+   */
+  resume: () => 'none' | 'resumed' | 'expired';
   reset: () => void;
 }
 
@@ -62,7 +75,9 @@ function touchTime(state: AttemptState, now: number): Record<string, AnswerState
   return { ...state.answers, [q.id]: { ...prev, visited: true, timeSpentMs: prev.timeSpentMs + Math.max(0, now - state.lastVisitAt) } };
 }
 
-export const useAttemptStore = create<AttemptState>((set, get) => ({
+export const useAttemptStore = create<AttemptState>()(
+  persist(
+    (set, get) => ({
   status: 'idle',
   attemptId: '',
   test: null,
@@ -180,8 +195,40 @@ export const useAttemptStore = create<AttemptState>((set, get) => ({
 
   markSynced: () => set((s) => (s.sync === 'saved' ? { sync: 'synced' } : s)),
 
+  resume: () => {
+    const s = get();
+    if (s.status !== 'in_progress') return 'none';
+    const now = Date.now();
+    if (now >= s.deadlineAt) return 'expired';
+    set({ lastVisitAt: now, sync: 'synced' });
+    return 'resumed';
+  },
+
   reset: () => set({ status: 'idle', test: null, paper: null, answers: {}, result: null, sectionWindows: null, currentIndex: 0, eventCount: 0 }),
-}));
+    }),
+    persistOptions<AttemptState, PersistedAttempt>('attempt', (s) => ({
+      status: s.status,
+      attemptId: s.attemptId,
+      test: s.test,
+      paper: s.paper,
+      startedAt: s.startedAt,
+      deadlineAt: s.deadlineAt,
+      sectionWindows: s.sectionWindows,
+      currentIndex: s.currentIndex,
+      answers: s.answers,
+      language: s.language,
+      zoom: s.zoom,
+      lastVisitAt: s.lastVisitAt,
+      eventCount: s.eventCount,
+      result: s.result,
+    })),
+  ),
+);
+
+type PersistedAttempt = Pick<
+  AttemptState,
+  'status' | 'attemptId' | 'test' | 'paper' | 'startedAt' | 'deadlineAt' | 'sectionWindows' | 'currentIndex' | 'answers' | 'language' | 'zoom' | 'lastVisitAt' | 'eventCount' | 'result'
+>;
 
 export function isSectionOpen(windows: SectionWindow[], sectionId: string, now: number): boolean {
   const w = windows.find((x) => x.sectionId === sectionId);
