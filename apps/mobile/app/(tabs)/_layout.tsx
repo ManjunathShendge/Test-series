@@ -1,4 +1,5 @@
 import { Redirect, Tabs } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '@/lib/store/app';
 import { Icon, type IconName } from '@/ui/primitives';
 import { colors, typography } from '@/ui/tokens';
@@ -20,6 +21,7 @@ const TABS: TabDef[] = [
 
 export default function TabsLayout() {
   const session = useAppStore((s) => s.session);
+  const insets = useSafeAreaInsets();
   if (!session.signedIn) return <Redirect href="/(auth)/sign-in" />;
   if (!session.onboarded) return <Redirect href="/(auth)/onboarding" />;
   return (
@@ -33,8 +35,10 @@ export default function TabsLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 64,
+          // 56dp bar plus the gesture/navigation bar inset so labels never sit under it.
+          height: 56 + insets.bottom,
           paddingTop: 6,
+          paddingBottom: Math.max(insets.bottom, 6),
         },
         tabBarItemStyle: { paddingVertical: 4 },
       }}

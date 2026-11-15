@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { useShallow } from 'zustand/react/shallow';
 import { ExaminerCard } from '@/features/catalogue/components/ExaminerCard';
 import { SectionHeader } from '@/features/catalogue/components/SectionHeader';
 import { TestCard } from '@/features/catalogue/components/TestCard';
@@ -49,7 +50,9 @@ export default function HomeScreen() {
   const suggestedExaminers = useMemo(() => examiners.filter((e) => !followed.includes(e.id)).slice(0, 2), [followed]);
 
   // Real in-progress attempt, if any: the timer keeps running while the student is away.
-  const attempt = useAttemptStore((s) => ({ status: s.status, test: s.test, paper: s.paper, answers: s.answers, deadlineAt: s.deadlineAt, sync: s.sync }));
+  const attempt = useAttemptStore(
+    useShallow((s) => ({ status: s.status, test: s.test, paper: s.paper, answers: s.answers, deadlineAt: s.deadlineAt, sync: s.sync })),
+  );
   const continueTest = attempt.status === 'in_progress' ? attempt.test : null;
   const answeredCount = attempt.paper ? (() => { const c = paletteCounts(attempt.paper, attempt.answers); return c.answered + c.markedAnswered; })() : 0;
   const secondsLeft = Math.max(0, Math.floor((attempt.deadlineAt - Date.now()) / 1000));

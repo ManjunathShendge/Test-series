@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { pastResults, synthesizeReview, type Result } from '@/lib/demo';
 
@@ -37,5 +38,8 @@ export const useResultsStore = create<ResultsState>((set) => ({
 
 /** Newest first. */
 export function useResultsList(): Result[] {
-  return useResultsStore((s) => Object.values(s.results).sort((a, b) => b.completedAt.localeCompare(a.completedAt)));
+  // Select the stable record, derive the sorted list outside the selector so the
+  // snapshot identity only changes when the store does.
+  const results = useResultsStore((s) => s.results);
+  return useMemo(() => Object.values(results).sort((a, b) => b.completedAt.localeCompare(a.completedAt)), [results]);
 }
