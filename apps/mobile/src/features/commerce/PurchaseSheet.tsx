@@ -184,7 +184,7 @@ export function PurchaseSheet({ visible, item, onClose, onUnlocked }: PurchaseSh
             </View>
           ) : (
             <Text variant="bodySmall" tone="secondary">
-              Instant access after confirmation. Invoice is saved to your profile. Full refund within 7 days if the test has not been started.
+              Instant access after confirmation. The receipt is saved to your profile. Refunds for in-app purchases are handled by Google Play.
             </Text>
           )}
 

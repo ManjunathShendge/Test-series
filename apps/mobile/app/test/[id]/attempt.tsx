@@ -71,7 +71,7 @@ export default function AttemptScreen() {
       markAttempted(result.testId);
       setLeaving(true);
       disablePrevention();
-      router.replace({ pathname: '/result/[attemptId]', params: { attemptId: result.attemptId } });
+      router.replace({ pathname: '/result/[attemptId]', params: { attemptId: result.attemptId, fresh: '1' } });
     },
     [a, addResult, markAttempted, router, disablePrevention],
   );
@@ -224,12 +224,21 @@ export default function AttemptScreen() {
         </View>
         <View style={styles.tools}>
           {bilingual ? (
-            <Pressable onPress={() => a.setLanguage(a.language === 'en' ? 'hi' : 'en')} accessibilityRole="button" accessibilityLabel={`Switch language to ${a.language === 'en' ? 'Hindi' : 'English'}`} style={styles.tool}>
-              <Icon name="language-outline" size={18} color={colors.primary} />
-              <Text variant="caption" tone="primary">
-                {a.language === 'en' ? 'हिं' : 'EN'}
-              </Text>
-            </Pressable>
+            question.stem.hi ? (
+              <Pressable onPress={() => a.setLanguage(a.language === 'en' ? 'hi' : 'en')} accessibilityRole="button" accessibilityLabel={`Language ${a.language === 'en' ? 'English' : 'Hindi'}, tap to switch to ${a.language === 'en' ? 'Hindi' : 'English'}`} style={styles.tool}>
+                <Icon name="language-outline" size={18} color={colors.primary} />
+                <Text variant="caption" tone="primary">
+                  {a.language === 'en' ? 'EN' : 'हिं'}
+                </Text>
+              </Pressable>
+            ) : (
+              <View accessible accessibilityLabel="This question is in English only" style={styles.tool}>
+                <Icon name="language-outline" size={18} color={colors.textDisabled} />
+                <Text variant="caption" style={{ color: colors.textDisabled }}>
+                  EN only
+                </Text>
+              </View>
+            )
           ) : null}
           <Pressable onPress={() => a.setZoom(ZOOMS[(ZOOMS.indexOf(a.zoom) + 1) % ZOOMS.length] ?? 1)} accessibilityRole="button" accessibilityLabel={`Text size ${Math.round(a.zoom * 100)} percent, tap to change`} style={styles.tool}>
             <Icon name="text-outline" size={18} color={colors.primary} />

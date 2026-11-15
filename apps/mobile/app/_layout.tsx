@@ -3,6 +3,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { OfflineBanner } from '@/features/common/OfflineBanner';
+import { ApiProvider } from '@/lib/api/client';
 import { useAppStore } from '@/lib/store/app';
 import { useAttemptStore } from '@/lib/store/attempt';
 import { useResultsStore } from '@/lib/store/results';
@@ -40,6 +42,7 @@ export default function RootLayout() {
   if (!hydrated) return null;
 
   return (
+    <ApiProvider>
     <SafeAreaProvider>
       <StatusBar style="dark" />
       <Stack
@@ -72,6 +75,8 @@ export default function RootLayout() {
         <Stack.Screen name="profile/legal" options={{ title: 'Terms and privacy' }} />
         <Stack.Screen name="profile/delete-account" options={{ title: 'Delete account' }} />
       </Stack>
+      <OfflineBanner />
     </SafeAreaProvider>
+    </ApiProvider>
   );
 }

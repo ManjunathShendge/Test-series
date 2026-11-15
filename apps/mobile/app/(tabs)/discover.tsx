@@ -1,10 +1,13 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { ExaminerCard } from '@/features/catalogue/components/ExaminerCard';
 import { SectionHeader } from '@/features/catalogue/components/SectionHeader';
 import { TestCard } from '@/features/catalogue/components/TestCard';
-import { examiners, exams, searchTests, type SearchFilters, type TestSummary } from '@/lib/demo';
+import { TestListSkeleton } from '@/features/catalogue/components/TestCardSkeleton';
+import { useIsOnline } from '@/lib/api/client';
+import { useSearch } from '@/lib/api/queries';
+import { examiners, exams, type SearchFilters, type TestSummary } from '@/lib/demo';
 import { formatCount } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
 import { Card, Chip, Icon, Screen, StateView, Text, TextField, type IconName } from '@/ui/primitives';
@@ -39,7 +42,24 @@ export default function DiscoverScreen() {
   const toggleFollow = useAppStore((s) => s.toggleFollow);
 
   const active = query.trim().length > 0 || Object.values(filters).some(Boolean);
-  const results = useMemo(() => searchTests({ ...filters, query }), [filters, query]);
+  // Debounce typing so each keystroke is not a request once this is a real API.
+  const [debounced, setDebounced] = useState(query);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(query), 250);
+    return () => clearTimeout(t);
+  }, [query]);
+  const search = useSearch({ ...filters, query: debounced });
+  const online = useIsOnline();
+  // Previous results stay on screen while a new search loads, dimmed, but are
+  // never shown as the answer to a filter they were not fetched for.
+  const stale = search.isPlaceholderData;
+  const listState =
+    search.data && !stale ? 'ready'
+    : search.isError ? 'error'
+    : search.fetchStatus === 'paused' ? 'offline'
+    : stale ? 'refreshing'
+    : 'loading';
+  const results = listState === 'ready' || listState === 'refreshing' ? (search.data ?? []) : [];
   const hasAccess = (t: TestSummary) => t.pricePaise === 0 || owned.includes(t.id) || (t.seriesId !== undefined && ownedSeries.includes(t.seriesId));
 
   const set = <K extends keyof SearchFilters>(key: K, value: SearchFilters[K]) =>
@@ -81,7 +101,7 @@ export default function DiscoverScreen() {
       {active ? (
         <View style={styles.resultsRow}>
           <Text variant="bodySmall" tone="secondary" accessibilityLiveRegion="polite">
-            {results.length === 1 ? '1 test' : `${results.length} tests`}
+            {listState === 'offline' ? 'Offline' : listState !== 'ready' ? 'Searching…' : results.length === 1 ? '1 test' : `${results.length} tests`}
           </Text>
           <Chip label="Clear filters" icon="close" onPress={() => { setQuery(''); setFilters({}); }} />
         </View>
@@ -123,21 +143,35 @@ export default function DiscoverScreen() {
         data={results}
         keyExtractor={(t) => t.id}
         renderItem={({ item }) => (
-          <View style={styles.item}>
+          <View style={[styles.item, listState === 'refreshing' && styles.dimmed]}>
             <TestCard test={item} hasAccess={hasAccess(item)} onPress={() => router.push({ pathname: '/test/[id]', params: { id: item.id } })} />
           </View>
         )}
         ListHeaderComponent={header}
         ListEmptyComponent={
-          <StateView
-            kind="empty"
-            title="No tests match"
-            message="Try a different exam, type or price filter, or clear the search."
-            actionLabel="Clear filters"
-            onAction={() => { setQuery(''); setFilters({}); }}
-          />
+          listState === 'loading' ? (
+            <View style={styles.item}>
+              <TestListSkeleton count={3} />
+            </View>
+          ) : listState === 'offline' || listState === 'error' ? (
+            <StateView
+              kind={listState === 'offline' ? 'offline' : 'error'}
+              title={listState === 'offline' ? 'Waiting for a connection' : 'Search is not responding'}
+              message={listState === 'offline' ? 'Results load as soon as you are back online.' : 'Try again in a moment.'}
+              actionLabel="Try again"
+              onAction={() => void search.refetch()}
+            />
+          ) : (
+            <StateView
+              kind="empty"
+              title="No tests match"
+              message="Try a different exam, type or price filter, or clear the search."
+              actionLabel="Clear filters"
+              onAction={() => { setQuery(''); setFilters({}); }}
+            />
+          )
         }
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, !online && styles.listOffline]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
@@ -156,5 +190,8 @@ const styles = StyleSheet.create({
   examCard: { flexBasis: '47%', flexGrow: 1 },
   examIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
   stack: { gap: space.md },
+  dimmed: { opacity: 0.5 },
+  // Room for the floating offline banner so it never covers the last action.
+  listOffline: { paddingBottom: 120 },
   item: { paddingHorizontal: layout.gutter, paddingTop: space.md },
 });

@@ -1,12 +1,13 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { announce } from '@/lib/a11y';
 import { reportQuestion, ReviewItem } from '@/features/results/ReviewItem';
 import { buildPaper, getExam, getTest } from '@/lib/demo';
 import { formatCount, formatDate, formatOrdinal } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
 import { useResultsStore } from '@/lib/store/results';
-import { Button, Card, Chip, Icon, ProgressBar, Screen, StateView, Text, type IconName } from '@/ui/primitives';
+import { Button, Card, Chip, Icon, ProgressBar, Screen, Skeleton, StateView, Text, type IconName } from '@/ui/primitives';
 import { colors, layout, radius, space } from '@/ui/tokens';
 
 type Filter = 'all' | 'wrong' | 'skipped' | 'bookmarked';
@@ -17,16 +18,44 @@ type Filter = 'all' | 'wrong' | 'skipped' | 'bookmarked';
  * question-by-question review with solutions, time and percent-correct.
  */
 export default function ResultScreen() {
-  const { attemptId } = useLocalSearchParams<{ attemptId: string }>();
+  const { attemptId, fresh } = useLocalSearchParams<{ attemptId: string; fresh?: string }>();
   const router = useRouter();
   const result = useResultsStore((s) => s.results[attemptId]);
   const toggleBookmark = useResultsStore((s) => s.toggleBookmark);
   const language = useAppStore((s) => s.profile.language);
   const [filter, setFilter] = useState<Filter>('all');
+  // Straight after submit the server scores and ranks the attempt (results.score job).
+  const [scoring, setScoring] = useState(fresh === '1');
+  useEffect(() => {
+    if (!scoring) return;
+    const t = setTimeout(() => {
+      setScoring(false);
+      announce('Your result is ready');
+    }, 1400);
+    return () => clearTimeout(t);
+  }, [scoring]);
 
   const test = result ? getTest(result.testId) : undefined;
   const paper = useMemo(() => (test ? buildPaper(test) : undefined), [test]);
   const questionIndex = useMemo(() => new Map(paper?.questions.map((q) => [q.id, q]) ?? []), [paper]);
+
+  if (scoring) {
+    return (
+      <Screen edges={['left', 'right']}>
+        <View style={styles.scoring} accessible accessibilityRole="progressbar" accessibilityLabel="Calculating your score">
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text variant="heading" align="center">
+            Calculating your score
+          </Text>
+          <Text tone="secondary" align="center">
+            Checking answers and comparing you with everyone who took this test.
+          </Text>
+        </View>
+        <Skeleton height={180} rounded="lg" />
+        <Skeleton height={140} rounded="lg" />
+      </Screen>
+    );
+  }
 
   if (!result || !test || !paper) {
     return (
@@ -224,6 +253,7 @@ function Bench({ label, value, max, color }: { label: string; value: number; max
 
 const styles = StyleSheet.create({
   content: { maxWidth: undefined, gap: 0 },
+  scoring: { alignItems: 'center', gap: space.md, paddingVertical: space['2xl'] },
   list: { paddingBottom: space['2xl'] },
   header: { paddingHorizontal: layout.gutter, paddingTop: space.lg, gap: space.lg },
   chips: { flexDirection: 'row', gap: space.sm, flexWrap: 'wrap' },

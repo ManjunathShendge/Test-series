@@ -3,11 +3,11 @@ import { useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PurchaseSheet } from '@/features/commerce/PurchaseSheet';
-import { getExam, getExaminer, getSeries, getTest } from '@/lib/demo';
+import { useTestDetail } from '@/lib/api/queries';
 import { formatCount, formatDuration, formatPaise } from '@/lib/format';
 import { useAppStore, useHasAccess } from '@/lib/store/app';
 import { useAttemptStore } from '@/lib/store/attempt';
-import { Avatar, Button, Card, Chip, Icon, Screen, StateView, Text, type IconName } from '@/ui/primitives';
+import { Avatar, Button, Card, Chip, Icon, Screen, Skeleton, StateView, Text, type IconName } from '@/ui/primitives';
 import { colors, radius, space } from '@/ui/tokens';
 
 /** Test detail (PRD 6.3): what you get, who made it, and one clear next action. */
@@ -15,7 +15,8 @@ export default function TestDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const test = getTest(id);
+  const detail = useTestDetail(id);
+  const test = detail.data?.test;
   const hasAccess = useHasAccess(id);
   const attempted = useAppStore((s) => s.attemptedTestIds.includes(id));
   const [buying, setBuying] = useState(false);
@@ -23,16 +24,39 @@ export default function TestDetailScreen() {
   const inProgressTitle = useAttemptStore((s) => (s.status === 'in_progress' ? s.test?.title ?? '' : ''));
 
   if (!test) {
+    if (detail.isError || detail.fetchStatus === 'paused') {
+      const offline = !detail.isError;
+      const notFound = detail.error?.name === 'NotFoundError';
+      return (
+        <Screen edges={['left', 'right']}>
+          <StateView
+            kind={offline ? 'offline' : 'error'}
+            title={offline ? 'Waiting for a connection' : notFound ? 'Test not found' : 'Could not load this test'}
+            message={offline ? 'This test loads as soon as you are back online.' : notFound ? 'This test may have been unpublished.' : 'Something went wrong. Try again in a moment.'}
+            actionLabel={notFound ? 'Go back' : 'Try again'}
+            onAction={() => (notFound ? router.back() : void detail.refetch())}
+          />
+        </Screen>
+      );
+    }
     return (
       <Screen edges={['left', 'right']}>
-        <StateView kind="error" title="Test not found" message="This test may have been unpublished." actionLabel="Go back" onAction={() => router.back()} />
+        <View accessible accessibilityRole="progressbar" accessibilityLabel="Loading test" style={{ gap: space.lg }}>
+          <Skeleton width={140} height={32} rounded="full" />
+          <Skeleton width="90%" height={30} />
+          <Skeleton height={76} rounded="lg" />
+          <View style={{ flexDirection: 'row', gap: space.md }}>
+            <View style={{ flex: 1 }}><Skeleton height={84} rounded="lg" /></View>
+            <View style={{ flex: 1 }}><Skeleton height={84} rounded="lg" /></View>
+            <View style={{ flex: 1 }}><Skeleton height={84} rounded="lg" /></View>
+          </View>
+          <Skeleton height={120} rounded="lg" />
+        </View>
       </Screen>
     );
   }
 
-  const exam = getExam(test.examId);
-  const examiner = getExaminer(test.examinerId);
-  const series = test.seriesId ? getSeries(test.seriesId) : undefined;
+  const { exam, examiner, series } = detail.data ?? {};
   const negative = test.sections[0]?.negativeMarks ?? 0;
 
   const resuming = inProgressTestId === test.id;

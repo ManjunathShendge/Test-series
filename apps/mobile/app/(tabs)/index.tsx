@@ -1,22 +1,16 @@
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
 import { ExaminerCard } from '@/features/catalogue/components/ExaminerCard';
 import { SectionHeader } from '@/features/catalogue/components/SectionHeader';
 import { TestCard } from '@/features/catalogue/components/TestCard';
-import {
-  examiners,
-  featuredFreeTests,
-  getExam,
-  newFromFollowed,
-  recommendedTests,
-  type TestSummary,
-} from '@/lib/demo';
+import { TestListSkeleton } from '@/features/catalogue/components/TestCardSkeleton';
+import { useHomeFeed } from '@/lib/api/queries';
+import { getExam, type TestSummary } from '@/lib/demo';
 import { formatClock } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
 import { paletteCounts, useAttemptStore } from '@/lib/store/attempt';
-import { Avatar, Button, Card, Chip, Icon, Screen, Text } from '@/ui/primitives';
+import { Avatar, Button, Card, Chip, Icon, Screen, StateView, Text } from '@/ui/primitives';
 import { colors, layout, space } from '@/ui/tokens';
 
 function greeting(): string {
@@ -43,10 +37,13 @@ export default function HomeScreen() {
   const hasAccess = (t: TestSummary) =>
     t.pricePaise === 0 || owned.includes(t.id) || (t.seriesId !== undefined && ownedSeries.includes(t.seriesId));
 
-  const recommended = useMemo(() => recommendedTests(profile.targetExamIds, new Set(attempted)), [profile.targetExamIds, attempted]);
-  const fromFollowed = useMemo(() => newFromFollowed(new Set(followed)), [followed]);
-  const featured = useMemo(() => featuredFreeTests(), []);
-  const suggestedExaminers = useMemo(() => examiners.filter((e) => !followed.includes(e.id)).slice(0, 2), [followed]);
+  const feed = useHomeFeed(profile.targetExamIds, attempted, followed);
+  const recommended = feed.data?.recommended ?? [];
+  const fromFollowed = feed.data?.fromFollowed ?? [];
+  const featured = feed.data?.featured ?? [];
+  const suggestedExaminers = feed.data?.suggestedExaminers ?? [];
+  // No data yet: first load, or waiting for a connection with nothing cached.
+  const feedState = feed.data ? 'ready' : feed.isError ? 'error' : feed.fetchStatus === 'paused' ? 'offline' : 'loading';
 
   // Real in-progress attempt, if any: the timer keeps running while the student is away.
   const attempt = useAttemptStore(
@@ -111,16 +108,55 @@ export default function HomeScreen() {
         </View>
       ) : null}
 
+      {feedState === 'loading' ? (
+        <View style={styles.section}>
+          <View style={styles.gutter}>
+            <SectionHeader title="Recommended for you" subtitle="Popular in your target exams" />
+          </View>
+          <ScrollView horizontal scrollEnabled={false} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gutter}>
+            <TestListSkeleton count={2} compact />
+          </ScrollView>
+          <View style={styles.gutter}>
+            <TestListSkeleton count={1} />
+          </View>
+        </View>
+      ) : null}
+
+      {feedState === 'error' || feedState === 'offline' ? (
+        <View style={styles.gutter}>
+          <StateView
+            kind={feedState === 'offline' ? 'offline' : 'error'}
+            title={feedState === 'offline' ? 'Waiting for a connection' : 'Could not load your tests'}
+            message={feedState === 'offline' ? 'Your recommendations load as soon as you are back online. A test in progress still works.' : 'Something went wrong on our side. Your progress is safe.'}
+            actionLabel="Try again"
+            onAction={() => void feed.refetch()}
+          />
+        </View>
+      ) : null}
+
+      {feedState === 'ready' ? (
       <View style={styles.section}>
         <View style={styles.gutter}>
           <SectionHeader title="Recommended for you" subtitle="Popular in your target exams" actionLabel="See all" onAction={() => router.push('/discover')} />
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.gutter, styles.rail]}>
-          {recommended.map((t) => (
-            <TestCard key={t.id} test={t} hasAccess={hasAccess(t)} onPress={() => openTest(t.id)} compact />
-          ))}
-        </ScrollView>
+        {recommended.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.gutter, styles.rail]}>
+            {recommended.map((t) => (
+              <TestCard key={t.id} test={t} hasAccess={hasAccess(t)} onPress={() => openTest(t.id)} compact />
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.gutter}>
+            <Card>
+              <Text variant="bodyStrong">You have attempted every popular test here</Text>
+              <Text variant="bodySmall" tone="secondary" style={{ marginTop: space.xs }}>
+                Browse Discover for sectionals and previous-year papers, or add another target exam in Profile.
+              </Text>
+            </Card>
+          </View>
+        )}
       </View>
+      ) : null}
 
       {fromFollowed.length > 0 ? (
         <View style={styles.section}>
@@ -135,6 +171,7 @@ export default function HomeScreen() {
         </View>
       ) : null}
 
+      {featured.length > 0 ? (
       <View style={styles.section}>
         <View style={styles.gutter}>
           <SectionHeader title="Free tests" subtitle="Hand-picked by our team" />
@@ -145,6 +182,7 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
       </View>
+      ) : null}
 
       {suggestedExaminers.length > 0 ? (
         <View style={styles.section}>
