@@ -1,8 +1,9 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, View } from 'react-native';
-import { buildPaper, getExam, getTest, type PaperQuestion, type QuestionReview } from '@/lib/demo';
-import { formatClock, formatCount, formatDate, formatOrdinal } from '@/lib/format';
+import { FlatList, StyleSheet, View } from 'react-native';
+import { reportQuestion, ReviewItem } from '@/features/results/ReviewItem';
+import { buildPaper, getExam, getTest } from '@/lib/demo';
+import { formatCount, formatDate, formatOrdinal } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
 import { useResultsStore } from '@/lib/store/results';
 import { Button, Card, Chip, Icon, ProgressBar, Screen, StateView, Text, type IconName } from '@/ui/primitives';
@@ -169,13 +170,7 @@ export default function ResultScreen() {
                   review={item}
                   language={language}
                   onBookmark={() => toggleBookmark(result.attemptId, item.questionId)}
-                  onReport={() =>
-                    Alert.alert('Report this question', 'Tell us what is wrong. Our review team responds within 72 hours.', [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Wrong answer key', onPress: () => Alert.alert('Reported', 'Thanks. We will review the key and notify you.') },
-                      { text: 'Typo or unclear', onPress: () => Alert.alert('Reported', 'Thanks. We will review the wording.') },
-                    ])
-                  }
+                  onReport={reportQuestion}
                 />
               </View>
             ) : null;
@@ -227,90 +222,6 @@ function Bench({ label, value, max, color }: { label: string; value: number; max
   );
 }
 
-function ReviewItem({ number, question, review, language, onBookmark, onReport }: { number: number; question: PaperQuestion; review: QuestionReview; language: 'en' | 'hi'; onBookmark: () => void; onReport: () => void }) {
-  const t = (b: { en: string; hi?: string }) => (language === 'hi' && b.hi ? b.hi : b.en);
-  const skipped = review.selectedOptionId === undefined;
-  const status = skipped
-    ? { label: 'Skipped', tone: 'neutral' as const, icon: 'remove-circle-outline' as IconName }
-    : review.isCorrect
-      ? { label: 'Correct', tone: 'success' as const, icon: 'checkmark-circle-outline' as IconName }
-      : { label: 'Wrong', tone: 'error' as const, icon: 'close-circle-outline' as IconName };
-  const slower = review.yourTimeSeconds > review.averageTimeSeconds;
-
-  return (
-    <Card>
-      <View style={styles.itemTop}>
-        <Text variant="bodySmallStrong" tone="secondary">
-          Q{number} · {question.topic}
-        </Text>
-        <Chip label={status.label} tone={status.tone} icon={status.icon} />
-      </View>
-      <Text style={{ marginTop: space.sm }}>{t(question.stem)}</Text>
-
-      <View style={styles.options}>
-        {question.options.map((o) => {
-          const isCorrect = o.id === review.correctOptionId;
-          const isChosen = o.id === review.selectedOptionId;
-          const icon: IconName | null = isCorrect ? 'checkmark-circle' : isChosen ? 'close-circle' : null;
-          return (
-            <View
-              key={o.id}
-              style={[styles.option, isCorrect && styles.optionCorrect, isChosen && !isCorrect && styles.optionWrong]}
-              accessible
-              accessibilityLabel={`Option ${o.id}: ${t(o.text)}${isCorrect ? ', correct answer' : ''}${isChosen ? ', your answer' : ''}`}
-            >
-              <Text variant="bodySmallStrong" tone={isCorrect ? 'success' : isChosen ? 'error' : 'secondary'} tabular>
-                {o.id}
-              </Text>
-              <Text variant="bodySmall" style={{ flex: 1 }}>
-                {t(o.text)}
-              </Text>
-              {icon ? <Icon name={icon} size={18} color={isCorrect ? colors.success : colors.error} /> : null}
-            </View>
-          );
-        })}
-      </View>
-
-      <View style={styles.solution}>
-        <Text variant="bodySmallStrong">Solution</Text>
-        <Text variant="bodySmall" tone="secondary">
-          {t(review.solution)}
-        </Text>
-      </View>
-
-      <View style={styles.statsRow}>
-        <View style={styles.statItem} accessible accessibilityLabel={`Your time ${formatClock(review.yourTimeSeconds)}, average ${formatClock(review.averageTimeSeconds)}`}>
-          <Icon name="time-outline" size={16} color={slower ? colors.warning : colors.textSecondary} />
-          <Text variant="caption" tone={slower ? 'warning' : 'secondary'} tabular>
-            You {formatClock(review.yourTimeSeconds)} · Avg {formatClock(review.averageTimeSeconds)}
-          </Text>
-        </View>
-        <View style={styles.statItem} accessible accessibilityLabel={`${review.percentCorrect} percent of students answered correctly`}>
-          <Icon name="people-outline" size={16} color={colors.textSecondary} />
-          <Text variant="caption" tone="secondary" tabular>
-            {review.percentCorrect}% got it right
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.itemActions}>
-        <Pressable onPress={onBookmark} accessibilityRole="button" accessibilityState={{ selected: review.bookmarked }} accessibilityLabel={review.bookmarked ? 'Remove bookmark' : 'Bookmark question'} style={styles.iconAction}>
-          <Icon name={review.bookmarked ? 'bookmark' : 'bookmark-outline'} size={20} color={review.bookmarked ? colors.primary : colors.textSecondary} />
-          <Text variant="bodySmallStrong" tone={review.bookmarked ? 'primary' : 'secondary'}>
-            {review.bookmarked ? 'Saved' : 'Save'}
-          </Text>
-        </Pressable>
-        <Pressable onPress={onReport} accessibilityRole="button" accessibilityLabel="Report a problem with this question" style={styles.iconAction}>
-          <Icon name="flag-outline" size={20} color={colors.textSecondary} />
-          <Text variant="bodySmallStrong" tone="secondary">
-            Report
-          </Text>
-        </Pressable>
-      </View>
-    </Card>
-  );
-}
-
 const styles = StyleSheet.create({
   content: { maxWidth: undefined, gap: 0 },
   list: { paddingBottom: space['2xl'] },
@@ -330,15 +241,5 @@ const styles = StyleSheet.create({
   reviewHead: { gap: space.md },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   item: { paddingHorizontal: layout.gutter, paddingTop: space.md },
-  itemTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
-  options: { gap: space.sm, marginTop: space.md },
-  option: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
-  optionCorrect: { borderColor: colors.success, backgroundColor: colors.successSoft },
-  optionWrong: { borderColor: colors.error, backgroundColor: colors.errorSoft },
-  solution: { marginTop: space.md, gap: space.xs, padding: space.md, borderRadius: radius.md, backgroundColor: colors.surfaceMuted },
-  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.lg, marginTop: space.md },
-  statItem: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  itemActions: { flexDirection: 'row', gap: space.lg, marginTop: space.md, paddingTop: space.md, borderTopWidth: 1, borderTopColor: colors.surfaceMuted },
-  iconAction: { flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: 44, paddingRight: space.sm },
   footer: { paddingHorizontal: layout.gutter, paddingTop: space.xl, gap: space.sm },
 });

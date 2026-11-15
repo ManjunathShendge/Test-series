@@ -1,6 +1,6 @@
 # Project status
 
-Date: 13 November 2026.
+Date: 15 November 2026.
 
 ## Completed
 
@@ -11,7 +11,7 @@ Date: 13 November 2026.
 
 ## Implementation state
 
-M0 in progress: directory structure and .gitignore only. No package manifests, application code, database migrations, CI jobs, provider accounts or deployments were created. No application tests or native/store checks have run. Documentation validation is recorded in SOURCES.
+M0 in progress: workspace manifests, TypeScript project graph and API/web health routes exist (phases 1 to 3). A demo-grade student mobile app runs in Expo Go on local demo data, with no backend calls, real auth or real billing (see the 15 November log entry and DECISIONS X1 to X5). No database migrations, CI jobs, provider accounts or deployments exist. No automated application tests or native/store checks have run.
 
 ## Log
 
@@ -134,9 +134,35 @@ Next concrete action: write the M0 workspace manifests, Compose file and env val
   pinned set above, then run the clean-clone flow.
 ```
 
+```text
+Date / milestone / requirement IDs: 15 November 2026 / mobile client demo (ahead of M-series) /
+  PRD 6.1 to 6.7
+Implemented behavior and changed paths (apps/mobile):
+  - Design tokens and primitives from design-system MASTER; typed demo repository with key-free
+    papers and solutions held separately; zustand stores for session, results and the attempt.
+  - Screens: sign-in, onboarding, Home, Discover, exam, examiner, series, test detail, purchase
+    sheet, instructions, attempt, result and review, Progress, practice lists, Profile, edit exams.
+  - Phase G: on-device persistence and resume, coupon and examiner codes, GST-inclusive price,
+    price band filter, edit target exams, continue-attempt wiring.
+  - Phase H: shared review card, cross-attempt mistake notebook and bookmarks, single bookmark
+    source, sign-out clears results and any live attempt, chart label and header fixes.
+Checks run (command, outcome, evidence):
+  - pnpm exec tsc --noEmit in apps/mobile: exit 0. pnpm exec oxlint app src: no findings.
+  - Manual walkthrough on Android emulator Pixel_10a in Expo Go with screenshots: sign-in,
+    onboarding, Home, Discover filters, purchase with ANITA10, instructions, attempt, kill and
+    relaunch mid-attempt resumed on the same question with the saved answer, leave dialog,
+    Progress, practice lists, result, exam tabs, series, examiner, Profile, sign-out.
+Unavailable checks and reason: no automated tests yet for the mobile app; native Android build
+  blocked by the space in the repository path (DECISIONS X1); no iOS device or simulator.
+Open decision IDs / blocking dependency: X1 repository relocation (owner), X4 and O09 GST
+  treatment (CA), X5 and S4 store coupon and SKU strategy.
+Next concrete action: owner decides on relocating the repository; then resume M0 phases 4 and 5
+  (Compose, env validation, CI) and add Vitest coverage for the attempt store and practice lists.
+```
+
 ## Next action
 
-Continue M0 tooling per the latest log entry, using the bootstrap prompt in PROMPTS.md. Business choices in DECISIONS may proceed independently; S4 must resolve mobile SKU type and correlation before mobile checkout implementation is finalized.
+Owner decides on relocating the repository to a path without spaces (DECISIONS X1). Then continue M0 phases 4 and 5 per the latest log entry, using the bootstrap prompt in PROMPTS.md. Business choices in DECISIONS may proceed independently; S4 must resolve mobile SKU type and correlation before mobile checkout implementation is finalized.
 
 ## Update template
 

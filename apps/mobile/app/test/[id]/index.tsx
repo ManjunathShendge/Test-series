@@ -54,7 +54,7 @@ export default function TestDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: exam?.shortName ?? 'Test' }} />
+      <Stack.Screen options={{ title: 'Test details' }} />
       <Screen contentStyle={{ paddingBottom: 120 }} edges={['left', 'right']}>
         <View style={styles.chips}>
           <Chip label={exam?.name ?? 'Exam'} tone="primary" icon="school-outline" />

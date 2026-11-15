@@ -5,7 +5,7 @@ import { SectionHeader } from '@/features/catalogue/components/SectionHeader';
 import { cutoffOnTrendScale, getExam, getTest, recommendedTests, scoreTrend, topicStrengths } from '@/lib/demo';
 import { formatDate, formatOrdinal } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
-import { useResultsList } from '@/lib/store/results';
+import { practiceEntries, useResultsList } from '@/lib/store/results';
 import { Card, Chip, Icon, ProgressBar, Screen, StateView, Text } from '@/ui/primitives';
 import { colors, radius, space } from '@/ui/tokens';
 
@@ -25,8 +25,8 @@ export default function ProgressScreen() {
   const weakest = useMemo(() => [...topicStrengths].sort((a, b) => a.accuracy - b.accuracy).slice(0, 3), []);
   const strongest = useMemo(() => [...topicStrengths].sort((a, b) => b.accuracy - a.accuracy).slice(0, 3), []);
   const suggested = useMemo(() => recommendedTests(profile.targetExamIds, new Set(attempted)).slice(0, 2), [profile.targetExamIds, attempted]);
-  const mistakes = results.reduce((n, r) => n + r.review.filter((q) => q.selectedOptionId !== undefined && !q.isCorrect).length, 0);
-  const bookmarks = results.reduce((n, r) => n + r.review.filter((q) => q.bookmarked).length, 0);
+  const mistakes = useMemo(() => practiceEntries(results, 'mistakes').length, [results]);
+  const bookmarks = useMemo(() => practiceEntries(results, 'bookmarks').length, [results]);
 
   if (results.length === 0) {
     return (
@@ -68,20 +68,21 @@ export default function ProgressScreen() {
           <View style={styles.chart} accessible accessibilityRole="image" accessibilityLabel={trendSummary}>
             <View style={[styles.cutoff, { bottom: CHART_HEIGHT * cutoffRatio }]}>
               <View style={styles.cutoffLine} />
-              <Text variant="caption" tone="secondary" style={styles.cutoffLabel}>
-                Cutoff {cutoffOnTrendScale.score}
-              </Text>
             </View>
+            <Text variant="caption" tone="warning" style={[styles.cutoffLabel, { bottom: CHART_HEIGHT * cutoffRatio + 4 }]}>
+              {cutoffOnTrendScale.label} {cutoffOnTrendScale.score}/{cutoffOnTrendScale.maxScore}
+            </Text>
             <View style={styles.bars}>
               {scoreTrend.map((p) => {
                 const ratio = p.score / p.maxScore;
                 const above = p.score >= cutoffOnTrendScale.score;
                 return (
                   <View key={p.date} style={styles.barCol}>
-                    <Text variant="caption" tabular style={{ color: above ? colors.success : colors.text }}>
-                      {p.score}
-                    </Text>
-                    <View style={[styles.bar, { height: Math.max(6, CHART_HEIGHT * ratio), backgroundColor: above ? colors.success : colors.primary }]} />
+                    <View style={[styles.bar, { height: Math.max(28, CHART_HEIGHT * ratio), backgroundColor: above ? colors.success : colors.primary }]}>
+                      <Text variant="caption" tabular style={styles.barValue}>
+                        {p.score}
+                      </Text>
+                    </View>
                   </View>
                 );
               })}
@@ -129,7 +130,7 @@ export default function ProgressScreen() {
       <View style={styles.block}>
         <SectionHeader title="Practice lists" />
         <View style={styles.practice}>
-          <Card onPress={() => results[0] && router.push({ pathname: '/result/[attemptId]', params: { attemptId: results[0].attemptId } })} accessibilityLabel={`Mistake notebook, ${mistakes} questions`} style={styles.practiceCard}>
+          <Card onPress={() => router.push({ pathname: '/practice/[list]', params: { list: 'mistakes' } })} accessibilityLabel={`Mistake notebook, ${mistakes} questions`} style={styles.practiceCard}>
             <View style={[styles.practiceIcon, { backgroundColor: colors.errorSoft }]}>
               <Icon name="close-circle-outline" size={22} color={colors.error} />
             </View>
@@ -140,7 +141,7 @@ export default function ProgressScreen() {
               Mistake notebook
             </Text>
           </Card>
-          <Card onPress={() => results[0] && router.push({ pathname: '/result/[attemptId]', params: { attemptId: results[0].attemptId } })} accessibilityLabel={`Bookmarks, ${bookmarks} questions`} style={styles.practiceCard}>
+          <Card onPress={() => router.push({ pathname: '/practice/[list]', params: { list: 'bookmarks' } })} accessibilityLabel={`Bookmarks, ${bookmarks} questions`} style={styles.practiceCard}>
             <View style={[styles.practiceIcon, { backgroundColor: colors.primarySoft }]}>
               <Icon name="bookmark-outline" size={22} color={colors.primary} />
             </View>
@@ -198,13 +199,14 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 const styles = StyleSheet.create({
   block: { gap: space.md },
   suggest: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
-  chart: { height: CHART_HEIGHT + 24, justifyContent: 'flex-end', position: 'relative' },
+  chart: { height: CHART_HEIGHT + 28, justifyContent: 'flex-end', position: 'relative' },
   bars: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: space.sm },
   barCol: { flex: 1, alignItems: 'center', gap: space.xs },
-  bar: { width: '100%', maxWidth: 40, borderTopLeftRadius: radius.sm, borderTopRightRadius: radius.sm },
-  cutoff: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: space.sm, zIndex: 1 },
+  bar: { width: '100%', maxWidth: 40, borderTopLeftRadius: radius.sm, borderTopRightRadius: radius.sm, alignItems: 'center', paddingTop: space.xs },
+  barValue: { color: colors.onPrimary },
+  cutoff: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center', zIndex: 1 },
   cutoffLine: { flex: 1, height: 0, borderTopWidth: 1, borderStyle: 'dashed', borderColor: colors.warning },
-  cutoffLabel: { backgroundColor: colors.surface, paddingHorizontal: space.xs },
+  cutoffLabel: { position: 'absolute', left: 0, zIndex: 2 },
   axis: { flexDirection: 'row', justifyContent: 'space-between', gap: space.sm, marginTop: space.xs },
   axisLabel: { flex: 1, textAlign: 'center' },
   legend: { flexDirection: 'row', gap: space.lg, marginTop: space.md },

@@ -3,6 +3,7 @@ import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { getExam, type Language } from '@/lib/demo';
 import { formatDate, formatPaise } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
+import { signOutEverywhere } from '@/lib/store/session';
 import { Avatar, Button, Card, Chip, Icon, Screen, Text, type IconName } from '@/ui/primitives';
 import { colors, radius, space, touch } from '@/ui/tokens';
 
@@ -17,7 +18,6 @@ export default function ProfileScreen() {
   const profile = useAppStore((s) => s.profile);
   const purchases = useAppStore((s) => s.purchases);
   const setLanguage = useAppStore((s) => s.setLanguage);
-  const signOut = useAppStore((s) => s.signOut);
 
   const confirmDelete = () =>
     Alert.alert(
@@ -134,7 +134,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.danger}>
-        <Button label="Sign out" variant="secondary" icon="log-out-outline" fullWidth onPress={signOut} />
+        <Button label="Sign out" variant="secondary" icon="log-out-outline" fullWidth onPress={signOutEverywhere} />
         <Button label="Delete account" variant="danger" icon="trash-outline" fullWidth onPress={confirmDelete} />
         <Text variant="caption" tone="secondary" align="center">
           Deletion starts a request with a 7-day grace period, as required by the stores.

@@ -102,3 +102,15 @@ Checked against vendor sources; still subject to M0 compatibility resolution as 
 | `react-native-razorpay` 2.3.1+ | Not applicable on mobile under C2. Razorpay stays web-only |
 
 M0 still pins the full set together against official documentation; no single version above is pinned in isolation.
+
+### Mobile demo build, 15 November 2026
+
+These record how the client demo was built. None changes a launch invariant. Items marked proposal still need the named owner.
+
+| ID | Decision | Rationale and limit |
+|---|---|---|
+| X1 | The demo runs in Expo Go, not a native development build | The React Native Android CMake step fails when the repository path contains a space, as "Client projects" does. Junction and subst workarounds fail because Expo and Gradle canonicalise the real path. The fix is to move the repository to a path without spaces; that is an owner call. Expo Go shows Expo branding and cannot load expo-iap, so store billing stays simulated until the move |
+| X2 | Demo state persists in AsyncStorage through zustand persist | Gives PRD 6.4 resume behaviour on device for the demo. Production keeps E14: the attempt event log commits to SQLite before the UI acknowledges a save, and the server stays authoritative for time, score and entitlement |
+| X3 | Navigation hooks come from expo-router only | expo-router 58 vendors React Navigation core. A separately installed @react-navigation package has no navigation context and crashed the attempt screen. Do not add @react-navigation packages directly |
+| X4 | Proposal: prices display as GST-inclusive at 18% | Display only, pending O09 with the CA. Integer paise throughout; fractional amounts render with paise |
+| X5 | Proposal: coupons and examiner codes map to discounted store products on the server | Play and App Store prices cannot change at runtime. The demo previews the discount on the client; the server must validate the code against the receipt and record attribution for the examiner revenue share. Needs S4 to settle the SKU strategy |

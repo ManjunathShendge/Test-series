@@ -28,7 +28,6 @@ interface AppState {
   ownedTestIds: string[];
   ownedSeriesIds: string[];
   followedExaminerIds: string[];
-  bookmarkedQuestionIds: string[];
   attemptedTestIds: string[];
   purchases: Purchase[];
   purchaseStatus: PurchaseStatus;
@@ -41,7 +40,6 @@ interface AppState {
   setLanguage: (language: Language) => void;
 
   toggleFollow: (examinerId: string) => void;
-  toggleBookmark: (questionId: string) => void;
   markAttempted: (testId: string) => void;
 
   /** Simulates the store billing round trip: pending -> verifying -> confirmed. */
@@ -59,7 +57,6 @@ const seed = () => ({
   ownedTestIds: tests.filter((t) => t.availability === 'owned').map((t) => t.id),
   ownedSeriesIds: series.filter((s) => s.owned).map((s) => s.id),
   followedExaminerIds: examiners.filter((e) => e.isFollowed).map((e) => e.id),
-  bookmarkedQuestionIds: ['q7', 'g10'],
   attemptedTestIds: pastResults.map((r) => r.testId),
   purchases: demoPurchases,
   purchaseStatus: 'idle' as const,
@@ -77,11 +74,11 @@ export const useAppStore = create<AppState>()(
         set((s) => ({ session: { ...s.session, onboarded: true }, profile: { ...s.profile, ...patch } })),
       updatePreferences: (patch) => set((s) => ({ profile: { ...s.profile, ...patch } })),
       // Sign-out resets to the demo seed so the next sign-in starts clean.
+      // Results and any live attempt are cleared by signOutEverywhere().
       signOut: () => set(seed()),
       setLanguage: (language) => set((s) => ({ profile: { ...s.profile, language } })),
 
       toggleFollow: (examinerId) => set((s) => ({ followedExaminerIds: toggle(s.followedExaminerIds, examinerId) })),
-      toggleBookmark: (questionId) => set((s) => ({ bookmarkedQuestionIds: toggle(s.bookmarkedQuestionIds, questionId) })),
       markAttempted: (testId) =>
         set((s) => (s.attemptedTestIds.includes(testId) ? s : { attemptedTestIds: [...s.attemptedTestIds, testId] })),
 
@@ -132,7 +129,6 @@ export const useAppStore = create<AppState>()(
       ownedTestIds: s.ownedTestIds,
       ownedSeriesIds: s.ownedSeriesIds,
       followedExaminerIds: s.followedExaminerIds,
-      bookmarkedQuestionIds: s.bookmarkedQuestionIds,
       attemptedTestIds: s.attemptedTestIds,
       purchases: s.purchases,
     })),

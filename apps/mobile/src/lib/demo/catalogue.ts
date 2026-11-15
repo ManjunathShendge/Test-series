@@ -371,7 +371,7 @@ export const series: Series[] = [
     examId: 'ssc-cgl-t1',
     examinerId: 'ex-anita',
     title: 'CGL Tier 1 Sprint Series',
-    description: 'Twelve mini mocks released weekly until the exam, each tuned to the latest shift analysis.',
+    description: 'Three mini mocks available now, with a new one each week until the exam. Each is tuned to the latest shift analysis.',
     testIds: ['t-cgl-mini-1', 't-cgl-mini-2', 't-cgl-mini-3'],
     pricePaise: 29900,
     validityDays: 180,

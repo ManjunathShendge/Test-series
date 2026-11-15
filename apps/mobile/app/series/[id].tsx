@@ -34,7 +34,7 @@ export default function SeriesScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: exam?.shortName ?? 'Series' }} />
+      <Stack.Screen options={{ title: 'Series' }} />
       <Screen contentStyle={{ paddingBottom: 120 }} edges={['left', 'right']}>
         <View style={styles.chips}>
           <Chip label={exam?.name ?? 'Exam'} tone="primary" icon="school-outline" />

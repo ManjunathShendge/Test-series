@@ -64,6 +64,7 @@ export default function RootLayout() {
         <Stack.Screen name="test/[id]/instructions" options={{ title: 'Instructions' }} />
         <Stack.Screen name="test/[id]/attempt" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="profile/edit-exams" options={{ title: 'Target exams' }} />
+        <Stack.Screen name="practice/[list]" options={{ title: 'Practice' }} />
       </Stack>
     </SafeAreaProvider>
   );
