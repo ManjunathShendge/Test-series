@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { applyPercentOff, examiners, pastResults, profile as demoProfile, purchases as demoPurchases, resolveCoupon, series, splitGst, tests } from '@/lib/demo';
-import type { Language, Profile, Purchase } from '@/lib/demo';
+import { applyPercentOff, devices as demoDevices, examiners, pastResults, profile as demoProfile, purchases as demoPurchases, resolveCoupon, series, splitGst, tests } from '@/lib/demo';
+import type { Device, Language, NotificationPrefs, Profile, Purchase } from '@/lib/demo';
 import { persistOptions } from './storage';
 
 /**
@@ -31,6 +31,12 @@ interface AppState {
   attemptedTestIds: string[];
   purchases: Purchase[];
   purchaseStatus: PurchaseStatus;
+  devices: Device[];
+  notificationPrefs: NotificationPrefs;
+  /** Optional product analytics (docs/NOTIFICATIONS.md PostHog events); off until the student opts in. */
+  analyticsConsent: boolean;
+  /** Set while an account deletion request is in its grace period. */
+  deletionRequestedAt: string | null;
 
   signIn: () => void;
   completeOnboarding: (patch: Preferences) => void;
@@ -45,6 +51,14 @@ interface AppState {
   /** Simulates the store billing round trip: pending -> verifying -> confirmed. */
   purchase: (item: PurchaseRequest) => Promise<void>;
   resetPurchaseStatus: () => void;
+
+  /** Web purchases only; access stays until the refund is verified (docs/PAYMENTS.md). */
+  requestRefund: (purchaseId: string, reason: string, note?: string) => Promise<void>;
+  removeDevice: (deviceId: string) => void;
+  setNotificationPref: (key: keyof NotificationPrefs, value: boolean) => void;
+  setAnalyticsConsent: (value: boolean) => void;
+  requestDeletion: () => Promise<void>;
+  cancelDeletion: () => void;
 }
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -54,12 +68,21 @@ const toggle = (list: string[], id: string) => (list.includes(id) ? list.filter(
 const seed = () => ({
   session: { signedIn: false, onboarded: false },
   profile: demoProfile,
-  ownedTestIds: tests.filter((t) => t.availability === 'owned').map((t) => t.id),
+  ownedTestIds: [
+    ...new Set([
+      ...tests.filter((t) => t.availability === 'owned').map((t) => t.id),
+      ...demoPurchases.filter((p) => p.kind === 'test').map((p) => p.itemId),
+    ]),
+  ],
   ownedSeriesIds: series.filter((s) => s.owned).map((s) => s.id),
   followedExaminerIds: examiners.filter((e) => e.isFollowed).map((e) => e.id),
   attemptedTestIds: pastResults.map((r) => r.testId),
   purchases: demoPurchases,
   purchaseStatus: 'idle' as const,
+  devices: demoDevices,
+  notificationPrefs: { newTestsFromFollowed: true, unfinishedAttempt: true, examDateChanges: true } as NotificationPrefs,
+  analyticsConsent: false,
+  deletionRequestedAt: null as string | null,
 });
 
 type PersistedApp = Omit<ReturnType<typeof seed>, 'purchaseStatus'>;
@@ -103,6 +126,7 @@ export const useAppStore = create<AppState>()(
           id: `pur-${Date.now()}`,
           title: source.title,
           kind,
+          itemId: id,
           amountPaise,
           purchasedAt: new Date().toISOString(),
           channel: 'Google Play',
@@ -122,6 +146,25 @@ export const useAppStore = create<AppState>()(
         }));
       },
       resetPurchaseStatus: () => set({ purchaseStatus: 'idle' }),
+
+      requestRefund: async (purchaseId, reason, note) => {
+        await wait(800);
+        set((s) => ({
+          purchases: s.purchases.map((p) =>
+            p.id === purchaseId && p.channel === 'Web' && !p.refund
+              ? { ...p, refund: { status: 'requested', requestedAt: new Date().toISOString(), reason, ...(note ? { note } : {}) } }
+              : p,
+          ),
+        }));
+      },
+      removeDevice: (deviceId) => set((s) => ({ devices: s.devices.filter((d) => d.current || d.id !== deviceId) })),
+      setNotificationPref: (key, value) => set((s) => ({ notificationPrefs: { ...s.notificationPrefs, [key]: value } })),
+      setAnalyticsConsent: (value) => set({ analyticsConsent: value }),
+      requestDeletion: async () => {
+        await wait(900);
+        set({ deletionRequestedAt: new Date().toISOString() });
+      },
+      cancelDeletion: () => set({ deletionRequestedAt: null }),
     }),
     persistOptions<AppState, PersistedApp>('app', (s) => ({
       session: s.session,
@@ -131,6 +174,10 @@ export const useAppStore = create<AppState>()(
       followedExaminerIds: s.followedExaminerIds,
       attemptedTestIds: s.attemptedTestIds,
       purchases: s.purchases,
+      devices: s.devices,
+      notificationPrefs: s.notificationPrefs,
+      analyticsConsent: s.analyticsConsent,
+      deletionRequestedAt: s.deletionRequestedAt,
     })),
   ),
 );

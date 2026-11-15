@@ -23,6 +23,7 @@ const config: ExpoConfig = {
     'expo-router',
     'expo-font',
     'expo-status-bar',
+    'expo-sqlite',
     ['expo-splash-screen', { backgroundColor: '#F8FAFC', resizeMode: 'contain' }],
   ],
   experiments: { typedRoutes: true },

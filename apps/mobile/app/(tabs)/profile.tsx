@@ -1,37 +1,44 @@
 import { useRouter } from 'expo-router';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
-import { getExam, type Language } from '@/lib/demo';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { deletionDate, DEVICE_LIMIT, getExam, type Language } from '@/lib/demo';
 import { formatDate, formatPaise } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
 import { signOutEverywhere } from '@/lib/store/session';
-import { Avatar, Button, Card, Chip, Icon, Screen, Text, type IconName } from '@/ui/primitives';
+import { Avatar, Button, Card, Chip, Icon, ListRow, Screen, Text } from '@/ui/primitives';
 import { colors, radius, space, touch } from '@/ui/tokens';
 
 const stageLabel = { starting: 'Just starting', revising: 'Revising', 'final-lap': 'Final lap' } as const;
 
 /**
- * Profile (PRD 6.7): target exams, language, purchase history with invoices,
- * devices, and in-app account deletion behind an explicit confirmation.
+ * Profile (PRD 6.7): target exams, language, purchase history with invoices
+ * and refunds, devices, notifications, help, policies, and in-app account
+ * deletion with a grace period.
  */
 export default function ProfileScreen() {
   const router = useRouter();
   const profile = useAppStore((s) => s.profile);
   const purchases = useAppStore((s) => s.purchases);
   const setLanguage = useAppStore((s) => s.setLanguage);
-
-  const confirmDelete = () =>
-    Alert.alert(
-      'Delete account?',
-      'This starts a deletion request. Purchases, attempts and results are removed after a 7-day grace period, and you will receive a confirmation email. Active attempts are lost.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Request deletion', style: 'destructive', onPress: () => Alert.alert('Deletion requested', 'We have emailed a confirmation. You can cancel from that email within 7 days.') },
-      ],
-    );
+  const devices = useAppStore((s) => s.devices);
+  const deletionRequestedAt = useAppStore((s) => s.deletionRequestedAt);
 
   return (
     <Screen>
       <Text variant="display">Profile</Text>
+
+      {deletionRequestedAt ? (
+        <Card onPress={() => router.push('/profile/delete-account')} accessibilityLabel="Account deletion scheduled. Open to cancel">
+          <View style={styles.identity}>
+            <Icon name="warning-outline" size={22} color={colors.warning} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text variant="bodyStrong">Account deletion scheduled for {formatDate(deletionDate(deletionRequestedAt).toISOString())}</Text>
+              <Text variant="bodySmall" tone="secondary">
+                Tap to cancel.
+              </Text>
+            </View>
+          </View>
+        </Card>
+      ) : null}
 
       <Card>
         <View style={styles.identity}>
@@ -89,75 +96,48 @@ export default function ProfileScreen() {
       <View style={styles.block}>
         <Text variant="heading">Purchases and invoices</Text>
         <Card padded={false}>
-          {purchases.map((p, i) => (
-            <View key={p.id} style={[styles.row, i > 0 && styles.divider]}>
-              <View style={[styles.rowIcon, { backgroundColor: colors.successSoft }]}>
-                <Icon name={p.kind === 'series' ? 'albums-outline' : 'document-text-outline'} size={20} color={colors.success} />
-              </View>
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text variant="bodyStrong" numberOfLines={1}>
-                  {p.title}
-                </Text>
-                <Text variant="bodySmall" tone="secondary">
-                  {formatDate(p.purchasedAt)} · {p.channel} · {p.invoiceNumber}
-                </Text>
-                {p.gstPaise !== undefined || p.couponCode ? (
-                  <Text variant="caption" tone="secondary">
-                    {[p.gstPaise !== undefined ? `Includes ${formatPaise(p.gstPaise)} GST` : null, p.couponCode ? `${p.couponCode} saved ${formatPaise(p.discountPaise ?? 0)}` : null].filter(Boolean).join(' · ')}
-                  </Text>
-                ) : null}
-              </View>
-              <View style={{ alignItems: 'flex-end', gap: space.xs }}>
-                <Text variant="bodyStrong" tabular>
-                  {formatPaise(p.amountPaise)}
-                </Text>
-                <Pressable onPress={() => Alert.alert('Invoice', `${p.invoiceNumber} has been emailed to ${profile.email}.`)} accessibilityRole="button" accessibilityLabel={`Download invoice ${p.invoiceNumber}`} hitSlop={8} style={styles.invoice}>
-                  <Icon name="download-outline" size={16} color={colors.primary} />
-                  <Text variant="caption" tone="primary">
-                    Invoice
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          ))}
+          {purchases.length === 0 ? (
+            <ListRow icon="bag-outline" title="No purchases yet" subtitle="Tests and series you buy appear here with their invoices." />
+          ) : (
+            purchases.map((p, i) => (
+              <ListRow
+                key={p.id}
+                icon={p.kind === 'series' ? 'albums-outline' : 'document-text-outline'}
+                iconTone={p.refund ? 'warning' : 'success'}
+                title={p.title}
+                subtitle={`${formatDate(p.purchasedAt)} · ${p.channel === 'Web' ? 'Website' : p.channel} · ${p.refund ? 'Refund requested' : p.invoiceNumber}`}
+                divider={i > 0}
+                onPress={() => router.push({ pathname: '/purchase/[id]', params: { id: p.id } })}
+                accessibilityLabel={`${p.title}, ${formatPaise(p.amountPaise)}, ${formatDate(p.purchasedAt)}. Open invoice and refund options`}
+                trailing={
+                  <View style={styles.amount}>
+                    <Text variant="bodyStrong" tabular>
+                      {formatPaise(p.amountPaise)}
+                    </Text>
+                    <Icon name="chevron-forward" size={16} color={colors.textSecondary} />
+                  </View>
+                }
+              />
+            ))
+          )}
         </Card>
       </View>
 
       <View style={styles.block}>
         <Text variant="heading">Account</Text>
         <Card padded={false}>
-          <Row icon="phone-portrait-outline" title="Devices" subtitle={`${profile.deviceCount} of 2 devices registered`} onPress={() => Alert.alert('Devices', 'This phone is your only registered device. You can register one more; a third is blocked until you remove one.')} />
-          <Row icon="notifications-outline" title="Notifications" subtitle="Results, new tests from followed examiners" onPress={() => Alert.alert('Notifications', 'Notification preferences arrive with the notifications milestone.')} divider />
-          <Row icon="help-circle-outline" title="Help and support" subtitle="Report a question, refunds, grievances" onPress={() => Alert.alert('Support', 'support@example.com · Replies within 72 hours.')} divider />
-          <Row icon="document-outline" title="Terms and privacy" subtitle="Consent, data retention, refund policy" onPress={() => Alert.alert('Terms and privacy', 'Policy documents are published before launch.')} divider />
+          <ListRow icon="phone-portrait-outline" title="Devices" subtitle={`${devices.length} of ${DEVICE_LIMIT} devices in use`} onPress={() => router.push('/profile/devices')} />
+          <ListRow icon="notifications-outline" title="Notifications" subtitle="Results, reminders, new tests" onPress={() => router.push('/profile/notifications')} divider />
+          <ListRow icon="help-circle-outline" title="Help and support" subtitle="FAQs, contact us, grievances" onPress={() => router.push('/profile/help')} divider />
+          <ListRow icon="document-outline" title="Terms and privacy" subtitle="Policies and your data choices" onPress={() => router.push('/profile/legal')} divider />
         </Card>
       </View>
 
       <View style={styles.danger}>
         <Button label="Sign out" variant="secondary" icon="log-out-outline" fullWidth onPress={signOutEverywhere} />
-        <Button label="Delete account" variant="danger" icon="trash-outline" fullWidth onPress={confirmDelete} />
-        <Text variant="caption" tone="secondary" align="center">
-          Deletion starts a request with a 7-day grace period, as required by the stores.
-        </Text>
+        <Button label="Delete account" variant="ghost" icon="trash-outline" fullWidth onPress={() => router.push('/profile/delete-account')} />
       </View>
     </Screen>
-  );
-}
-
-function Row({ icon, title, subtitle, onPress, divider }: { icon: IconName; title: string; subtitle: string; onPress: () => void; divider?: boolean }) {
-  return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${title}. ${subtitle}`} android_ripple={{ color: colors.surfaceMuted }} style={[styles.row, divider && styles.divider]}>
-      <View style={[styles.rowIcon, { backgroundColor: colors.surfaceMuted }]}>
-        <Icon name={icon} size={20} color={colors.textSecondary} />
-      </View>
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text variant="bodyStrong">{title}</Text>
-        <Text variant="bodySmall" tone="secondary">
-          {subtitle}
-        </Text>
-      </View>
-      <Icon name="chevron-forward" size={18} color={colors.textSecondary} />
-    </Pressable>
   );
 }
 
@@ -168,9 +148,6 @@ const styles = StyleSheet.create({
   segment: { flexDirection: 'row', padding: space.xs, gap: space.xs },
   segmentItem: { flex: 1, minHeight: touch.minSize, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs, borderRadius: radius.md },
   segmentSelected: { backgroundColor: colors.primarySoft },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg },
-  divider: { borderTopWidth: 1, borderTopColor: colors.surfaceMuted },
-  rowIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  invoice: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 32 },
+  amount: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
   danger: { gap: space.md, marginTop: space.md },
 });

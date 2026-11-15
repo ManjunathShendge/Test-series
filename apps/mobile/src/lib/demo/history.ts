@@ -1,4 +1,4 @@
-import type { Profile, Purchase, Result, ScorePoint, TopicStrength } from './types';
+import type { Device, Profile, Purchase, Result, ScorePoint, TopicStrength } from './types';
 
 /**
  * Past activity for the demo student. Results carry a cohort snapshot with
@@ -19,6 +19,7 @@ export const purchases: Purchase[] = [
     id: 'pur-1',
     title: 'NTPC CBT 1 Hindi-first Series',
     kind: 'series',
+    itemId: 's-rrb-ntpc',
     amountPaise: 19900,
     purchasedAt: '2026-11-03T14:22:00Z',
     channel: 'Google Play',
@@ -28,6 +29,7 @@ export const purchases: Purchase[] = [
     id: 'pur-2',
     title: 'SSC CGL Tier 1 Mini Mock 2',
     kind: 'test',
+    itemId: 't-cgl-mini-2',
     amountPaise: 4900,
     purchasedAt: '2026-11-06T09:05:00Z',
     channel: 'Google Play',
@@ -37,11 +39,28 @@ export const purchases: Purchase[] = [
     id: 'pur-3',
     title: 'General Awareness Sectional: Polity & Geography',
     kind: 'test',
+    itemId: 't-rrb-ga-sec',
     amountPaise: 1900,
     purchasedAt: '2026-11-10T18:40:00Z',
     channel: 'Google Play',
     invoiceNumber: 'INV-2026-004871',
   },
+  {
+    // Bought on the website; access appears in the app through server entitlements.
+    id: 'pur-4',
+    title: 'IBPS PO Prelims Mini Mock 2',
+    kind: 'test',
+    itemId: 't-ibps-mini-2',
+    amountPaise: 3900,
+    purchasedAt: '2026-11-13T16:10:00Z',
+    channel: 'Web',
+    invoiceNumber: 'INV-2026-004912',
+  },
+];
+
+export const devices: Device[] = [
+  { id: 'dev-1', name: 'Pixel 10a', platform: 'android', registeredAt: '2026-10-02T08:00:00Z', lastActiveAt: '2026-11-15T08:00:00Z', current: true },
+  { id: 'dev-2', name: 'Lenovo Tab M10', platform: 'android', registeredAt: '2026-10-20T17:30:00Z', lastActiveAt: '2026-11-12T19:30:00Z', current: false },
 ];
 
 export const pastResults: Result[] = [

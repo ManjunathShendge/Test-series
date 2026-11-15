@@ -180,10 +180,21 @@ export interface ScorePoint {
   testTitle: string;
 }
 
+export type RefundStatus = 'requested' | 'refunded' | 'declined';
+
+export interface RefundRequest {
+  status: RefundStatus;
+  requestedAt: string;
+  reason: string;
+  note?: string;
+}
+
 export interface Purchase {
   id: string;
   title: string;
   kind: 'test' | 'series';
+  /** The test or series id this purchase unlocked. */
+  itemId: string;
   amountPaise: number;
   purchasedAt: string;
   channel: 'Google Play' | 'App Store' | 'Web';
@@ -193,6 +204,24 @@ export interface Purchase {
   /** Applied code and the discount it produced, for the invoice line. */
   couponCode?: string;
   discountPaise?: number;
+  /** Web purchases only: our 7-day refund request. Store refunds follow Apple or Google. */
+  refund?: RefundRequest;
+}
+
+export interface Device {
+  id: string;
+  name: string;
+  platform: 'android' | 'ios';
+  registeredAt: string;
+  lastActiveAt: string;
+  current: boolean;
+}
+
+/** Optional student push notices (docs/NOTIFICATIONS.md). Transactional notices are always on. */
+export interface NotificationPrefs {
+  newTestsFromFollowed: boolean;
+  unfinishedAttempt: boolean;
+  examDateChanges: boolean;
 }
 
 export interface Profile {

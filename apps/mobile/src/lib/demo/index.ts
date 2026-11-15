@@ -1,12 +1,13 @@
 import { bank } from './bank';
 import { examiners, exams, series, tests } from './catalogue';
-import { cutoffOnTrendScale, pastResults, profile, purchases, scoreTrend, topicStrengths } from './history';
+import { cutoffOnTrendScale, devices, pastResults, profile, purchases, scoreTrend, topicStrengths } from './history';
 import { solutions } from './solutions';
 import type { AnswerState, Exam, Examiner, Paper, PaperQuestion, QuestionReview, Result, SectionResult, Series, TestSummary } from './types';
 
 export * from './types';
 export * from './coupons';
-export { cutoffOnTrendScale, exams, examiners, pastResults, profile, purchases, scoreTrend, series, tests, topicStrengths };
+export * from './policy';
+export { cutoffOnTrendScale, devices, exams, examiners, pastResults, profile, purchases, scoreTrend, series, tests, topicStrengths };
 
 /**
  * Repository facade. Screens import from here and nowhere else in `demo/`, so

@@ -146,6 +146,10 @@ Implemented behavior and changed paths (apps/mobile):
     price band filter, edit target exams, continue-attempt wiring.
   - Phase H: shared review card, cross-attempt mistake notebook and bookmarks, single bookmark
     source, sign-out clears results and any live attempt, chart label and header fixes.
+  - Phase I: storage moved to SQLite (expo-sqlite kv-store); purchase detail with tax invoice or
+    receipt, GST breakdown, share, and refund request (web 7-day rule) or store refund link;
+    devices with removal; notification preferences; help with FAQs and contact form; terms,
+    privacy and analytics consent; account deletion with typed confirmation and grace period.
 Checks run (command, outcome, evidence):
   - pnpm exec tsc --noEmit in apps/mobile: exit 0. pnpm exec oxlint app src: no findings.
   - Manual walkthrough on Android emulator Pixel_10a in Expo Go with screenshots: sign-in,
