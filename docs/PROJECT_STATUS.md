@@ -150,6 +150,13 @@ Implemented behavior and changed paths (apps/mobile):
     receipt, GST breakdown, share, and refund request (web 7-day rule) or store refund link;
     devices with removal; notification preferences; help with FAQs and contact form; terms,
     privacy and analytics consent; account deletion with typed confirmation and grace period.
+  - Phase J: React Query data layer over the demo repository (src/lib/api) with NetInfo online
+    status; skeleton, offline and error states on Home, Discover and test detail; floating offline
+    banner; post-submit scoring state. Walked series purchase, IBPS sectional timing with locked
+    sections and automatic section switch, Hindi switching, offline and reconnect, and deadline
+    auto-submit on the emulator.
+  - Phase J checks: pnpm exec vitest run in apps/mobile, 19 tests passed (attempt store sectional
+    timing, answer isolation, scoring; money and rank formatting). tsc and oxlint clean.
 Checks run (command, outcome, evidence):
   - pnpm exec tsc --noEmit in apps/mobile: exit 0. pnpm exec oxlint app src: no findings.
   - Manual walkthrough on Android emulator Pixel_10a in Expo Go with screenshots: sign-in,

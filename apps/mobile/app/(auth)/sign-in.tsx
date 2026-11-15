@@ -119,14 +119,17 @@ export default function SignInScreen() {
               </View>
             )}
 
-            {error && (!adult || mode !== 'email') ? (
-              <View style={styles.errorRow} accessibilityLiveRegion="assertive">
-                <Icon name="alert-circle-outline" size={16} color={colors.error} />
-                <Text variant="bodySmall" tone="error">
-                  {error}
-                </Text>
-              </View>
-            ) : null}
+            {/* Space is reserved so the buttons above never move when the message appears. */}
+            <View style={styles.errorSlot} accessibilityLiveRegion="assertive">
+              {error && (!adult || mode !== 'email') ? (
+                <View style={styles.errorRow}>
+                  <Icon name="alert-circle-outline" size={16} color={colors.error} />
+                  <Text variant="bodySmall" tone="error">
+                    {error}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
           </>
         )}
 
@@ -151,6 +154,7 @@ const styles = StyleSheet.create({
   checkboxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   checkboxError: { borderColor: colors.error },
   errorRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  errorSlot: { height: 40, marginTop: -space.sm, justifyContent: 'flex-start' },
   sent: { alignItems: 'center', gap: space.md },
   sentIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.successSoft, alignItems: 'center', justifyContent: 'center' },
   legal: { marginTop: space.sm },

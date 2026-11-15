@@ -48,18 +48,19 @@ export function formatCount(n: number): string {
   return String(n);
 }
 
-/** Ordinal for ranks: 1st, 2nd, 3rd, 11th, 112th. */
+/** Ordinal for ranks with Indian digit grouping: 1st, 2nd, 112th, 14,191st, 1,02,345th. */
 export function formatOrdinal(n: number): string {
+  const grouped = n.toLocaleString('en-IN');
   const mod100 = n % 100;
-  if (mod100 >= 11 && mod100 <= 13) return `${n}th`;
+  if (mod100 >= 11 && mod100 <= 13) return `${grouped}th`;
   switch (n % 10) {
     case 1:
-      return `${n}st`;
+      return `${grouped}st`;
     case 2:
-      return `${n}nd`;
+      return `${grouped}nd`;
     case 3:
-      return `${n}rd`;
+      return `${grouped}rd`;
     default:
-      return `${n}th`;
+      return `${grouped}th`;
   }
 }
