@@ -12,9 +12,19 @@ const config: ExpoConfig = {
   version: '0.0.0',
   orientation: 'portrait',
   newArchEnabled: true,
+  userInterfaceStyle: 'light',
+  backgroundColor: '#F8FAFC',
   ios: { supportsTablet: false, bundleIdentifier: 'com.example.examprep' },
-  android: { package: 'com.example.examprep' },
-  plugins: ['expo-router'],
+  android: {
+    package: 'com.example.examprep',
+    softwareKeyboardLayoutMode: 'resize',
+  },
+  plugins: [
+    'expo-router',
+    'expo-font',
+    'expo-status-bar',
+    ['expo-splash-screen', { backgroundColor: '#F8FAFC', resizeMode: 'contain' }],
+  ],
   experiments: { typedRoutes: true },
 };
 
