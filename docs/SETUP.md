@@ -61,6 +61,14 @@ Provisioning a hosted database (done for staging on 19 November 2026):
 
 Supabase enables row-level security on every new table (its `ensure_rls` event trigger). The migrator therefore keeps RLS on for every public table, everywhere, with one `exam_service_access` policy for `exam_app` and `exam_worker`; it reapplies this after every run. Provisioning also revokes Supabase's `anon` and `authenticated` access to public tables, so data stays closed even if the Data API is re-enabled. In the local `.env`, staging values use the `STAGING_` and `SUPABASE_` prefixes so they never replace the Docker URLs.
 
+### Keeping the free-plan project awake
+
+Supabase pauses free-plan projects after about a week without activity. `.github/workflows/keep-supabase-awake.yml` runs `SELECT now()` every three days (and on demand from the Actions tab) as `exam_keepalive`, a login-only role with no access to any table. It verifies TLS against the committed public Supabase root certificate in `.github/certs/`.
+
+- Create or rotate the role: `pnpm --filter @exam-prep/db provision-keepalive-role` with the owner `MIGRATION_DATABASE_URL`, `DATABASE_CA_CERT_PATH`, `OUTPUT_ENV_FILE` and `OUTPUT_PREFIX`; it writes `<PREFIX>KEEPALIVE_DATABASE_URL` without printing it.
+- Copy that value into the repository secret `SUPABASE_KEEPALIVE_DATABASE_URL` (Settings, Secrets and variables, Actions). Rotating the role requires updating the secret.
+- GitHub disables scheduled workflows after 60 days without repository activity; re-enable it from the Actions tab if that happens. A paid Supabase plan does not pause, so the workflow can be removed then.
+
 ## Checks
 
 ```sh

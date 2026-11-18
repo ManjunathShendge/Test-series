@@ -1,0 +1,42 @@
+name: Keep Supabase staging awake
+# Supabase pauses free-plan projects after about a week without activity. This runs a trivial
+# query every three days as exam_keepalive, a login-only role with no access to any data.
+# Scheduled workflows run only from the default branch, and GitHub disables them after 60 days
+# without repository activity; re-enable from the Actions tab if that happens.
+on:
+  schedule:
+    - cron: '17 3 */3 * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: keep-supabase-awake
+  cancel-in-progress: false
+jobs:
+  ping:
+    if: github.repository == 'ManjunathShendge/Test-series'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/certs
+      - name: Query the staging database
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_KEEPALIVE_DATABASE_URL }}
+          PGSSLMODE: verify-full
+          PGSSLROOTCERT: .github/certs/supabase-prod-ca-2021.crt
+          PGCONNECT_TIMEOUT: '20'
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Repository secret SUPABASE_KEEPALIVE_DATABASE_URL is not set"
+            exit 1
+          fi
+          command -v psql >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client; }
+          for attempt in 1 2 3; do
+            if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT 'awake at ' || now()"; then exit 0; fi
+            echo "Attempt $attempt failed; retrying in 20 seconds"
+            sleep 20
+          done
+          echo "::error::Could not reach Supabase staging after 3 attempts"
+          exit 1
