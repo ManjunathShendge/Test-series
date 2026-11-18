@@ -1,32 +1,45 @@
-name: exam-prep-sqlite
+name: exam-prep
 services:
+  postgres:
+    # Same major/minor as Supabase staging (17.12 observed 18 November 2026).
+    image: postgres:17.12-alpine
+    environment:
+      POSTGRES_USER: exam_migrator
+      POSTGRES_PASSWORD: local_migration_only
+      POSTGRES_DB: exam_prep
+    ports: ['127.0.0.1:${POSTGRES_PORT:-15432}:5432']
+    volumes:
+      - postgres17-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U exam_migrator -d exam_prep']
+      interval: 5s
+      timeout: 3s
+      retries: 20
   api:
     profiles: [app]
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    environment:
+    environment: &app-env
       NODE_ENV: production
       APP_ENV: local
-      DATABASE_URL: file:/data/exam-prep.sqlite
+      DATABASE_URL: postgresql://exam_app:local_app_only@postgres:5432/exam_prep
+      WORKER_DATABASE_URL: postgresql://exam_worker:local_worker_only@postgres:5432/exam_prep
+      MIGRATION_DATABASE_URL: postgresql://exam_migrator:local_migration_only@postgres:5432/exam_prep
       PUBLIC_WEB_ORIGIN: http://localhost:3000
       CORS_ORIGINS: http://localhost:3000
     ports: ['127.0.0.1:3001:3001']
-    volumes: ['sqlite-data:/data']
+    depends_on: { postgres: { condition: service_healthy } }
     command: ['sh', '-c', 'node node_modules/@exam-prep/db/scripts/migrate.mjs && node dist/main.js']
   worker:
     profiles: [app]
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    environment:
-      NODE_ENV: production
-      APP_ENV: local
-      DATABASE_URL: file:/data/exam-prep.sqlite
-      PUBLIC_WEB_ORIGIN: http://localhost:3000
-      CORS_ORIGINS: http://localhost:3000
+    environment: *app-env
     ports: ['127.0.0.1:3002:3002']
-    volumes: ['sqlite-data:/data']
-    command: ['sh', '-c', 'node node_modules/@exam-prep/db/scripts/migrate.mjs && node dist/worker.js']
+    depends_on: { postgres: { condition: service_healthy } }
+    command: ['node', 'dist/worker.js']
 volumes:
-  sqlite-data:
+  postgres17-data:

@@ -21,8 +21,8 @@
     "setup": "node scripts/setup.mjs",
     "build:server": "turbo run build --filter=@exam-prep/api...",
     "db:migrate:dev": "pnpm --filter @exam-prep/db run migrate",
-    "services:up": "pnpm db:migrate",
-    "services:stop": "node -e \"console.log('SQLite has no database service to stop')\"",
+    "services:up": "docker compose up -d --wait postgres",
+    "services:stop": "docker compose stop",
     "check:public-env": "node scripts/check-public-env.mjs"
   },
   "devDependencies": {
