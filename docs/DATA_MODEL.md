@@ -1,6 +1,6 @@
 # Relational data model
 
-This is the schema specification; SQL migrations in `packages/db/migrations/sqlite` and this document evolve together. Storage is SQLite per the 16 November 2026 decision; Postgres-specific types below map to SQLite STRICT tables (TEXT UUIDs, INTEGER epoch-millisecond UTC timestamps, JSON validated with `json_valid`). UUID identifiers; UTC timestamps; integer paise for INR; rational/integer-scaled scoring; explicit foreign keys, created_at and updated_at on mutable records. No soft-delete cascade may erase financial/audit history.
+This is the schema specification; SQL migrations in `packages/db/migrations/postgres` and this document evolve together. Storage is PostgreSQL 17 (Supabase in staging/production). UUID identifiers; UTC timestamptz; integer paise for INR; rational/integer-scaled scoring; explicit foreign keys, created_at and updated_at on mutable records. No soft-delete cascade may erase financial/audit history.
 
 ## Identity and catalogue
 
@@ -92,15 +92,17 @@ Phase 2 adds pass_plans, pass_pool_runs/allocations, live_windows/registrations 
 - App role cannot UPDATE/DELETE ledger or audit. Separate migration role; protection tests use actual application privileges.
 - Sensitive blobs/tokens encrypted; audit snapshots exclude secrets/content/KYC. Retention and deletion policy finalized before production.
 
-## Implemented M0 baseline (16 November 2026)
+## Implemented M0 baseline (19 November 2026)
 
-Migration `001_storage.sql` (SQLite, STRICT tables) implements storage primitives only, not the domain services:
+Migration `001_storage.sql` installs `pg_trgm` and `btree_gin` and implements storage primitives only, not the domain services. Identifiers are `uuid`, times `timestamptz`, money `bigint` paise, payloads `jsonb`:
 
 - `bootstrap_state` with schema version 1, checked by readiness.
-- `users`, `roles` (student, examiner, reviewer, ops, finance, super), `user_roles`, `sessions` (hashed token references).
-- `billing_orders` (integer paise, INR only, unique idempotency key), `billing_events` (unique per provider event), `ledger_entries` (unique source event; update/delete blocked by triggers).
-- `audit_events` (update/delete blocked by triggers).
-- `stored_files` (file contents as BLOBs).
-- `jobs` (deduplication key, leased claims with recovery of expired leases).
+- `users` (no password column: Firebase owns credentials), `roles` (student, examiner, reviewer, ops, finance, super), `user_roles`, `sessions` (hashed token references).
+- `billing_orders` (integer paise, INR only, unique idempotency key), `billing_events` (unique per provider event), `ledger_entries` (unique source event; update, delete and truncate blocked by triggers).
+- `audit_events` (update, delete and truncate blocked by triggers).
+- `jobs` (deduplication key, `FOR UPDATE SKIP LOCKED` claims, leases with recovery of expired leases).
+- `schema_migrations` (name and checksum, maintained by the migrator).
 
-The identity and commerce workflows that must use these tables are M1 and M9 work; the M1 schema will extend or replace these primitives to match the specification above. The idempotent local/test seed inserts a synthetic infrastructure marker, not a user or paper. SQLite has no database roles; authorization is enforced in API services and the file is protected by OS permissions. The earlier PostgreSQL bootstrap migration is preserved in `docs/archive/postgres-bootstrap/`.
+Binary file content is not stored in the database; object storage is chosen when uploads are built.
+
+The identity and commerce workflows that must use these tables are M1 and M9 work; the M1 schema will extend or replace these primitives to match the specification above. The idempotent local/test seed inserts a synthetic infrastructure marker, not a user or paper. Locally the migrator owns the schema and the API/worker roles have row access only (`docker/postgres/init`); authorization is still enforced in API services. Production role provisioning remains a deployment responsibility. The superseded Prisma bootstrap is preserved in `docs/archive/postgres-bootstrap/`.

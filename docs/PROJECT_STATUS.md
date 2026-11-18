@@ -1,6 +1,6 @@
 # Project status
 
-Date: 18 November 2026.
+Date: 19 November 2026.
 
 ## Completed
 
@@ -11,7 +11,7 @@ Date: 18 November 2026.
 
 ## Implementation state
 
-The development foundation is implemented on SQLite (owner decision, 16 November 2026): workspace scripts, environment validation, API and worker health, a checksummed SQLite migration with storage primitives, idempotent fixture seed, CI and container definitions. Mobile remains a synthetic student demo without backend auth or billing. Domain contracts, the shared attempt engine and business database schemas remain future milestones. See the latest log for checks and remaining limits.
+The development foundation is implemented on PostgreSQL 17 (Docker locally and in CI; Supabase Mumbai for staging, owner decision 18 November 2026): workspace scripts, environment validation, API and worker health, a checksummed migration with storage primitives and a leased job table, idempotent fixture seed, CI and container definitions. Supabase staging is reachable but not yet migrated. Mobile remains a synthetic student demo without backend auth or billing. Domain contracts, the shared attempt engine and business database schemas remain future milestones. See the latest log for checks and remaining limits.
 
 ## Log
 
@@ -173,7 +173,7 @@ Next concrete action: owner decides on relocating the repository; then resume M0
 
 ## Next action
 
-Begin M1 identity contracts, domain schema and provider adapters on the SQLite foundation. Before production work, revise ARCHITECTURE and INFRA for single-host SQLite. Native Android path relocation (X1), iOS/device/store evidence and S4 remain separate work.
+Migrate Supabase staging once its CA certificate is in place and restricted roles are created, then begin M1 identity contracts, domain schema and provider adapters. API hosting (spike S3), native Android path relocation (X1), native iOS/store evidence and S4 remain separate work.
 
 ## Update template
 
@@ -233,3 +233,24 @@ Verification on 18 November 2026 (Node 22.23.5, pnpm 11.13.1):
 - First remote CI run passed on commit 67d5a59 (GitHub Actions run 44356546448): every step including both API and web image builds.
 
 Not run locally: Docker image builds (verified in CI only). No iOS device or simulator; X1 relocation pending.
+
+## 19 November 2026: PostgreSQL on Supabase / M0 rework / R26
+
+Implemented (commits 8811a7a to the M5 docs commit):
+- DECISIONS "PostgreSQL on Supabase" supersedes the SQLite server storage decision; Supabase is database only, Firebase and Expo Push unchanged.
+- Local PostgreSQL 17.12 in Compose on loopback 15432 with migrator, API and worker roles; three database URLs in env examples.
+- `packages/db` on `pg` 8.23.1: transactional checksummed migrator with advisory lock; migration 001 with pg_trgm/btree_gin, append-only ledger and audit including TRUNCATE, SKIP LOCKED leased jobs. No password column and no file BLOBs.
+- API/worker on pg pools; staging/production require `DATABASE_CA_CERT_PATH` for verified TLS; worker can use a separate session-mode URL.
+- CI starts PostgreSQL via Compose before migrating; API image no longer creates a SQLite data directory. SETUP, DATA_MODEL, TESTING updated.
+
+Verification on 19 November 2026 (Node 22.23.5, pnpm 11.13.1, Docker 29.9.3):
+- Frozen install, public-env check, lint and typecheck passed.
+- Unit: 31 passed (19 mobile, 12 API including SQLite-URL rejection and deployed-TLS requirement).
+- Integration: 10 passed (8 database on an isolated database per test, 2 API readiness); temporary databases were all dropped.
+- Migrate twice (second reported up to date) and seed twice passed; API/worker/web and CORS smoke passed.
+- API image built; Compose `app` profile API and worker both returned 200 on `/health/ready` against the Postgres container, then were stopped.
+- Supabase staging (18 November): transaction and session poolers both connected, PostgreSQL 17.12, extensions available, 30-43 ms round trip. Read-only; nothing migrated.
+- iOS: owner reports the Expo Go demo running on a physical iPhone without issues. Expo Go cannot load native auth or billing modules, so this is not development-build or store evidence.
+
+Open: Supabase CA certificate and restricted roles before staging migration; confirm the Data API is disabled; Supabase plan, backups and PITR terms (E11); pre-existing react/react-dom 19.3.0/19.3.1 peer warning; Supabase account password rotation after it appeared in a session log.
+

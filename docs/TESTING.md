@@ -1,6 +1,6 @@
 # Verification strategy
 
-The domain suites below remain planned. M0 checks now exist: API environment unit tests, mobile unit tests, SQLite storage integration tests, HTTP readiness failure tests and API/worker/web smoke checks. See SETUP and PROJECT_STATUS for commands and observed results. Use real SQLite files (not mocks or `:memory:`) for transactional behavior; provider fakes for deterministic integration, real sandboxes for billing certification. Test invariants rather than mock method call counts.
+The domain suites below remain planned. M0 checks now exist: API environment unit tests, mobile unit tests, PostgreSQL storage and role integration tests, HTTP readiness failure tests and API/worker/web smoke checks. See SETUP and PROJECT_STATUS for commands and observed results. Use real PostgreSQL for transactional behavior; provider fakes for deterministic integration, real sandboxes for billing certification. Test invariants rather than mock method call counts.
 
 | Layer | Required evidence |
 |---|---|

@@ -10,7 +10,6 @@ FROM node:22.23.5-bookworm-slim
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build --chown=node:node /app .
-RUN mkdir /data && chown node:node /data
 USER node
 EXPOSE 3001 3002
 CMD ["node", "dist/main.js"]
