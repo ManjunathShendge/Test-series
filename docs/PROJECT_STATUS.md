@@ -230,4 +230,6 @@ Verification on 18 November 2026 (Node 22.23.5, pnpm 11.13.1):
 - `pnpm test:int`: 9 passed (8 SQLite storage, 1 HTTP readiness failure path).
 - `pnpm test:e2e`: API, worker, web and CORS smoke passed. It requires `db:migrate` first; a run without the database failed with `unable to open database file`, as SETUP now documents.
 
-Not run locally: Docker image builds (left to CI). No iOS device or simulator; X1 relocation pending.
+- First remote CI run passed on commit 67d5a59 (GitHub Actions run 44356546448): every step including both API and web image builds.
+
+Not run locally: Docker image builds (verified in CI only). No iOS device or simulator; X1 relocation pending.
