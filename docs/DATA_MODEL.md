@@ -106,3 +106,29 @@ Migration `001_storage.sql` installs `pg_trgm` and `btree_gin` and implements st
 Row-level security is enabled on every public table except `schema_migrations`, with a single `exam_service_access` policy for the API and worker roles; the migrator reapplies it after each run. Authorization still lives in API services; RLS is a second barrier, chiefly against Supabase's Data API roles. Binary file content is not stored in the database; object storage is chosen when uploads are built.
 
 The identity and commerce workflows that must use these tables are M1 and M9 work; the M1 schema will extend or replace these primitives to match the specification above. The idempotent local/test seed inserts a synthetic infrastructure marker, not a user or paper. Locally the migrator owns the schema and the API/worker roles have row access only (`docker/postgres/init`); authorization is still enforced in API services. Production role provisioning remains a deployment responsibility. The superseded Prisma bootstrap is preserved in `docs/archive/postgres-bootstrap/`.
+
+## Owner schema v1.1 implementation
+
+The owner-supplied `Supabase_Database_Schema_Documentation.md` (see DECISIONS "Database schema source") is the authoritative data model; the sections above remain as background specification. Migrations follow its names exactly. Progress and every deviation:
+
+| Migration | Schema sections | Status |
+|---|---|---|
+| 002_identity | 1 (extensions, enums, `trigger_set_timestamp`), 2 (profiles, devices, examiner profiles, followers), 9 (`admin_audit_logs`), 11 (`has_role`, profile policy) | Implemented 19 November 2026 |
+| Later | 3-8, 9 (banners), 10, 11 (remaining policies), 12 | Pending |
+
+002 replaces the M0 primitives `users`, `roles`, `user_roles`, `sessions`, `billing_orders`, `billing_events`, `ledger_entries` and `audit_events`. A verified-fulfilment inbox and append-only ledger return with the commerce tables. `bootstrap_state` is at schema version 2; `jobs` is unchanged.
+
+| Deviation | Reason |
+|---|---|
+| `profiles.id` is a generated UUID with `firebase_uid TEXT NOT NULL UNIQUE`; no `auth.users` reference | PRD tech stack: Firebase Authentication (owner direction) |
+| `auth.uid()` is replaced by `current_user_id()`, which reads the transaction-local `app.user_id` set by `withUser` after the API verifies the Firebase token | Same; NestJS is the only path to data |
+| `ensure_profile_for_firebase_user(uid, email, name)`, SECURITY DEFINER, execute granted to `exam_app` only | Sign-in must find or create a profile before a user context exists. Always creates a plain student; a second Firebase uid with an existing email fails on the unique email instead of merging (invariant 10) |
+| `profiles.phone` is not unique | Phone is optional and unverified (D01/C1) |
+| `protect_profile_privileges` trigger: under a user context, only admins can change `roles`, admin flags, `is_blocked` or `firebase_uid` | The schema's profile policy (`FOR ALL` on own row) would otherwise allow self-promotion to admin |
+| `enforce_active_device_limit` trigger: a third active device is rejected, serialised per user with an advisory lock | Schema states the 2-device rule but did not enforce it; DECISIONS C4 |
+| `admin_audit_logs` rejects UPDATE, DELETE and TRUNCATE | PRD p.9 audit log on every admin action; invariant 5 |
+| `trigger_set_timestamp` attached to tables with `updated_at` | The schema defines the function but attaches no triggers |
+| Every function sets `search_path`; SECURITY DEFINER functions are owned by the migrator | Prevents search-path hijacking |
+
+Row-level security: every public table has RLS. `exam_worker` has full row access (system jobs). `exam_app` is governed by the schema's policies where a table has them, and has full row access only where the schema defines none (for example `user_devices`, `examiner_profiles`). `exam_app` with no user context sees no profiles.
+

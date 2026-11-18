@@ -5,34 +5,48 @@ import { createDatabase, transaction, type DatabaseOptions, type Queryable } fro
 
 // Arbitrary constant: serialises concurrent migrators (two deploys starting at once).
 const MIGRATION_LOCK = 4_221_190_318;
-const SERVICE_ROLES = ['exam_app', 'exam_worker'];
+const SERVICE_POLICIES = ['exam_worker_access', 'exam_app_access', 'exam_service_access'];
 
 /**
- * Row-level security on every public table, with access only for the API and worker roles.
- * Supabase enables RLS on new tables automatically (its ensure_rls event trigger); doing the
- * same everywhere keeps local and hosted behaviour identical and keeps Supabase's Data API
- * roles locked out. Idempotent; runs after every migration and after role provisioning.
+ * Row-level security on every public table. Supabase enables RLS on new tables automatically
+ * (its ensure_rls event trigger); doing the same everywhere keeps local and hosted behaviour
+ * identical and keeps Supabase's Data API roles locked out.
+ *
+ * - exam_worker: full row access everywhere, for system jobs (rescoring, payouts, fulfilment).
+ * - exam_app: governed by the schema's own policies where a table has them (evaluated against
+ *   current_user_id()); full row access only on tables the schema leaves without policies.
+ *
+ * Idempotent; runs after every migration and after role provisioning.
  */
 export async function ensureServiceAccess(client: Queryable): Promise<void> {
   const { rows: roles } = await client.query<{ rolname: string }>(
-    'SELECT rolname FROM pg_roles WHERE rolname = ANY($1::text[]) ORDER BY rolname',
-    [SERVICE_ROLES],
+    "SELECT rolname FROM pg_roles WHERE rolname IN ('exam_app', 'exam_worker')",
   );
-  const { rows: tables } = await client.query<{ name: string; has_policy: boolean }>(
+  const has = (role: string) => roles.some((r) => r.rolname === role);
+  const { rows: tables } = await client.query<{ name: string; policies: string[] }>(
     `SELECT c.relname::text AS name,
-       EXISTS (SELECT 1 FROM pg_policies p WHERE p.schemaname = 'public' AND p.tablename = c.relname
-               AND p.policyname = 'exam_service_access') AS has_policy
+       COALESCE((SELECT array_agg(p.policyname::text) FROM pg_policies p
+                 WHERE p.schemaname = 'public' AND p.tablename = c.relname), '{}') AS policies
      FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
      WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relname <> 'schema_migrations'`,
   );
   for (const table of tables) {
     const name = `"${table.name.replaceAll('"', '""')}"`;
+    const policies = new Set(table.policies);
+    const schemaPolicies = table.policies.filter((p) => !SERVICE_POLICIES.includes(p));
     await client.query(`ALTER TABLE ${name} ENABLE ROW LEVEL SECURITY`);
-    if (!table.has_policy && roles.length === SERVICE_ROLES.length) {
+    if (policies.has('exam_service_access'))
+      await client.query(`DROP POLICY exam_service_access ON ${name}`);
+    if (has('exam_worker') && !policies.has('exam_worker_access'))
       await client.query(
-        `CREATE POLICY exam_service_access ON ${name} FOR ALL TO ${SERVICE_ROLES.join(', ')} USING (true) WITH CHECK (true)`,
+        `CREATE POLICY exam_worker_access ON ${name} FOR ALL TO exam_worker USING (true) WITH CHECK (true)`,
       );
-    }
+    if (schemaPolicies.length > 0 && policies.has('exam_app_access'))
+      await client.query(`DROP POLICY exam_app_access ON ${name}`);
+    if (has('exam_app') && schemaPolicies.length === 0 && !policies.has('exam_app_access'))
+      await client.query(
+        `CREATE POLICY exam_app_access ON ${name} FOR ALL TO exam_app USING (true) WITH CHECK (true)`,
+      );
   }
 }
 

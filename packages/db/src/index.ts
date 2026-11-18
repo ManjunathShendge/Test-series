@@ -32,11 +32,14 @@ export function createDatabase(url: string, options: DatabaseOptions = {}): Data
   return pool;
 }
 
+/** Bumped by every migration that changes the schema this code expects. */
+export const SCHEMA_VERSION = 2;
+
 export async function checkDatabase(db: Queryable): Promise<void> {
   const { rows } = await db.query<{ version: number }>(
     "SELECT version FROM bootstrap_state WHERE id = 'schema'",
   );
-  if (rows[0]?.version !== 1) throw new Error('Database schema is incompatible');
+  if (rows[0]?.version !== SCHEMA_VERSION) throw new Error('Database schema is incompatible');
 }
 
 /** Never hold a transaction across provider calls; keep callbacks to database work. */
@@ -56,6 +59,22 @@ export async function transaction<T>(
   } finally {
     client.release();
   }
+}
+
+/**
+ * Runs a transaction as a verified user: row-level security policies read this identity through
+ * public.current_user_id(). Call only after the API has verified the Firebase token and resolved
+ * the profile. The setting is transaction-local, so pooled connections never carry it over.
+ */
+export async function withUser<T>(
+  db: Database,
+  profileId: string,
+  action: (client: DatabaseClient) => Promise<T>,
+): Promise<T> {
+  return transaction(db, async (client) => {
+    await client.query("SELECT set_config('app.user_id', $1, true)", [profileId]);
+    return action(client);
+  });
 }
 
 export async function enqueueJob(
