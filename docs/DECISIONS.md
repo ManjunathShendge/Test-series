@@ -144,3 +144,25 @@ Supersedes the 16 November SQLite storage decision for server data. D04's Postgr
 - **Row-level security (19 November 2026):** Supabase auto-enables RLS on new tables. Keep it on everywhere with one policy for the two service roles, applied by the migrator after every run, rather than disabling it. API services remain the authorization layer.
 - **Push notifications:** unaffected. Expo Push stays the provider (NOTIFICATIONS); Supabase has no push delivery service.
 - Plan tier, backups and point-in-time recovery terms must be confirmed on the Supabase plan before production (E11).
+
+## Database schema source (19 November 2026, owner instruction)
+
+`Supabase_Database_Schema_Documentation.md` v1.1 (SHA-256 `1b8d0530…0a1d`, client-confidential, gitignored) is the authoritative data model. Implement its tables, columns, enums, indexes, triggers and functions as written, except where the owner directed the PRD to prevail and the three technical corrections below. Each deviation is listed in DATA_MODEL with its reason.
+
+PRD prevails (owner direction):
+
+- **Sign-in is Firebase (PRD tech stack).** `profiles.id` is a generated UUID with a unique `firebase_uid`; there is no `auth.users` reference. Schema uses of `auth.uid()` become `public.current_user_id()`, which reads the transaction-local `app.user_id` setting the API sets after verifying the Firebase token. Supabase Storage object policies keyed on Supabase sessions are not created; the API authorizes file access and issues signed expiring URLs (PRD storage row).
+- **Live tests are versioned, not edited (PRD p.4).** Approved questions are immutable apart from statistics and report counters. A key correction creates a new question version and an append-only correction record; rescoring reads that record instead of overwriting `correct_option`.
+- **Tests go live only on QC approval (PRD p.4).** Examiners may create and edit their own tests only in draft or changes-requested states and may submit them; approval, scheduling, publishing and price changes after submission happen through reviewer/admin functions.
+- **Approved questions stay locked during revisions (PRD p.4).** Examiners cannot change approved or QC-locked questions.
+- **Audit log on every admin action (PRD p.9).** `admin_audit_logs` is append-only, and admin mutations write it in the same transaction.
+
+Technical corrections:
+
+- Store billing columns and identifiers on `purchases` for Apple IAP and Google Play Billing (D02/C2 postdate the PRD); the M0 `billing_events` inbox and append-only `ledger_entries` remain for idempotent, verified fulfilment.
+- `profiles.phone` is not unique: phone is optional and unverified (D01/C1).
+- Every `SECURITY DEFINER` function sets `search_path` explicitly.
+
+Row-level security: the schema's policies apply to the API role. Tables without schema policies keep the blanket service policy. The worker role keeps blanket access for system jobs (rescoring, payouts, fulfilment). Where the API must write rows the schema only lets users read, a policy scoped to `current_user_id()` is added and noted in DATA_MODEL. M0 primitives `users`, `roles`, `user_roles`, `sessions`, `billing_orders` and `audit_events` are replaced by `profiles`, `profiles.roles`, Firebase, `purchases` and `admin_audit_logs`.
+
+The schema's revenue split, Pass pool, payout minimum and SLAs match the PRD. Its fixed 10% TDS and 18% GST defaults remain parameters pending the CA (O09), and net revenue after store fees remains O03.

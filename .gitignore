@@ -77,3 +77,6 @@ data/
 # Local credential notes; never commit.
 credentials*.txt
 *.credentials
+
+# Client-confidential: derived from the PRD (see docs/sources/README.md).
+Supabase_Database_Schema_Documentation.md

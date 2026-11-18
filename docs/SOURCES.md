@@ -29,5 +29,6 @@ Source SHA-256 fingerprints at delivery:
 | SKILL.md | 14f43337edfbf7822e091428e4ae0c6f92f86e3353deda6a30f6613121e2cf2d |
 | requirement.text | f1f95ad982a761c1a39211fea3ad13acb021adbcb84a29ca9d1c9b92b5766b58 |
 | PRD__Exam_Prep_Marketplace.pdf | 3d154db6748b78678d451ec16e0c685e78265d047dde63d2064d349b4f651681 |
+| Supabase_Database_Schema_Documentation.md (added 19 November 2026) | 1b8d0530f8f18e0bd6f3790ca4cc86dd8b8f88dc0548d1744a158fca0bf10a1d |
 
 Engineering additions (outbox, protected immutable AI records, account linking, session epochs, payment correlation, correction maps, quarantine gating) are explicitly reconciled in DECISIONS. Optional business defaults remain proposals with named owner gates. Prompt templates contain intentional angle-bracket task parameters, not unresolved implementation values.

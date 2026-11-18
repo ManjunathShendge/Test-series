@@ -8,6 +8,7 @@ client-confidential inputs held locally by the project owner and listed in `.git
 | `PRD__Exam_Prep_Marketplace.pdf` | Original product requirements, 19 pages, dated 2 November 2026 | Request from the project owner |
 | `requirement.text` | Requirements draft plus the later authentication and store-billing amendments | Request from the project owner |
 | `docs/PRD.md` | Page-marked text transcription of the PDF above; same confidential content | Request from the project owner |
+| `Supabase_Database_Schema_Documentation.md` | Database schema v1.1 built from the PRD, supplied 19 November 2026; authoritative data model with the deviations in DECISIONS | Request from the project owner |
 
 Links to `PRD.md` from [REQUIREMENTS](../REQUIREMENTS.md), [DECISIONS](../DECISIONS.md) and
 [SOURCES](../SOURCES.md) therefore resolve only in a working copy that has the file. This is
