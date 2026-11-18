@@ -11,7 +11,7 @@ Date: 19 November 2026.
 
 ## Implementation state
 
-The development foundation is implemented on PostgreSQL 17 (Docker locally and in CI; Supabase Mumbai for staging, owner decision 18 November 2026): workspace scripts, environment validation, API and worker health, a checksummed migration with storage primitives and a leased job table, idempotent fixture seed, CI and container definitions. Supabase staging is migrated, with restricted roles and verified TLS. The owner-supplied schema v1.1 is implemented in full (migrations 002-005) with the PRD overrides and deviations in DATA_MODEL; no API endpoints use it yet. Mobile remains a synthetic student demo without backend auth or billing. Domain contracts, the shared attempt engine and business database schemas remain future milestones. See the latest log for checks and remaining limits.
+The development foundation is implemented on PostgreSQL 17 (Docker locally and in CI; Supabase Mumbai for staging, owner decision 18 November 2026): workspace scripts, environment validation, API and worker health, a checksummed migration with storage primitives and a leased job table, idempotent fixture seed, CI and container definitions. Supabase staging is migrated, with restricted roles and verified TLS. The owner-supplied schema v1.1 is implemented in full (migrations 002-005) with the PRD overrides and deviations in DATA_MODEL; no API endpoints use it yet. Mobile signs in with Firebase email/password against the API (profile, onboarding, devices); catalogue, attempts, results and billing on mobile are still synthetic demo data. Domain contracts, the shared attempt engine and business database schemas remain future milestones. See the latest log for checks and remaining limits.
 
 ## Log
 
@@ -283,3 +283,19 @@ Open: Firebase project (owner); whether examiners may create their own coupon co
 - `keep-supabase-awake.yml` runs `SELECT now()` every three days as `exam_keepalive` (login-only, no table access, verified TLS). Owner added the `SUPABASE_KEEPALIVE_DATABASE_URL` secret; the first manual run (Actions run 44388767265) succeeded. Before that, a local psql run of the same command succeeded and the role was refused on `profiles` and `bootstrap_state`.
 - GitHub disables scheduled workflows after 60 days without repository activity; remove the workflow once staging is on a paid Supabase plan.
 
+
+## 19 November 2026: M1 milestone A, email sign-in end to end
+
+Implemented (API in 6c11491, mobile in the following commit):
+- API: Firebase ID tokens verified against Google's securetoken keys (project issuer/audience, RS256). `POST /v1/identity/session` requires a verified email and 18+ confirmation, creates the profile without merging on email, and registers a server-issued device under the two-device limit (409 with the active devices). `GET/PATCH /v1/me`, `GET /v1/me/devices`, `DELETE /v1/me/devices/:id` (allowed from an unregistered device so a blocked student can free a slot). Errors use the contract shape.
+- Mobile: Firebase JS SDK email/password (create account, verification email and re-check, password reset), session persisted in expo-sqlite; sign-in calls the API, stores the device id in SecureStore and handles the device limit by removing a device and retrying. Onboarding saves language and preparation stage to the server; Profile and Devices read and revoke real devices; the language switch saves to the server and reverts on failure; sign-out releases this device's slot. Google and Apple buttons are disabled until the development build (milestone D).
+- `apps/mobile/.env.example` lists the four public Firebase web config values; the public-env allowlist includes them.
+
+Verification on 19 November 2026:
+- Lint (0 warnings), typecheck and unit tests across the workspace passed: mobile 25 (6 new for API error mapping, network failure, contract-invalid replies and 204), API 14.
+- API identity integration: 8 tests (verified-email gate, age confirmation, profile bootstrap, device registration and limit, revoke, profile update, token rejection) passed with test-only signing keys.
+- Against the real Firebase project `testapp-6be1e`: an unverified account was refused with 403 and a tampered token with 401; the throwaway account was deleted.
+- `expo export --platform ios` bundled successfully, including Firebase's React Native persistence.
+- Not yet verified: the full flow on a phone with a verified inbox (owner test in Expo Go).
+
+Open: target exams are not saved to the server yet (needs the catalogue, milestone B); target-exam editing and account deletion remain local demo screens.

@@ -3,13 +3,20 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { View } from 'react-native';
 import { OfflineBanner } from '@/features/common/OfflineBanner';
 import { ApiProvider } from '@/lib/api/client';
+import { onAuthChange } from '@/lib/auth';
+import { missingConfig } from '@/lib/config';
 import { useAppStore } from '@/lib/store/app';
+import { resetLocalSession } from '@/lib/store/session';
 import { useAttemptStore } from '@/lib/store/attempt';
 import { useResultsStore } from '@/lib/store/results';
 import { useHydrated } from '@/lib/store/storage';
-import { colors, typography } from '@/ui/tokens';
+import { Text } from '@/ui/primitives';
+import { colors, space, typography } from '@/ui/tokens';
+
+const MISSING_CONFIG = missingConfig();
 
 // Keep the native splash up until persisted state is back, so the first frame
 // is the right screen (Home for a signed-in student, never a flash of sign-in).
@@ -39,7 +46,25 @@ export default function RootLayout() {
     void SplashScreen.hideAsync();
   }, [hydrated]);
 
+  // Firebase restores its own session; if it has no user (signed out, revoked or a fresh
+  // install with old local state), the local session must not outlive it.
+  useEffect(() => {
+    if (!hydrated || MISSING_CONFIG.length) return undefined;
+    return onAuthChange((user) => {
+      if (!user && useAppStore.getState().session.signedIn) resetLocalSession();
+    });
+  }, [hydrated]);
+
   if (!hydrated) return null;
+
+  if (MISSING_CONFIG.length) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', padding: space.xl, gap: space.md, backgroundColor: colors.background }}>
+        <Text variant="heading">App configuration is incomplete</Text>
+        <Text tone="secondary">Set these in apps/mobile/.env and restart Expo: {MISSING_CONFIG.join(', ')}</Text>
+      </View>
+    );
+  }
 
   return (
     <ApiProvider>

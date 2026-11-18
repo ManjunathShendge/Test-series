@@ -1,6 +1,8 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { useUpdateProfile } from '@/lib/api/account';
+import { ApiRequestError } from '@/lib/api/http';
 import { exams, type Language, type Profile } from '@/lib/demo';
 import { useAppStore } from '@/lib/store/app';
 import { Button, Card, Chip, Icon, Screen, Text, type IconName } from '@/ui/primitives';
@@ -21,6 +23,7 @@ const STAGES: { key: Stage; label: string; detail: string; icon: IconName }[] = 
 export default function OnboardingScreen() {
   const router = useRouter();
   const complete = useAppStore((s) => s.completeOnboarding);
+  const saveProfile = useUpdateProfile();
   const [step, setStep] = useState(0);
   const [examIds, setExamIds] = useState<string[]>([]);
   const [language, setLanguage] = useState<Language>('en');
@@ -41,8 +44,18 @@ export default function OnboardingScreen() {
       setStep(step + 1);
       return;
     }
-    complete({ targetExamIds: examIds, language, preparationStage: stage });
-    router.replace('/');
+    // Language and stage are saved on the server; target exams stay on the device until the
+    // catalogue API (milestone B) gives them server ids.
+    saveProfile.mutate(
+      { preferredLanguage: language, preparationStage: stage },
+      {
+        onSuccess: () => {
+          complete({ targetExamIds: examIds, language, preparationStage: stage });
+          router.replace('/');
+        },
+        onError: (e) => setError(e instanceof ApiRequestError ? e.message : 'Could not save your choices. Try again.'),
+      },
+    );
   };
 
   return (
@@ -157,7 +170,7 @@ export default function OnboardingScreen() {
 
       <View style={styles.actions}>
         {step > 0 ? <Button label="Back" variant="ghost" icon="arrow-back" onPress={() => setStep(step - 1)} /> : <View />}
-        <Button label={step === 2 ? 'Finish' : 'Continue'} icon={step === 2 ? 'checkmark' : 'arrow-forward'} iconPosition="trailing" size="lg" onPress={next} />
+        <Button label={step === 2 ? 'Finish' : 'Continue'} icon={step === 2 ? 'checkmark' : 'arrow-forward'} iconPosition="trailing" size="lg" loading={saveProfile.isPending} onPress={next} />
       </View>
       <View style={styles.selectedRow}>
         {examIds.map((id) => {

@@ -1,15 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { applyPercentOff, devices as demoDevices, examiners, pastResults, profile as demoProfile, purchases as demoPurchases, resolveCoupon, series, splitGst, tests } from '@/lib/demo';
-import type { Device, Language, NotificationPrefs, Profile, Purchase } from '@/lib/demo';
+import type { Profile as ServerProfile } from '@exam-prep/contracts';
+import { applyPercentOff, examiners, pastResults, profile as demoProfile, purchases as demoPurchases, resolveCoupon, series, splitGst, tests } from '@/lib/demo';
+import type { Language, NotificationPrefs, Profile, Purchase } from '@/lib/demo';
 import { persistOptions } from './storage';
 
 /**
  * Student session and entitlement state (docs/MOBILE.md: Zustand for UI
  * state), persisted on device so sign-in, purchases and follows survive a
- * restart. Seeded from the demo dataset. Entitlement, follows and purchases
- * are server-decided in the real product; here they are mocked so the demo
- * flows end to end.
+ * restart. Sign-in, the profile basics and devices come from the API; the
+ * catalogue, entitlements, follows and purchases are still demo data until
+ * their milestones (B, C, E) replace them.
  */
 
 export type PurchaseStatus = 'idle' | 'pending' | 'verifying' | 'confirmed' | 'failed';
@@ -31,14 +32,14 @@ interface AppState {
   attemptedTestIds: string[];
   purchases: Purchase[];
   purchaseStatus: PurchaseStatus;
-  devices: Device[];
   notificationPrefs: NotificationPrefs;
   /** Optional product analytics (docs/NOTIFICATIONS.md PostHog events); off until the student opts in. */
   analyticsConsent: boolean;
   /** Set while an account deletion request is in its grace period. */
   deletionRequestedAt: string | null;
 
-  signIn: () => void;
+  /** Applies the profile the API returned at sign-in or after an update. */
+  applyServerProfile: (profile: ServerProfile) => void;
   completeOnboarding: (patch: Preferences) => void;
   /** Profile > Edit: the same fields as onboarding, editable any time (PRD 6.7). */
   updatePreferences: (patch: Preferences) => void;
@@ -54,7 +55,6 @@ interface AppState {
 
   /** Web purchases only; access stays until the refund is verified (docs/PAYMENTS.md). */
   requestRefund: (purchaseId: string, reason: string, note?: string) => Promise<void>;
-  removeDevice: (deviceId: string) => void;
   setNotificationPref: (key: keyof NotificationPrefs, value: boolean) => void;
   setAnalyticsConsent: (value: boolean) => void;
   requestDeletion: () => Promise<void>;
@@ -79,7 +79,6 @@ const seed = () => ({
   attemptedTestIds: pastResults.map((r) => r.testId),
   purchases: demoPurchases,
   purchaseStatus: 'idle' as const,
-  devices: demoDevices,
   notificationPrefs: { newTestsFromFollowed: true, unfinishedAttempt: true, examDateChanges: true } as NotificationPrefs,
   analyticsConsent: false,
   deletionRequestedAt: null as string | null,
@@ -92,7 +91,17 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       ...seed(),
 
-      signIn: () => set((s) => ({ session: { ...s.session, signedIn: true } })),
+      applyServerProfile: (p) =>
+        set((s) => ({
+          session: { signedIn: true, onboarded: p.onboarded },
+          profile: {
+            ...s.profile,
+            name: p.fullName,
+            email: p.email ?? '',
+            language: p.preferredLanguage,
+            preparationStage: p.preparationStage ?? s.profile.preparationStage,
+          },
+        })),
       completeOnboarding: (patch) =>
         set((s) => ({ session: { ...s.session, onboarded: true }, profile: { ...s.profile, ...patch } })),
       updatePreferences: (patch) => set((s) => ({ profile: { ...s.profile, ...patch } })),
@@ -157,7 +166,6 @@ export const useAppStore = create<AppState>()(
           ),
         }));
       },
-      removeDevice: (deviceId) => set((s) => ({ devices: s.devices.filter((d) => d.current || d.id !== deviceId) })),
       setNotificationPref: (key, value) => set((s) => ({ notificationPrefs: { ...s.notificationPrefs, [key]: value } })),
       setAnalyticsConsent: (value) => set({ analyticsConsent: value }),
       requestDeletion: async () => {
@@ -174,7 +182,6 @@ export const useAppStore = create<AppState>()(
       followedExaminerIds: s.followedExaminerIds,
       attemptedTestIds: s.attemptedTestIds,
       purchases: s.purchases,
-      devices: s.devices,
       notificationPrefs: s.notificationPrefs,
       analyticsConsent: s.analyticsConsent,
       deletionRequestedAt: s.deletionRequestedAt,

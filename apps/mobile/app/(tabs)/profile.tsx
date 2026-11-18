@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { useDevices, useUpdateProfile } from '@/lib/api/account';
 import { deletionDate, DEVICE_LIMIT, getExam, type Language } from '@/lib/demo';
 import { formatDate, formatPaise } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
@@ -19,7 +20,25 @@ export default function ProfileScreen() {
   const profile = useAppStore((s) => s.profile);
   const purchases = useAppStore((s) => s.purchases);
   const setLanguage = useAppStore((s) => s.setLanguage);
-  const devices = useAppStore((s) => s.devices);
+  const devices = useDevices();
+  const saveProfile = useUpdateProfile();
+  const activeDevices = devices.data?.filter((d) => d.isActive).length;
+
+  // Applied locally at once; restored if the server does not accept it.
+  const changeLanguage = (lang: Language) => {
+    const previous = profile.language;
+    if (lang === previous) return;
+    setLanguage(lang);
+    saveProfile.mutate(
+      { preferredLanguage: lang },
+      {
+        onError: (e) => {
+          setLanguage(previous);
+          Alert.alert('Could not change the language', e instanceof Error ? e.message : 'Please try again.');
+        },
+      },
+    );
+  };
   const deletionRequestedAt = useAppStore((s) => s.deletionRequestedAt);
 
   return (
@@ -73,7 +92,7 @@ export default function ProfileScreen() {
               return (
                 <Pressable
                   key={lang}
-                  onPress={() => setLanguage(lang)}
+                  onPress={() => changeLanguage(lang)}
                   accessibilityRole="radio"
                   accessibilityState={{ checked: selected }}
                   accessibilityLabel={lang === 'en' ? 'English' : 'Hindi'}
@@ -126,7 +145,7 @@ export default function ProfileScreen() {
       <View style={styles.block}>
         <Text variant="heading">Account</Text>
         <Card padded={false}>
-          <ListRow icon="phone-portrait-outline" title="Devices" subtitle={`${devices.length} of ${DEVICE_LIMIT} devices in use`} onPress={() => router.push('/profile/devices')} />
+          <ListRow icon="phone-portrait-outline" title="Devices" subtitle={activeDevices === undefined ? `Up to ${DEVICE_LIMIT} devices` : `${activeDevices} of ${DEVICE_LIMIT} devices in use`} onPress={() => router.push('/profile/devices')} />
           <ListRow icon="notifications-outline" title="Notifications" subtitle="Results, reminders, new tests" onPress={() => router.push('/profile/notifications')} divider />
           <ListRow icon="help-circle-outline" title="Help and support" subtitle="FAQs, contact us, grievances" onPress={() => router.push('/profile/help')} divider />
           <ListRow icon="document-outline" title="Terms and privacy" subtitle="Policies and your data choices" onPress={() => router.push('/profile/legal')} divider />
@@ -134,7 +153,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.danger}>
-        <Button label="Sign out" variant="secondary" icon="log-out-outline" fullWidth onPress={signOutEverywhere} />
+        <Button label="Sign out" variant="secondary" icon="log-out-outline" fullWidth onPress={() => void signOutEverywhere()} />
         <Button label="Delete account" variant="ghost" icon="trash-outline" fullWidth onPress={() => router.push('/profile/delete-account')} />
       </View>
     </Screen>

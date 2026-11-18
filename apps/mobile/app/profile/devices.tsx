@@ -1,8 +1,8 @@
 import { Alert, View } from 'react-native';
+import { useDevices, useRevokeDevice } from '@/lib/api/account';
 import { DEVICE_LIMIT } from '@/lib/demo';
-import { formatDate, formatRelative } from '@/lib/format';
-import { useAppStore } from '@/lib/store/app';
-import { Button, Card, Chip, ListRow, Screen, Text } from '@/ui/primitives';
+import { formatRelative } from '@/lib/format';
+import { Button, Card, Chip, ListRow, Screen, Skeleton, StateView, Text } from '@/ui/primitives';
 import { space } from '@/ui/tokens';
 
 /**
@@ -11,15 +11,40 @@ import { space } from '@/ui/tokens';
  * does that.
  */
 export default function DevicesScreen() {
-  const devices = useAppStore((s) => s.devices);
-  const removeDevice = useAppStore((s) => s.removeDevice);
+  const query = useDevices();
+  const revoke = useRevokeDevice();
+  const devices = (query.data ?? []).filter((d) => d.isActive);
   const free = Math.max(0, DEVICE_LIMIT - devices.length);
 
   const confirmRemove = (id: string, name: string) =>
     Alert.alert(`Remove ${name}?`, 'It is signed out immediately. Any test in progress on it keeps its timer running and can be continued here.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => removeDevice(id) },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () =>
+          revoke.mutate(id, {
+            onError: (e) => Alert.alert('Could not remove the device', e instanceof Error ? e.message : 'Please try again.'),
+          }),
+      },
     ]);
+
+  if (query.isPending) {
+    return (
+      <Screen edges={['left', 'right']}>
+        <Skeleton height={72} />
+        <Skeleton height={128} />
+      </Screen>
+    );
+  }
+
+  if (query.isError) {
+    return (
+      <Screen edges={['left', 'right']}>
+        <StateView kind="error" title="Could not load your devices" message={query.error.message} actionLabel="Try again" onAction={() => void query.refetch()} />
+      </Screen>
+    );
+  }
 
   return (
     <Screen edges={['left', 'right']}>
@@ -38,12 +63,18 @@ export default function DevicesScreen() {
         {devices.map((d, i) => (
           <ListRow
             key={d.id}
-            icon={d.platform === 'ios' ? 'phone-portrait-outline' : d.name.toLowerCase().includes('tab') ? 'tablet-portrait-outline' : 'phone-portrait-outline'}
-            iconTone={d.current ? 'primary' : 'neutral'}
-            title={d.name}
-            subtitle={d.current ? `This device · added ${formatDate(d.registeredAt)}` : `Last active ${formatRelative(d.lastActiveAt)} · added ${formatDate(d.registeredAt)}`}
+            icon={/tab|ipad/i.test(d.name ?? '') ? 'tablet-portrait-outline' : 'phone-portrait-outline'}
+            iconTone={d.isCurrent ? 'primary' : 'neutral'}
+            title={d.name ?? 'Unnamed device'}
+            subtitle={d.isCurrent ? 'This device' : `Last active ${formatRelative(d.lastActiveAt)}`}
             divider={i > 0}
-            trailing={d.current ? <Chip label="This device" tone="primary" /> : <Button label="Remove" variant="ghost" onPress={() => confirmRemove(d.id, d.name)} />}
+            trailing={
+              d.isCurrent ? (
+                <Chip label="This device" tone="primary" />
+              ) : (
+                <Button label="Remove" variant="ghost" loading={revoke.isPending && revoke.variables === d.id} onPress={() => confirmRemove(d.id, d.name ?? 'this device')} />
+              )
+            }
           />
         ))}
       </Card>
