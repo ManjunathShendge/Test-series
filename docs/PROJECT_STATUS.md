@@ -278,3 +278,8 @@ Verification on 19 November 2026:
 
 Open: Firebase project (owner); whether examiners may create their own coupon codes (currently admin-only); TDS/GST parameters (O09) and net revenue after store fees (O03).
 
+### 19 November 2026: Supabase keep-alive
+
+- `keep-supabase-awake.yml` runs `SELECT now()` every three days as `exam_keepalive` (login-only, no table access, verified TLS). Owner added the `SUPABASE_KEEPALIVE_DATABASE_URL` secret; the first manual run (Actions run 44388767265) succeeded. Before that, a local psql run of the same command succeeded and the role was refused on `profiles` and `bootstrap_state`.
+- GitHub disables scheduled workflows after 60 days without repository activity; remove the workflow once staging is on a paid Supabase plan.
+
