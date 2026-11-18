@@ -29,7 +29,11 @@ const schema = z
     // Worker uses a session-mode connection (Supabase session pooler); defaults to DATABASE_URL.
     WORKER_DATABASE_URL: databaseUrl.optional(),
     DATABASE_CA_CERT_PATH: z.string().min(1).optional(),
-    FIREBASE_PROJECT_ID: z.string().min(1).optional(),
+    // Firebase ID tokens must be issued for this project (issuer and audience).
+    FIREBASE_PROJECT_ID: z.string().regex(/^[a-z0-9-]{4,40}$/),
+    // Test-only public JWKS (JSON) used instead of Google's keys, so integration and smoke
+    // tests can sign their own tokens. Rejected outside NODE_ENV=test with APP_ENV=test.
+    FIREBASE_TEST_JWKS: z.string().min(2).optional(),
     FIREBASE_AUTH_EMULATOR_HOST: z
       .string()
       .regex(/^[\w.-]+:\d+$/)
@@ -54,6 +58,13 @@ const schema = z
         code: 'custom',
         path: ['APP_ENV'],
         message: 'Deployed environments require a real project and HTTPS origins',
+      });
+    }
+    if (env.FIREBASE_TEST_JWKS && !(env.NODE_ENV === 'test' && env.APP_ENV === 'test')) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['FIREBASE_TEST_JWKS'],
+        message: 'Test signing keys are only allowed when NODE_ENV and APP_ENV are test',
       });
     }
     if (['staging', 'production'].includes(env.APP_ENV) && !env.DATABASE_CA_CERT_PATH) {

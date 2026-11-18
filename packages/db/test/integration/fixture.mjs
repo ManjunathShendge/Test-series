@@ -26,7 +26,7 @@ export async function fixture(t) {
     await app.end(); await worker.end(); await owner.end();
     await admin.query(`DROP DATABASE ${name} WITH (FORCE)`); await admin.end();
   });
-  return { owner, app, worker, url: withDatabase(adminUrl, name) };
+  return { owner, app, worker, url: withDatabase(adminUrl, name), appUrl: withDatabase(appUrl, name) };
 }
 
 /** Creates a profile through the sign-in function, optionally with extra roles (set by the owner). */

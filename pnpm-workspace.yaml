@@ -3,7 +3,7 @@ packages:
   - "packages/*"
 
 # Dependencies require no install scripts.
-allowBuilds: { '@prisma/engines': set this to true or false, prisma: set this to true or false }
+allowBuilds: { '@firebase/util': false, protobufjs: false }
 
 # Shared dependency versions, resolved against the npm registry in M0 on 13 November 2026.
 # This is the single place a shared version is declared, so apps and packages cannot drift.

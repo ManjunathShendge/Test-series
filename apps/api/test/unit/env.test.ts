@@ -60,6 +60,16 @@ describe('environment boundary', () => {
       'DATABASE_URL',
     );
   });
+  it('requires a valid Firebase project id', () => {
+    expect(() => parseEnvironment({ ...local, FIREBASE_PROJECT_ID: undefined })).toThrow('FIREBASE_PROJECT_ID');
+    expect(() => parseEnvironment({ ...local, FIREBASE_PROJECT_ID: 'Bad Project!' })).toThrow('FIREBASE_PROJECT_ID');
+  });
+  it('accepts test signing keys only when NODE_ENV and APP_ENV are both test', () => {
+    const jwks = '{"keys":[]}';
+    expect(parseEnvironment({ ...local, NODE_ENV: 'test', APP_ENV: 'test', FIREBASE_TEST_JWKS: jwks }).FIREBASE_TEST_JWKS).toBe(jwks);
+    expect(() => parseEnvironment({ ...local, FIREBASE_TEST_JWKS: jwks })).toThrow('FIREBASE_TEST_JWKS');
+    expect(() => parseEnvironment({ ...local, NODE_ENV: 'test', FIREBASE_TEST_JWKS: jwks })).toThrow('FIREBASE_TEST_JWKS');
+  });
   it('rejects colliding listener ports', () => {
     expect(() => parseEnvironment({ ...local, WORKER_PORT: 3001 })).toThrow('WORKER_PORT');
   });

@@ -3,3 +3,6 @@
 // provider imports may appear anywhere in this package.
 
 export const CONTRACTS_PACKAGE = '@exam-prep/contracts' as const;
+
+export * from './common/errors.js';
+export * from './identity/index.js';
