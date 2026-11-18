@@ -116,7 +116,9 @@ The owner-supplied `Supabase_Database_Schema_Documentation.md` (see DECISIONS "D
 | 002_identity | 1 (extensions, enums, `trigger_set_timestamp`), 2 (profiles, devices, examiner profiles, followers), 9 (`admin_audit_logs`), 11 (`has_role`, profile policy) | Implemented 19 November 2026 |
 | 003_catalogue | 3 (hierarchy, syllabus, templates), 4 (passages, questions, indexes, AI cache), 5 (series, tests, sections, test questions), 11 (question and test policies) | Implemented 19 November 2026 |
 | 004_qc_attempts | 6 (reviewer mappings, QC reviews, per-question reviews, student reports, auto-hide trigger), 7 (attempts, answers, saved questions, ratings), 11 (attempt and answer policies) | Implemented 19 November 2026 |
-| Later | 8, 9 (banners), 10, 11 (purchase and payout policies), 12 | Pending |
+| 005_commerce_functions | 8 (Pass plans, coupons, purchases, entitlements, Pass pools, payouts), 9 (CMS banners), 10 (all five functions), 11 (purchase and payout policies), 12 (buckets) | Implemented 19 November 2026 |
+
+All twelve schema sections are implemented; `bootstrap_state` is at schema version 5.
 
 002 replaces the M0 primitives `users`, `roles`, `user_roles`, `sessions`, `billing_orders`, `billing_events`, `ledger_entries` and `audit_events`. A verified-fulfilment inbox and append-only ledger return with the commerce tables. `bootstrap_state` is at schema version 2; `jobs` is unchanged.
 
@@ -139,6 +141,17 @@ The owner-supplied `Supabase_Database_Schema_Documentation.md` (see DECISIONS "D
 | `trigger_auto_hide_reported_question` is SECURITY DEFINER; `protect_question_integrity` accepts moderation-counter changes only from nested triggers | Lets a reporting student's transaction update counters on an approved question while direct moderation by users stays rejected |
 | `protect_attempt_authority` trigger: under a user context, attempt identity, timer, counts, score, rank, percentile and Pass qualification are read-only; students may update progress and submit; only the server times out or abandons; finished attempts cannot reopen | Invariant 4: the server decides time and score |
 | `protect_answer_authority` trigger: under a user context, answers are accepted only while the attempt is in progress and before `server_expires_at`; `is_correct`/`marks_awarded` are server-only; answers cannot be deleted | Invariant 4 and DECISIONS C3 strict deadline; invariant 8 never discard an answer |
+| `purchases`: `store_product_id`, `store_transaction_id` (unique per channel), `store_original_transaction_id`, `play_purchase_token` (unique), `store_environment` | D02/C2 postdate the PRD: Apple IAP on iOS, Play Billing on Android; invariant 7 idempotent fulfilment |
+| `billing_events` (unique provider event, verified time) and append-only `ledger_entries` (unique source event; capture, refund, fee, payout, adjustment) | Invariants 5 and 7; the schema had no verified-event inbox or ledger |
+| Purchase policies: students create only their own `created` orders; admins update; payout policy adds admin update | The API must create orders, which the schema's read-only policy did not allow; capture and refunds stay server/admin work |
+| `require_admin_or_system` trigger on entitlements, purchase updates, Pass pools, payouts, billing events, ledger inserts, coupons and Pass plans | Invariant 4: the server decides entitlement, price and payment status. Examiner self-service coupons, if wanted, need an explicit decision |
+| `audit_privileged_change` trigger on admin-managed tables: every change under an admin or QC reviewer context writes `admin_audit_logs` (before/after, actor, optional `app.audit_action` name) in the same transaction. `rescore_*` and `calculate_*` write one audit row per run | PRD p.9 audit on every admin action; invariant 6 |
+| `rescore_test_attempts_on_key_change(p_correction_id)` reads `question_key_corrections` instead of overwriting the key; ranks tie-break on `submitted_at`; enqueues `notify_rescored_students`; reviewer/admin or system only; idempotent | PRD p.4 versioning and "notify affected students"; `updated_at` changes on every rescore, so it was an unstable tie-break |
+| `get_test_questions_for_attempt` uses `current_user_id()`, serves the latest corrected version, and filters auto-hidden questions by the original item | Firebase sign-in; corrections never edit the frozen test |
+| `run_question_duplicate_check` and `run_test_presubmit_check` check the caller (owning examiner, reviewer, admin or system) | SECURITY DEFINER bypasses RLS, so the functions must authorise |
+| `calculate_monthly_examiner_payouts`: finance or super admins or system only; first-of-month input; refuses a finalised month; never overwrites approved or paid payout rows | Recalculating could otherwise rewrite money already paid |
+| Functions revoked from PUBLIC and Supabase `anon`/`authenticated`; executable by the API and worker | Defence if the Data API is re-enabled |
+| Storage buckets are created on Supabase only; `storage.objects` policies are not | Firebase sign-in: Supabase Storage sees no Supabase session, so the API authorises files and issues signed URLs |
 | Every function sets `search_path`; SECURITY DEFINER functions are owned by the migrator | Prevents search-path hijacking |
 
 Row-level security: every public table has RLS. `exam_worker` has full row access (system jobs). `exam_app` is governed by the schema's policies where a table has them, and has full row access only where the schema defines none (for example `user_devices`, `examiner_profiles`). `exam_app` with no user context sees no profiles.

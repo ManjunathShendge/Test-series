@@ -30,6 +30,15 @@ export async function ensureServiceAccess(client: Queryable): Promise<void> {
      FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
      WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relname <> 'schema_migrations'`,
   );
+  // Supabase grants its Data API roles EXECUTE on new public functions by default; the API
+  // and worker are the only callers.
+  const { rows: dataApiRoles } = await client.query<{ rolname: string }>(
+    "SELECT rolname::text AS rolname FROM pg_roles WHERE rolname IN ('anon', 'authenticated')",
+  );
+  if (dataApiRoles.length > 0) {
+    const list = dataApiRoles.map((r) => r.rolname).join(', ');
+    await client.query(`REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM ${list}`);
+  }
   for (const table of tables) {
     const name = `"${table.name.replaceAll('"', '""')}"`;
     const policies = new Set(table.policies);
