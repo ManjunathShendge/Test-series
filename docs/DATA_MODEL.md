@@ -115,7 +115,8 @@ The owner-supplied `Supabase_Database_Schema_Documentation.md` (see DECISIONS "D
 |---|---|---|
 | 002_identity | 1 (extensions, enums, `trigger_set_timestamp`), 2 (profiles, devices, examiner profiles, followers), 9 (`admin_audit_logs`), 11 (`has_role`, profile policy) | Implemented 19 November 2026 |
 | 003_catalogue | 3 (hierarchy, syllabus, templates), 4 (passages, questions, indexes, AI cache), 5 (series, tests, sections, test questions), 11 (question and test policies) | Implemented 19 November 2026 |
-| Later | 6-8, 9 (banners), 10, 11 (remaining policies), 12 | Pending |
+| 004_qc_attempts | 6 (reviewer mappings, QC reviews, per-question reviews, student reports, auto-hide trigger), 7 (attempts, answers, saved questions, ratings), 11 (attempt and answer policies) | Implemented 19 November 2026 |
+| Later | 8, 9 (banners), 10, 11 (purchase and payout policies), 12 | Pending |
 
 002 replaces the M0 primitives `users`, `roles`, `user_roles`, `sessions`, `billing_orders`, `billing_events`, `ledger_entries` and `audit_events`. A verified-fulfilment inbox and append-only ledger return with the commerce tables. `bootstrap_state` is at schema version 2; `jobs` is unchanged.
 
@@ -134,6 +135,10 @@ The owner-supplied `Supabase_Database_Schema_Documentation.md` (see DECISIONS "D
 | "Examiners manage own draft tests" policy limited to `draft`/`changes_requested` rows, with `submitted` as the only status an examiner can set | PRD p.4: tests go live on QC approval. The schema's `FOR ALL` policy let examiners publish or reprice their own tests |
 | `protect_published_test` trigger: approved/scheduled/live/archived tests keep their content and price, cannot be deleted, and status only moves forward (approved, scheduled, live, archived) | PRD p.4: live tests are versioned (`parent_test_id`), not edited; D03 frozen price snapshot |
 | `protect_test_structure` trigger: sections and items of a published test are frozen; QC-locked items cannot be moved, replaced or removed by examiners; only reviewers/admins set `qc_status`/`is_locked_by_qc` | PRD p.4 approved questions stay locked during revisions |
+| `question_key_corrections` (append-only): test, old and new question version, old and new key, optional report, corrector, reason | PRD p.4 versioning + key corrections re-score past attempts. A live test's structure is frozen, so corrections are records that scoring and delivery read, not edits |
+| `trigger_auto_hide_reported_question` is SECURITY DEFINER; `protect_question_integrity` accepts moderation-counter changes only from nested triggers | Lets a reporting student's transaction update counters on an approved question while direct moderation by users stays rejected |
+| `protect_attempt_authority` trigger: under a user context, attempt identity, timer, counts, score, rank, percentile and Pass qualification are read-only; students may update progress and submit; only the server times out or abandons; finished attempts cannot reopen | Invariant 4: the server decides time and score |
+| `protect_answer_authority` trigger: under a user context, answers are accepted only while the attempt is in progress and before `server_expires_at`; `is_correct`/`marks_awarded` are server-only; answers cannot be deleted | Invariant 4 and DECISIONS C3 strict deadline; invariant 8 never discard an answer |
 | Every function sets `search_path`; SECURITY DEFINER functions are owned by the migrator | Prevents search-path hijacking |
 
 Row-level security: every public table has RLS. `exam_worker` has full row access (system jobs). `exam_app` is governed by the schema's policies where a table has them, and has full row access only where the schema defines none (for example `user_devices`, `examiner_profiles`). `exam_app` with no user context sees no profiles.

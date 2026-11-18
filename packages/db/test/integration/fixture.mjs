@@ -77,3 +77,25 @@ export async function draftTest(db, exam, examinerId) {
     VALUES ($1, $2, 'Quant', 1, 2, 2, 0.5) RETURNING id`, [test, exam.templateSection])).rows[0].id;
   return { test, section };
 }
+
+/** A live two-question test with approved questions (set up by the owner as system/admin). */
+export async function liveTest(owner, exam, examinerId) {
+  const { test, section } = await draftTest(owner, exam, examinerId);
+  const items = [];
+  for (const order of [1, 2]) {
+    const q = await question(owner, exam, examinerId);
+    await owner.query('UPDATE questions SET is_approved_in_corpus = true WHERE id = $1', [q]);
+    const tq = (await owner.query('INSERT INTO test_questions (test_id, section_id, question_id, display_order, positive_marks, negative_marks) VALUES ($1, $2, $3, $4, 2, 0.5) RETURNING id', [test, section, q, order])).rows[0].id;
+    items.push({ question: q, testQuestion: tq });
+  }
+  await owner.query("UPDATE tests SET status = 'approved' WHERE id = $1", [test]);
+  await owner.query("UPDATE tests SET status = 'live', published_at = now() WHERE id = $1", [test]);
+  return { test, section, items };
+}
+
+/** Starts an attempt as the student, with the server-computed deadline. */
+export async function startAttempt(client, studentId, testId, expiresInSeconds = 600) {
+  const { rows } = await client.query(`INSERT INTO student_attempts (student_id, test_id, server_expires_at, remaining_seconds_at_last_sync, total_questions)
+    VALUES ($1, $2, now() + make_interval(secs => $3), $3, 2) RETURNING id`, [studentId, testId, expiresInSeconds]);
+  return rows[0].id;
+}
