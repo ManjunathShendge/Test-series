@@ -11,7 +11,7 @@ Date: 19 November 2026.
 
 ## Implementation state
 
-The development foundation is implemented on PostgreSQL 17 (Docker locally and in CI; Supabase Mumbai for staging, owner decision 18 November 2026): workspace scripts, environment validation, API and worker health, a checksummed migration with storage primitives and a leased job table, idempotent fixture seed, CI and container definitions. Supabase staging is migrated, with restricted roles and verified TLS. Mobile remains a synthetic student demo without backend auth or billing. Domain contracts, the shared attempt engine and business database schemas remain future milestones. See the latest log for checks and remaining limits.
+The development foundation is implemented on PostgreSQL 17 (Docker locally and in CI; Supabase Mumbai for staging, owner decision 18 November 2026): workspace scripts, environment validation, API and worker health, a checksummed migration with storage primitives and a leased job table, idempotent fixture seed, CI and container definitions. Supabase staging is migrated, with restricted roles and verified TLS. The owner-supplied schema v1.1 is implemented in full (migrations 002-005) with the PRD overrides and deviations in DATA_MODEL; no API endpoints use it yet. Mobile remains a synthetic student demo without backend auth or billing. Domain contracts, the shared attempt engine and business database schemas remain future milestones. See the latest log for checks and remaining limits.
 
 ## Log
 
@@ -173,7 +173,7 @@ Next concrete action: owner decides on relocating the repository; then resume M0
 
 ## Next action
 
-Begin M1 identity contracts, domain schema and provider adapters. API hosting (spike S3), native Android path relocation (X1), native iOS/store evidence and S4 remain separate work.
+Begin M1 identity: Firebase project setup (owner), token verification and the sign-in flow on `ensure_profile_for_firebase_user`, `withUser` request context, devices and consent. API hosting (spike S3), native Android path relocation (X1), native iOS/store evidence and S4 remain separate work.
 
 ## Update template
 
@@ -262,4 +262,19 @@ Open: Supabase CA certificate and restricted roles before staging migration; con
 - Staging checks as each role: verified TLS, readiness, row write (rolled back) allowed; CREATE/DROP TABLE and `schema_migrations` access denied; `anon` and `authenticated` have no SELECT on any public table. The built API and worker both returned 200 on `/health/ready` against staging.
 - Local suite after the change: lint, typecheck, unit (31), integration (11), migrate and smoke all passed.
 - Owner confirmed the Data API is disabled (not independently verifiable from a database connection).
+
+## 19 November 2026: owner schema v1.1 / data model
+
+Implemented (commits 1153853 to 5190c93):
+- Owner-supplied `Supabase_Database_Schema_Documentation.md` registered as a confidential source (gitignored) and made the data model. PRD prevails on sign-in (Firebase), versioning, QC-gated publishing, locked approved questions and the admin audit log; technical corrections for store billing, unverified phone and function search paths.
+- Migrations 002 identity, 003 catalogue, 004 QC and attempts, 005 commerce, functions and buckets: 39 tables, all twelve schema sections. Each deviation and its reason is in DATA_MODEL.
+- `withUser` sets the verified profile per transaction; schema policies use `current_user_id()`. Worker has full row access; the API follows schema policies where they exist.
+
+Verification on 19 November 2026:
+- Database integration: 34 tests passed on two consecutive runs, each in an isolated database. They cover the sign-in function and no email merge, own-profile visibility and blocked self-promotion, the two-device limit under concurrency, append-only audit, corrections and ledger, question immutability and versioning, examiner publishing limits, frozen published tests, QC locks, five-report auto-hide, server-only timing and scoring with a strict answer deadline, order and entitlement rules, automatic audit rows, all five functions, and a hand-calculated payout fixture (holds, refunds, minimum, paid rows untouched, finalised month).
+- Whole suite: lint, typecheck, 31 unit tests, 36 integration tests and the HTTP smoke test passed. Local database migrated to schema version 5 and seeded.
+- Two defects found by tests and fixed before commit: the device-limit lock saw no rows under RLS (now an advisory lock), and privileged functions left no audit trace when they suspend the user context (now one audit row per run).
+- Staging: migrations 002-005 applied in one transaction; 39 of 39 tables have RLS; `anon`/`authenticated` can read no table and execute none of the sensitive functions; five storage buckets created; as `exam_app`, readiness, sign-in, own-profile visibility and blocked self-promotion all held (probe rolled back). The built API and worker returned 200 on `/health/ready` against staging.
+
+Open: Firebase project (owner); whether examiners may create their own coupon codes (currently admin-only); TDS/GST parameters (O09) and net revenue after store fees (O03).
 
