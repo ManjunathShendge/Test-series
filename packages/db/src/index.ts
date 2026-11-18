@@ -1,49 +1,116 @@
-import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
-import { resolveDatabasePath } from './path.js';
+import { readFileSync } from 'node:fs';
+import pg from 'pg';
 
-export type Database = DatabaseSync;
-export { resolveDatabasePath } from './path.js';
+export type Database = pg.Pool;
+export type DatabaseClient = pg.PoolClient;
+export type Queryable = Pick<pg.Pool, 'query'>;
 
-export function createDatabase(url: string): Database {
-  const db = new DatabaseSync(resolveDatabasePath(url), { timeout: 5000 });
-  try {
-    db.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA synchronous = FULL;');
-    return db;
-  } catch (error) { db.close(); throw error; }
+export interface DatabaseOptions {
+  /** PEM CA certificate path; when set, TLS is required and the server certificate verified. */
+  caCertPath?: string | undefined;
+  max?: number;
+  connectionTimeoutMillis?: number;
 }
 
-export function checkDatabase(db: Database): void {
-  const row = db.prepare("SELECT version FROM bootstrap_state WHERE id = 'schema'").get();
-  if (row?.['version'] !== 1) throw new Error('Database schema is incompatible');
-  if (db.prepare('PRAGMA foreign_keys').get()?.['foreign_keys'] !== 1) throw new Error('Foreign keys are disabled');
+/**
+ * Pools work through the Supabase transaction pooler: node-postgres only uses
+ * unnamed statements, so no prepared-statement settings are needed.
+ */
+export function createDatabase(url: string, options: DatabaseOptions = {}): Database {
+  if (!/^postgres(ql)?:\/\//.test(url)) throw new Error('Database URL must be a postgresql:// URL');
+  const pool = new pg.Pool({
+    connectionString: url,
+    max: options.max ?? 10,
+    connectionTimeoutMillis: options.connectionTimeoutMillis ?? 5000,
+    ...(options.caCertPath
+      ? { ssl: { ca: readFileSync(options.caCertPath, 'utf8'), rejectUnauthorized: true } }
+      : {}),
+  });
+  // An idle client losing its connection must not crash the process; the next query reconnects.
+  pool.on('error', () => {});
+  return pool;
 }
 
-/** The callback must be synchronous; never hold a transaction across provider calls. */
-export function transaction<T>(db: Database, action: () => T): T {
-  db.exec('BEGIN IMMEDIATE');
+export async function checkDatabase(db: Queryable): Promise<void> {
+  const { rows } = await db.query<{ version: number }>(
+    "SELECT version FROM bootstrap_state WHERE id = 'schema'",
+  );
+  if (rows[0]?.version !== 1) throw new Error('Database schema is incompatible');
+}
+
+/** Never hold a transaction across provider calls; keep callbacks to database work. */
+export async function transaction<T>(
+  db: Database,
+  action: (client: DatabaseClient) => Promise<T>,
+): Promise<T> {
+  const client = await db.connect();
   try {
-    const result = action();
-    if (result && typeof (result as { then?: unknown }).then === 'function') throw new Error('Transaction callbacks must be synchronous');
-    db.exec('COMMIT');
+    await client.query('BEGIN');
+    const result = await action(client);
+    await client.query('COMMIT');
     return result;
-  } catch (error) { db.exec('ROLLBACK'); throw error; }
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
-export function enqueueJob(db: Database, kind: string, payload: unknown, key: string, now = Date.now()): void {
-  db.prepare('INSERT INTO jobs (id, deduplication_key, kind, payload, available_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(deduplication_key) DO NOTHING')
-    .run(randomUUID(), key, kind, JSON.stringify(payload), now);
+export async function enqueueJob(
+  db: Queryable,
+  kind: string,
+  payload: unknown,
+  key: string,
+  now = new Date(),
+): Promise<void> {
+  await db.query(
+    `INSERT INTO jobs (id, deduplication_key, kind, payload, available_at)
+     VALUES ($1, $2, $3, $4, $5) ON CONFLICT (deduplication_key) DO NOTHING`,
+    [randomUUID(), key, kind, JSON.stringify(payload), now],
+  );
 }
 
-/** Atomic claim; expired leases can be recovered. Only claim registered job kinds. */
-export function claimJob(db: Database, kind: string, now = Date.now(), leaseMs = 30000) {
+export interface ClaimedJob {
+  id: string;
+  kind: string;
+  payload: unknown;
+  lease_token: string;
+  attempts: number;
+}
+
+/** Atomic claim; concurrent workers skip locked rows and expired leases can be recovered. */
+export async function claimJob(
+  db: Queryable,
+  kind: string,
+  now = new Date(),
+  leaseMs = 30000,
+): Promise<ClaimedJob | undefined> {
   if (!Number.isSafeInteger(leaseMs) || leaseMs <= 0) throw new Error('Invalid job lease');
-  return db.prepare(`UPDATE jobs SET status='running', lease_token=?, lease_until=?, attempts=attempts+1
-    WHERE id=(SELECT id FROM jobs WHERE kind=? AND ((status='pending' AND available_at<=?) OR (status='running' AND lease_until<=?)) ORDER BY available_at, id LIMIT 1)
-    RETURNING id, kind, payload, lease_token, attempts`).get(randomUUID(), now + leaseMs, kind, now, now);
+  const { rows } = await db.query<ClaimedJob>(
+    `UPDATE jobs SET status = 'running', lease_token = $1, lease_until = $2, attempts = attempts + 1
+     WHERE id = (
+       SELECT id FROM jobs
+       WHERE kind = $3 AND ((status = 'pending' AND available_at <= $4) OR (status = 'running' AND lease_until <= $4))
+       ORDER BY available_at, id LIMIT 1 FOR UPDATE SKIP LOCKED)
+     RETURNING id, kind, payload, lease_token, attempts`,
+    [randomUUID(), new Date(now.getTime() + leaseMs), kind, now],
+  );
+  return rows[0];
 }
 
-export function finishJob(db: Database, id: string, token: string, now = Date.now()): boolean {
-  return db.prepare("UPDATE jobs SET status='done', lease_token=NULL, lease_until=NULL WHERE id=? AND lease_token=? AND status='running' AND lease_until>?")
-    .run(id, token, now).changes === 1;
+/** Only the current, unexpired lease holder can acknowledge a job. */
+export async function finishJob(
+  db: Queryable,
+  id: string,
+  token: string,
+  now = new Date(),
+): Promise<boolean> {
+  const result = await db.query(
+    `UPDATE jobs SET status = 'done', lease_token = NULL, lease_until = NULL
+     WHERE id = $1 AND lease_token = $2 AND status = 'running' AND lease_until > $3`,
+    [id, token, now],
+  );
+  return result.rowCount === 1;
 }

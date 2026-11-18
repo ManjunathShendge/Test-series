@@ -1,8 +1,9 @@
 import { createDatabase } from '../dist/index.js';
 if (!['local', 'test'].includes(process.env.APP_ENV ?? '')) throw new Error('Seed requires APP_ENV=local or test');
-if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
-const db = createDatabase(process.env.DATABASE_URL);
+const url = process.env.MIGRATION_DATABASE_URL;
+if (!url) throw new Error('MIGRATION_DATABASE_URL is required');
+const db = createDatabase(url, { max: 1 });
 try {
-  db.prepare("INSERT INTO bootstrap_state VALUES ('synthetic-fixture', 1) ON CONFLICT(id) DO NOTHING").run();
-  console.log('SQLite fixture ready; no accounts or paid entitlements were fabricated');
-} finally { db.close(); }
+  await db.query("INSERT INTO bootstrap_state VALUES ('synthetic-fixture', 1) ON CONFLICT (id) DO NOTHING");
+  console.log('Fixture ready; no accounts or paid entitlements were fabricated');
+} finally { await db.end(); }
