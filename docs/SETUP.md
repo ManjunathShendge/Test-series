@@ -76,7 +76,7 @@ pnpm test:e2e
 
 Unit tests need no services. Empty contracts/engine/web suites explicitly allow no tests while they remain scaffolds; this is not coverage. `test:int` needs running PostgreSQL: database tests create an isolated database per test, apply `docker/postgres/init/002-grants.sql` and the migrations, then drop it. They cover migrations and extensions, role restrictions, billing idempotency and integer money, append-only ledger and audit, transactional rollback and concurrent job claims. API tests cover readiness against an unreachable and a migrated database. Missing services cause failures, never skips.
 
-`test:e2e` builds server/web, starts temporary API/worker/web listeners on 43101/43102/43100 against the configured database, verifies readiness, HTML and CORS, then stops its own processes. Run `db:migrate` first. This is a foundation HTTP smoke test, not browser or native user-journey coverage.
+`test:e2e` builds server/web, starts temporary API/worker/web listeners on free ports chosen at run time (printed first) against the configured database, verifies readiness, HTML and CORS, then stops its own processes. Run `db:migrate` first. A failure names the service and its exit code. This is a foundation HTTP smoke test, not browser or native user-journey coverage.
 
 CI starts PostgreSQL with Compose, runs these checks, applies migrations, seeds twice and builds API/web images. It does not publish or deploy. `check:public-env` validates public variable names against an allowlist; it is not a general secret or question-key scanner. Synthetic mobile solutions remain bundled for the demo.
 
