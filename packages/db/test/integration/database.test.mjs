@@ -8,7 +8,7 @@ test('migrations are repeatable, checksummed and install the required extensions
   const { owner, url } = await fixture(t);
   assert.deepEqual(await migrateDatabase(url), []);
   await checkDatabase(owner);
-  assert.equal((await owner.query('SELECT count(*)::int AS n FROM schema_migrations')).rows[0].n, 2);
+  assert.equal((await owner.query('SELECT count(*)::int AS n FROM schema_migrations')).rows[0].n, 3);
   assert.equal((await owner.query("SELECT version FROM bootstrap_state WHERE id = 'schema'")).rows[0].version, SCHEMA_VERSION);
   const ext = (await owner.query("SELECT array_agg(extname::text ORDER BY extname) AS e FROM pg_extension WHERE extname IN ('pg_trgm','btree_gin','pgcrypto')")).rows[0].e;
   assert.deepEqual(ext, ['btree_gin', 'pg_trgm', 'pgcrypto']);

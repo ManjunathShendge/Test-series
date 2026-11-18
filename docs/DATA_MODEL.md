@@ -114,7 +114,8 @@ The owner-supplied `Supabase_Database_Schema_Documentation.md` (see DECISIONS "D
 | Migration | Schema sections | Status |
 |---|---|---|
 | 002_identity | 1 (extensions, enums, `trigger_set_timestamp`), 2 (profiles, devices, examiner profiles, followers), 9 (`admin_audit_logs`), 11 (`has_role`, profile policy) | Implemented 19 November 2026 |
-| Later | 3-8, 9 (banners), 10, 11 (remaining policies), 12 | Pending |
+| 003_catalogue | 3 (hierarchy, syllabus, templates), 4 (passages, questions, indexes, AI cache), 5 (series, tests, sections, test questions), 11 (question and test policies) | Implemented 19 November 2026 |
+| Later | 6-8, 9 (banners), 10, 11 (remaining policies), 12 | Pending |
 
 002 replaces the M0 primitives `users`, `roles`, `user_roles`, `sessions`, `billing_orders`, `billing_events`, `ledger_entries` and `audit_events`. A verified-fulfilment inbox and append-only ledger return with the commerce tables. `bootstrap_state` is at schema version 2; `jobs` is unchanged.
 
@@ -128,6 +129,11 @@ The owner-supplied `Supabase_Database_Schema_Documentation.md` (see DECISIONS "D
 | `enforce_active_device_limit` trigger: a third active device is rejected, serialised per user with an advisory lock | Schema states the 2-device rule but did not enforce it; DECISIONS C4 |
 | `admin_audit_logs` rejects UPDATE, DELETE and TRUNCATE | PRD p.9 audit log on every admin action; invariant 5 |
 | `trigger_set_timestamp` attached to tables with `updated_at` | The schema defines the function but attaches no triggers |
+| `questions.parent_question_id` and `version_number` (unique together) | PRD p.4: a key correction creates a new question version |
+| `protect_question_integrity` trigger: approved questions are immutable apart from statistics and report counters and cannot be deleted; under a user context only QC reviewers/admins approve or moderate (`is_approved_in_corpus`, `is_auto_hidden`, `open_report_count`); only system jobs write `ai_suggestion` and statistics | PRD p.4 approved questions stay locked; AI rule; otherwise an examiner could self-approve, unhide a reported question or forge AI output |
+| "Examiners manage own draft tests" policy limited to `draft`/`changes_requested` rows, with `submitted` as the only status an examiner can set | PRD p.4: tests go live on QC approval. The schema's `FOR ALL` policy let examiners publish or reprice their own tests |
+| `protect_published_test` trigger: approved/scheduled/live/archived tests keep their content and price, cannot be deleted, and status only moves forward (approved, scheduled, live, archived) | PRD p.4: live tests are versioned (`parent_test_id`), not edited; D03 frozen price snapshot |
+| `protect_test_structure` trigger: sections and items of a published test are frozen; QC-locked items cannot be moved, replaced or removed by examiners; only reviewers/admins set `qc_status`/`is_locked_by_qc` | PRD p.4 approved questions stay locked during revisions |
 | Every function sets `search_path`; SECURITY DEFINER functions are owned by the migrator | Prevents search-path hijacking |
 
 Row-level security: every public table has RLS. `exam_worker` has full row access (system jobs). `exam_app` is governed by the schema's policies where a table has them, and has full row access only where the schema defines none (for example `user_devices`, `examiner_profiles`). `exam_app` with no user context sees no profiles.
