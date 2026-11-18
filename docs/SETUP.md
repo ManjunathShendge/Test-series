@@ -52,7 +52,14 @@ Supabase is used as a database only: Supabase Auth and Edge Functions are unused
 | `WORKER_DATABASE_URL`, `MIGRATION_DATABASE_URL` | Session pooler, port 5432 |
 | `DATABASE_CA_CERT_PATH` | CA certificate downloaded from the Supabase dashboard (Database settings, SSL) |
 
-Direct connections are IPv6-only and are not used. Staging and production refuse to start without `DATABASE_CA_CERT_PATH`, so TLS always verifies the server certificate. Keep connection strings in the gitignored `.env` or the host's secret store; never commit them. Restricted Supabase roles equivalent to `exam_app`/`exam_worker` must be created before staging serves traffic.
+Direct connections are IPv6-only and are not used. Staging and production refuse to start without `DATABASE_CA_CERT_PATH`, so TLS always verifies the server certificate. Keep connection strings in the gitignored `.env` or the host's secret store; never commit them.
+
+Provisioning a hosted database (done for staging on 19 November 2026):
+
+1. Migrate with the owner (`postgres.<project-ref>`) session-pooler URL as `MIGRATION_DATABASE_URL` and `DATABASE_CA_CERT_PATH` set: `pnpm db:migrate`.
+2. Create or rotate the restricted roles: `pnpm --filter @exam-prep/db provision-roles` with the same two variables plus `OUTPUT_ENV_FILE` and `OUTPUT_PREFIX` (for example `.env` and `STAGING_`). It generates passwords, writes `<PREFIX>DATABASE_URL` (exam_app, port 6543), `<PREFIX>WORKER_DATABASE_URL` (exam_worker, port 5432) and `<PREFIX>DATABASE_CA_CERT_PATH` into that file and never prints them. Re-running rotates both passwords.
+
+Supabase enables row-level security on every new table (its `ensure_rls` event trigger). The migrator therefore keeps RLS on for every public table, everywhere, with one `exam_service_access` policy for `exam_app` and `exam_worker`; it reapplies this after every run. Provisioning also revokes Supabase's `anon` and `authenticated` access to public tables, so data stays closed even if the Data API is re-enabled. In the local `.env`, staging values use the `STAGING_` and `SUPABASE_` prefixes so they never replace the Docker URLs.
 
 ## Checks
 

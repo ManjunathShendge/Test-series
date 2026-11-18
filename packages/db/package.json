@@ -25,7 +25,8 @@
     "migrate": "pnpm build && node --env-file-if-exists=../../.env scripts/migrate.mjs",
     "migrate:deploy": "pnpm migrate",
     "seed": "pnpm build && node --env-file-if-exists=../../.env seeds/index.mjs",
-    "test:int": "node --env-file-if-exists=../../.env --test test/integration/*.test.mjs"
+    "test:int": "node --env-file-if-exists=../../.env --test test/integration/*.test.mjs",
+    "provision-roles": "pnpm build && node scripts/provision-roles.mjs"
   },
   "dependencies": {
     "pg": "8.23.1"

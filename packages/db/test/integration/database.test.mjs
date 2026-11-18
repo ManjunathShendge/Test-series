@@ -48,6 +48,21 @@ test('migrations are repeatable, checksummed and install the search extensions',
   await owner.query("UPDATE schema_migrations SET checksum = 'tampered'");
   await assert.rejects(migrateDatabase(url), /Applied migration changed/);
 });
+test('row-level security is on everywhere with access only for the service roles', async (t) => {
+  const { owner, url } = await fixture(t);
+  const rows = (await owner.query(`SELECT c.relname::text AS name, c.relrowsecurity AS rls,
+      (SELECT array_agg(r::text ORDER BY r::text) FROM pg_policies p, unnest(p.roles) r
+        WHERE p.tablename = c.relname AND p.policyname = 'exam_service_access') AS roles
+    FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relname <> 'schema_migrations'`)).rows;
+  assert.ok(rows.length >= 10);
+  for (const row of rows) {
+    assert.equal(row.rls, true, row.name);
+    assert.deepEqual(row.roles, ['exam_app', 'exam_worker'], row.name);
+  }
+  await migrateDatabase(url);
+  assert.equal((await owner.query("SELECT count(*)::int AS n FROM pg_policies WHERE policyname = 'exam_service_access'")).rows[0].n, rows.length);
+});
 test('API role reads and writes rows but cannot change the schema', async (t) => {
   const { app } = await fixture(t);
   const id = await user(app);

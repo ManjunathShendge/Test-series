@@ -103,6 +103,6 @@ Migration `001_storage.sql` installs `pg_trgm` and `btree_gin` and implements st
 - `jobs` (deduplication key, `FOR UPDATE SKIP LOCKED` claims, leases with recovery of expired leases).
 - `schema_migrations` (name and checksum, maintained by the migrator).
 
-Binary file content is not stored in the database; object storage is chosen when uploads are built.
+Row-level security is enabled on every public table except `schema_migrations`, with a single `exam_service_access` policy for the API and worker roles; the migrator reapplies it after each run. Authorization still lives in API services; RLS is a second barrier, chiefly against Supabase's Data API roles. Binary file content is not stored in the database; object storage is chosen when uploads are built.
 
 The identity and commerce workflows that must use these tables are M1 and M9 work; the M1 schema will extend or replace these primitives to match the specification above. The idempotent local/test seed inserts a synthetic infrastructure marker, not a user or paper. Locally the migrator owns the schema and the API/worker roles have row access only (`docker/postgres/init`); authorization is still enforced in API services. Production role provisioning remains a deployment responsibility. The superseded Prisma bootstrap is preserved in `docs/archive/postgres-bootstrap/`.

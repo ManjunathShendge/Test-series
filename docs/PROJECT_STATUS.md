@@ -11,7 +11,7 @@ Date: 19 November 2026.
 
 ## Implementation state
 
-The development foundation is implemented on PostgreSQL 17 (Docker locally and in CI; Supabase Mumbai for staging, owner decision 18 November 2026): workspace scripts, environment validation, API and worker health, a checksummed migration with storage primitives and a leased job table, idempotent fixture seed, CI and container definitions. Supabase staging is reachable but not yet migrated. Mobile remains a synthetic student demo without backend auth or billing. Domain contracts, the shared attempt engine and business database schemas remain future milestones. See the latest log for checks and remaining limits.
+The development foundation is implemented on PostgreSQL 17 (Docker locally and in CI; Supabase Mumbai for staging, owner decision 18 November 2026): workspace scripts, environment validation, API and worker health, a checksummed migration with storage primitives and a leased job table, idempotent fixture seed, CI and container definitions. Supabase staging is migrated, with restricted roles and verified TLS. Mobile remains a synthetic student demo without backend auth or billing. Domain contracts, the shared attempt engine and business database schemas remain future milestones. See the latest log for checks and remaining limits.
 
 ## Log
 
@@ -173,7 +173,7 @@ Next concrete action: owner decides on relocating the repository; then resume M0
 
 ## Next action
 
-Migrate Supabase staging once its CA certificate is in place and restricted roles are created, then begin M1 identity contracts, domain schema and provider adapters. API hosting (spike S3), native Android path relocation (X1), native iOS/store evidence and S4 remain separate work.
+Begin M1 identity contracts, domain schema and provider adapters. API hosting (spike S3), native Android path relocation (X1), native iOS/store evidence and S4 remain separate work.
 
 ## Update template
 
@@ -253,4 +253,13 @@ Verification on 19 November 2026 (Node 22.23.5, pnpm 11.13.1, Docker 29.9.3):
 - iOS: owner reports the Expo Go demo running on a physical iPhone without issues. Expo Go cannot load native auth or billing modules, so this is not development-build or store evidence.
 
 Open: Supabase CA certificate and restricted roles before staging migration; confirm the Data API is disabled; Supabase plan, backups and PITR terms (E11); pre-existing react/react-dom 19.3.0/19.3.1 peer warning; Supabase account password rotation after it appeared in a session log.
+
+### 19 November 2026: Supabase staging provisioned
+
+- Supabase Root 2021 CA (valid to April 2031) stored outside the repository; both poolers passed full certificate verification.
+- Migration 001 applied to staging; `provision-roles` created `exam_app` and `exam_worker` and wrote their URLs to the local `.env` under `STAGING_`, without printing them.
+- Supabase's `ensure_rls` trigger had enabled RLS with no policies, so the service roles saw no rows and readiness failed. Fixed in the migrator: RLS on everywhere plus an `exam_service_access` policy for the two roles, reapplied every run; new integration test.
+- Staging checks as each role: verified TLS, readiness, row write (rolled back) allowed; CREATE/DROP TABLE and `schema_migrations` access denied; `anon` and `authenticated` have no SELECT on any public table. The built API and worker both returned 200 on `/health/ready` against staging.
+- Local suite after the change: lint, typecheck, unit (31), integration (11), migrate and smoke all passed.
+- Owner confirmed the Data API is disabled (not independently verifiable from a database connection).
 
