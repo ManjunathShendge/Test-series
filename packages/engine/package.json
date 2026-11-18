@@ -16,9 +16,9 @@
   ],
   "scripts": {
     "build": "tsc -b",
-    "typecheck": "tsc -b --noEmit false --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit --incremental false --composite false",
     "lint": "oxlint src",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@exam-prep/contracts": "workspace:*"

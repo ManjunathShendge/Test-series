@@ -13,26 +13,25 @@
   },
   "files": [
     "dist",
-    "prisma"
+    "migrations/sqlite",
+    "scripts",
+    "seeds"
   ],
   "scripts": {
     "build": "tsc -b",
-    "typecheck": "tsc -b --noEmit false --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit --incremental false --composite false",
     "lint": "oxlint src",
-    "test": "vitest run",
-    "generate": "prisma generate",
-    "migrate": "prisma migrate dev",
-    "migrate:deploy": "prisma migrate deploy",
-    "seed": "node --experimental-strip-types seeds/index.ts",
-    "test:int": "vitest run --config vitest.int.config.ts"
+    "test": "vitest run --passWithNoTests",
+    "migrate": "pnpm build && node --env-file-if-exists=../../.env scripts/migrate.mjs",
+    "migrate:deploy": "pnpm migrate",
+    "seed": "pnpm build && node --env-file-if-exists=../../.env seeds/index.mjs",
+    "test:int": "node --env-file-if-exists=../../.env --test test/integration/*.test.mjs"
   },
-  "dependencies": {
-    "@prisma/client": "7.10.1"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "prisma": "7.10.1",
+    "@types/node": "catalog:",
+    "oxlint": "1.93.0",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "oxlint": "1.93.0"
+    "vitest": "catalog:"
   }
 }

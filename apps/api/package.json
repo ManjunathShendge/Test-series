@@ -4,15 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n tsc,api -c blue,green \"tsc -b --watch --preserveWatchOutput\" \"node --watch dist/main.js\"",
-    "dev:worker": "concurrently -n tsc,worker -c blue,magenta \"tsc -b --watch --preserveWatchOutput\" \"node --watch dist/worker.js\"",
+    "dev": "concurrently -k -n tsc,api \"tsc -b --watch --preserveWatchOutput\" \"node --env-file-if-exists=../../.env --watch dist/main.js\"",
+    "dev:worker": "node --env-file-if-exists=../../.env --watch dist/worker.js",
     "build": "tsc -b",
     "start": "node dist/main.js",
     "start:worker": "node dist/worker.js",
-    "typecheck": "tsc -b --noEmit false --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit --incremental false --composite false",
     "lint": "oxlint src",
-    "test": "vitest run",
-    "test:int": "vitest run --config vitest.int.config.ts"
+    "test": "vitest run --config vitest.config.ts",
+    "test:int": "node --env-file-if-exists=../../.env --test test/integration/*.test.mjs"
   },
   "dependencies": {
     "@exam-prep/contracts": "workspace:*",
@@ -22,7 +22,6 @@
     "@nestjs/config": "12.1.1",
     "@nestjs/core": "12.5.0",
     "@nestjs/platform-express": "12.5.0",
-    "pg-boss": "12.38.2",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
     "zod": "catalog:"

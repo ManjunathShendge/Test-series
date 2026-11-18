@@ -1,5 +1,7 @@
 # Infrastructure and deployment
 
+> **Storage superseded (16 November 2026):** the owner chose SQLite for all server storage, including files and the job queue; see the SQLite decision in [DECISIONS](DECISIONS.md). PostgreSQL, pg-boss, S3 and multi-replica sections below predate that decision and have not been revised. Production hosting for a single-host SQLite deployment still needs its own design pass.
+
 Local -> isolated staging -> production. Prefer India-region compute/Postgres/private objects (PRD: AWS Mumbai). Free-tier candidates in requirement.text are historical suggestions, not verified current offers. Do not assume they cover a 500-student beta or any paid/live test workload. Validate region, commercial terms, capacity, backup/PITR, egress and actual bill before selection.
 
 ## Services

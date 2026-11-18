@@ -1,0 +1,11 @@
+datasource db {
+  provider = "postgresql"
+}
+
+// M0 infrastructure marker, not a domain model or student record.
+model BootstrapState {
+  id      String @id
+  version Int
+
+  @@map("bootstrap_state")
+}

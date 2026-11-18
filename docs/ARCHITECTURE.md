@@ -2,6 +2,8 @@
 
 Authority: [decisions](DECISIONS.md); scope: [requirements](REQUIREMENTS.md). Proposed implementation, not deployed infrastructure.
 
+> **Storage superseded (16 November 2026):** the owner chose SQLite for all server storage, including files and the job queue; see the SQLite decision in [DECISIONS](DECISIONS.md). PostgreSQL, pg-boss, S3 and multi-replica sections below predate that decision and have not been revised. Production hosting for a single-host SQLite deployment still needs its own design pass.
+
 ## Deployment shape
 
 ```mermaid

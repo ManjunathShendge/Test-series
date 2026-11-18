@@ -1,6 +1,6 @@
 # Project status
 
-Date: 15 November 2026.
+Date: 18 November 2026.
 
 ## Completed
 
@@ -11,7 +11,7 @@ Date: 15 November 2026.
 
 ## Implementation state
 
-M0 in progress: workspace manifests, TypeScript project graph and API/web health routes exist (phases 1 to 3). A demo-grade student mobile app runs in Expo Go on local demo data, with no backend calls, real auth or real billing (see the 15 November log entry and DECISIONS X1 to X5). No database migrations, CI jobs, provider accounts or deployments exist. No automated application tests or native/store checks have run.
+The development foundation is implemented on SQLite (owner decision, 16 November 2026): workspace scripts, environment validation, API and worker health, a checksummed SQLite migration with storage primitives, idempotent fixture seed, CI and container definitions. Mobile remains a synthetic student demo without backend auth or billing. Domain contracts, the shared attempt engine and business database schemas remain future milestones. See the latest log for checks and remaining limits.
 
 ## Log
 
@@ -163,7 +163,7 @@ Checks run (command, outcome, evidence):
     onboarding, Home, Discover filters, purchase with ANITA10, instructions, attempt, kill and
     relaunch mid-attempt resumed on the same question with the saved answer, leave dialog,
     Progress, practice lists, result, exam tabs, series, examiner, Profile, sign-out.
-Unavailable checks and reason: no automated tests yet for the mobile app; native Android build
+Unavailable checks and reason: native Android build
   blocked by the space in the repository path (DECISIONS X1); no iOS device or simulator.
 Open decision IDs / blocking dependency: X1 repository relocation (owner), X4 and O09 GST
   treatment (CA), X5 and S4 store coupon and SKU strategy.
@@ -173,7 +173,7 @@ Next concrete action: owner decides on relocating the repository; then resume M0
 
 ## Next action
 
-Owner decides on relocating the repository to a path without spaces (DECISIONS X1). Then continue M0 phases 4 and 5 per the latest log entry, using the bootstrap prompt in PROMPTS.md. Business choices in DECISIONS may proceed independently; S4 must resolve mobile SKU type and correlation before mobile checkout implementation is finalized.
+Begin M1 identity contracts, domain schema and provider adapters on the SQLite foundation. Before production work, revise ARCHITECTURE and INFRA for single-host SQLite. Native Android path relocation (X1), iOS/device/store evidence and S4 remain separate work.
 
 ## Update template
 
@@ -185,3 +185,49 @@ Unavailable checks and reason:
 Open decision IDs / blocking dependency:
 Next concrete action:
 ```
+
+## 16 November 2026: development foundation / M0 / R26
+
+Implemented:
+- Idempotent environment setup; pinned Node 22.23.5 and patched pnpm 11.13.1.
+- Compose services with loopback ports and persistent volumes; PostgreSQL role separation, Firebase demo project, MinIO private bucket initialization and Mailpit.
+- Prisma baseline migration with required extensions; local/test-only repeatable infrastructure seed. Domain accounts and a complete paper await domain schemas.
+- Validated server configuration, origin allowlist, database/schema readiness, pg-boss worker lifecycle and health endpoint.
+- Clean startup scripts, separate unit/integration checks, API/worker/web HTTP smoke script, public-environment allowlist, CI and non-root container definitions.
+- Corrected typecheck scripts to avoid mutating build metadata; mobile Vitest configuration uses an ESM file extension.
+- Updated README/setup/instructions and schema/decision documentation.
+
+Verification on 16 November 2026:
+- Frozen-lockfile install with pnpm 11.13.1 passed.
+- Workspace lint and typecheck passed; 29 unit tests passed (19 mobile, 10 API environment tests).
+- Four integration tests passed: PostgreSQL extensions/schema, application role restrictions, incompatible schema rejection, HTTP liveness/readiness during database failure.
+- Baseline migration applied; seed executed twice successfully.
+- Repeated services startup passed; PostgreSQL, MinIO, Mailpit and Firebase were healthy; private bucket initialization passed.
+- API/worker/web HTTP smoke and CORS checks passed; `pnpm dev` startup verified all three health endpoints.
+- Public environment allowlist and git whitespace checks passed.
+- API container build and packaged runtime readiness passed with pinned Node 22.23.5.
+- Web container build and packaged server health passed with pinned Node 22.23.5.
+- Scoped formatting checks passed. Temporary runtime-check containers were stopped and removed. Local development services remain running.
+
+Host limitation: local Node remains 22.18.0 and emits the declared engine warning. CI/container runtime is pinned to 22.23.5. GitHub CI has been authored but has not run remotely; no deployment was performed.
+
+Scope limits: no real authentication/billing, provider adapters, domain APIs, production deployment, browser user-journey tests or native/store verification. Empty unit suites are explicitly allowed for scaffolds; they are not coverage. The original 15 November mobile work is preserved.
+
+Superseded the same day: the owner's SQLite storage decision replaced PostgreSQL, pg-boss and MinIO. The PostgreSQL verification above describes that earlier tree; the SQLite tree was first recorded as verified on 18 November.
+
+## 18 November 2026: M0 close-out on SQLite / R26
+
+Implemented:
+- Host Node upgraded from 22.18.0 to the pinned 22.23.5 (winget OpenJS.NodeJS.22); the engine warning is gone.
+- SETUP, DATA_MODEL, TESTING and CLAUDE.md updated to describe the SQLite foundation; ARCHITECTURE and INFRA carry a superseded-storage note pending a production design pass.
+- Orphaned PostgreSQL role init and MinIO build files moved to `docs/archive/compose-services/`. Firebase Auth emulator configuration kept for M1.
+- M0 work committed and pushed to GitHub so CI runs remotely.
+
+Verification on 18 November 2026 (Node 22.23.5, pnpm 11.13.1):
+- `pnpm install --frozen-lockfile`, `pnpm lint`, `pnpm typecheck` passed.
+- `pnpm test`: 29 unit tests passed (19 mobile, 10 API). The first run after install failed once in the web task under parallel turbo; serial and two forced parallel reruns passed. Not reproduced.
+- `pnpm check:public-env` passed; `pnpm db:migrate`, then `pnpm db:seed` twice, passed.
+- `pnpm test:int`: 9 passed (8 SQLite storage, 1 HTTP readiness failure path).
+- `pnpm test:e2e`: API, worker, web and CORS smoke passed. It requires `db:migrate` first; a run without the database failed with `unable to open database file`, as SETUP now documents.
+
+Not run locally: Docker image builds (left to CI). No iOS device or simulator; X1 relocation pending.

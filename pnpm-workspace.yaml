@@ -2,12 +2,8 @@ packages:
   - "apps/*"
   - "packages/*"
 
-# Install scripts are blocked by default. Only packages that genuinely need one are
-# allowed, and each is listed deliberately. Prisma downloads its query engine binaries
-# in a postinstall step, so it cannot work without this.
-allowBuilds:
-  '@prisma/engines': true
-  prisma: true
+# Dependencies require no install scripts.
+allowBuilds: { '@prisma/engines': set this to true or false, prisma: set this to true or false }
 
 # Shared dependency versions, resolved against the npm registry in M0 on 13 November 2026.
 # This is the single place a shared version is declared, so apps and packages cannot drift.

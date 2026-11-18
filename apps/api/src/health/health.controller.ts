@@ -1,4 +1,6 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Inject, ServiceUnavailableException } from '@nestjs/common';
+import { checkDatabase, DATABASE } from '../database/database.module.js';
+import type { createDatabase } from '@exam-prep/db';
 
 /**
  * Liveness answers "is this process alive" and must stay dependency free, so a
@@ -8,14 +10,22 @@ import { Controller, Get } from '@nestjs/common';
  */
 @Controller('health')
 export class HealthController {
+  constructor(@Inject(DATABASE) private readonly database: ReturnType<typeof createDatabase>) {}
   @Get('live')
   live(): { status: 'ok'; uptimeSeconds: number } {
     return { status: 'ok', uptimeSeconds: Math.floor(process.uptime()) };
   }
 
   @Get('ready')
-  ready(): { status: 'ok'; checks: Record<string, string> } {
-    // M0 has no dependencies wired yet. Each one registers a named check here.
-    return { status: 'ok', checks: {} };
+  async ready(): Promise<{ status: 'ok'; checks: Record<string, string> }> {
+    try {
+      await checkDatabase(this.database);
+      return { status: 'ok', checks: { database: 'ok', schema: 'ok' } };
+    } catch {
+      throw new ServiceUnavailableException({
+        status: 'unavailable',
+        checks: { database: 'failed' },
+      });
+    }
   }
 }

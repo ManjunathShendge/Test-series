@@ -2,20 +2,20 @@
 
 ## Current state and authority
 
-Documentation only. Do not claim packages, scripts, tests, or services exist until inspected.
+Development foundation and mobile demo exist. Inspect implementation and PROJECT_STATUS before claiming domain features or verification.
 Read `docs/DECISIONS.md` for precedence: latest explicit decisions in requirement.text override older draft sections and PRD conflicts. Preserve the original sources. Unresolved business policies are proposals, not approvals.
 Use `docs/ROADMAP.md` and `docs/PROJECT_STATUS.md` to choose the next authorized milestone.
 
 ## Stack and boundaries
 
 - pnpm workspaces, Turborepo, strict TypeScript.
-- `apps/api`: NestJS HTTP and pg-boss worker entry points; one modular monolith.
+- `apps/api`: NestJS HTTP and worker entry points; one modular monolith.
 - `apps/web`: Next.js App Router; students, examiners, reviewer/admin sections.
 - `apps/mobile`: Expo development builds, expo-router; students only.
 - `packages/contracts`: Zod request/response contracts.
 - `packages/engine`: pure TypeScript attempt reducer, timing, scoring functions.
-- `packages/db`: Prisma, SQL migrations, seeds; PostgreSQL with pg_trgm and btree_gin.
-- S3-compatible private storage; Firebase Google/email plus Apple on iOS.
+- `packages/db`: SQLite (`node:sqlite`) for all server storage, including files and the job table; checksummed SQL migrations, seeds. Owner decision 16 November 2026 in DECISIONS supersedes PostgreSQL, pg-boss and S3; ARCHITECTURE/INFRA production sections still predate it.
+- Firebase Google/email plus Apple on iOS.
 - Web payments: Razorpay. Mobile payments: Apple IAP and Google Play Billing.
 - No Redis, Firestore, external search, embeddings, vector DB, fine-tuning, or OCR at launch.
 
@@ -26,7 +26,7 @@ Use `docs/ROADMAP.md` and `docs/PROJECT_STATUS.md` to choose the next authorized
 3. Never expose keys or solutions through student paper payloads, bundles, assets, logs, or caches before authorized review. Staff authoring/review access is separately authorized.
 4. Server decides entitlement, price, time, section eligibility, score, and payment status.
 5. Money uses integer minor units; launch currency INR (paise). Ledger and audit records are append-only.
-6. Mutations affecting admin/reviewer actions commit with audit records. Domain jobs use a transactional outbox, then pg-boss dispatch.
+6. Mutations affecting admin/reviewer actions commit with audit records. Domain jobs use a transactional outbox and the SQLite job table with leased claims.
 7. Provider callbacks are untrusted until verified. Fulfilment, refunds, payout allocation, and job consumers are idempotent.
 8. Durable answer persistence precedes UI confirmation. Never discard an answer on an ambiguous network response.
 9. Backend SDKs stay behind `apps/api/src/providers/`; necessary client auth/billing SDKs stay behind client adapters. Never put privileged secrets on clients.
@@ -45,15 +45,16 @@ Use `docs/ROADMAP.md` and `docs/PROJECT_STATUS.md` to choose the next authorized
 - No production data, credentials, real payments, or public releases in fixtures or development.
 - Finish with changed behavior, checks actually run, failures, and remaining blockers.
 
-## Planned commands (M0 must implement)
+## Development commands
 
 ```text
-pnpm install
-docker compose up -d
+pnpm install --frozen-lockfile
+pnpm setup
+pnpm services:up
 pnpm db:migrate
 pnpm db:seed
 pnpm dev
-pnpm --filter mobile start
+pnpm --filter @exam-prep/mobile start
 pnpm typecheck
 pnpm lint
 pnpm test
@@ -74,4 +75,4 @@ pnpm build
 | UI | SKILL.md, design-system/exam-prep-marketplace/MASTER.md, matching page override |
 | Deployment | docs/INFRA.md, docs/OPERATIONS.md, docs/LAUNCH_CHECKLIST.md |
 
-Definition of done: acceptance criteria met; relevant tests, lint, typecheck and build pass; documentation/status updated. Report checks unavailable in this documentation-only repository honestly.
+Definition of done: acceptance criteria met; relevant tests, lint, typecheck and build pass; documentation/status updated. Report unavailable checks and remaining production milestones honestly.

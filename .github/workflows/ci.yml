@@ -1,0 +1,40 @@
+name: Foundation checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: foundation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm setup
+      - run: pnpm check:public-env
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+      - run: pnpm db:seed
+      - run: pnpm test:int
+      - run: pnpm test:e2e
+      - name: Build server images
+        run: |
+          docker build -f apps/api/Dockerfile -t exam-prep-api:ci .
+          docker build -f apps/web/Dockerfile -t exam-prep-web:ci .

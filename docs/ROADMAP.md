@@ -1,6 +1,6 @@
 # Implementation roadmap
 
-Documentation exists; all implementation milestones are pending. Read [DECISIONS](DECISIONS.md) and [PROJECT_STATUS](PROJECT_STATUS.md). Estimates in PRD (Phase 0 ~2 weeks, MVP 10-12 weeks, expansion 6-8 weeks; requirement draft adds mobile billing effort) are planning inputs, not delivery commitments.
+The development foundation and a mobile demo exist; domain implementation milestones remain pending. Read [DECISIONS](DECISIONS.md) and [PROJECT_STATUS](PROJECT_STATUS.md). Estimates in PRD (Phase 0 ~2 weeks, MVP 10-12 weeks, expansion 6-8 weeks; requirement draft adds mobile billing effort) are planning inputs, not delivery commitments.
 
 ## Phase 0 and independent bootstrap
 

@@ -67,3 +67,9 @@ __pycache__/
 PRD__Exam_Prep_Marketplace.pdf
 requirement.text
 docs/PRD.md
+
+# Local SQLite data and journals
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm

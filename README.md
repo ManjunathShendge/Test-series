@@ -2,14 +2,14 @@
 
 Implementation blueprint prepared on 11 November 2026 from [requirement.text](requirement.text), the [19-page PRD](PRD__Exam_Prep_Marketplace.pdf), and [SKILL.md](SKILL.md).
 
-This repository currently contains documentation, not a running application. Commands and directory structures describe the implementation to create in M0. No infrastructure, accounts, payments, or deployments have been provisioned.
+The repository contains a student mobile demo plus the development foundation for the API, worker and web app. Mobile uses synthetic local data; real authentication, billing and domain APIs are not implemented. Local services, migrations, environment validation and CI are described in [SETUP](docs/SETUP.md). No production deployment has been provisioned.
 
 ## Start here
 
 1. Read [CLAUDE.md](CLAUDE.md) for project instructions.
 2. Read [decisions and conflicts](docs/DECISIONS.md) before making product assumptions.
 3. Use [ROADMAP](docs/ROADMAP.md) to implement one milestone at a time.
-4. Copy a task prompt from [PROMPTS](docs/PROMPTS.md); begin with its bootstrap prompt.
+4. Follow [SETUP](docs/SETUP.md) to run the local stack; use [PROMPTS](docs/PROMPTS.md) for later milestones.
 5. Track evidence in [PROJECT_STATUS](docs/PROJECT_STATUS.md).
 
 ## Documentation map

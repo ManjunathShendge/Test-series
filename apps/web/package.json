@@ -8,8 +8,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint app src",
-    "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@exam-prep/contracts": "workspace:*",

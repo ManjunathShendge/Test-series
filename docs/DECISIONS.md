@@ -114,3 +114,17 @@ These record how the client demo was built. None changes a launch invariant. Ite
 | X3 | Navigation hooks come from expo-router only | expo-router 58 vendors React Navigation core. A separately installed @react-navigation package has no navigation context and crashed the attempt screen. Do not add @react-navigation packages directly |
 | X4 | Proposal: prices display as GST-inclusive at 18% | Display only, pending O09 with the CA. Integer paise throughout; fractional amounts render with paise |
 | X5 | Proposal: coupons and examiner codes map to discounted store products on the server | Play and App Store prices cannot change at runtime. The demo previews the discount on the client; the server must validate the code against the receipt and record attribution for the examiner revenue share. Needs S4 to settle the SKU strategy |
+
+## M0 implementation refinements (16 November 2026)
+
+- Pin Node 22.23.5 in `.node-version`, CI and images; it meets the existing engine range.
+- PostgreSQL host port defaults to 15432 after Windows rejected 5432. Override `POSTGRES_PORT` and all three database URLs together.
+- Local MinIO builds official release `RELEASE.2025-09-07T16-13-09Z` from source after the official Quay image returned 401. The architecture stays S3-compatible. Source: https://github.com/minio/minio/tree/RELEASE.2025-09-07T16-13-09Z .
+- M0 seeds an infrastructure marker only. Synthetic accounts and a paper await their domain schemas in M1-M5.
+- Empty contracts/engine/web unit suites explicitly allow no tests. Real database integration tests are separate and never silently skip missing infrastructure.
+
+- Upgrade pnpm from 11.12.0 to 11.13.1: the npm registry marks 11.12.0 as broken and explicitly recommends 11.13.1 or newer. Use the same pin in CI and images.
+
+## SQLite storage decision (16 November 2026, owner instruction)
+
+The owner requested SQLite for all application storage, including authentication, authorization and billing records. This supersedes earlier PostgreSQL, pg-boss and S3 storage decisions. Server data and file BLOBs use one SQLite file; mobile keeps its existing local SQLite cache. API and worker share the server file on one host with WAL, foreign keys, a busy timeout and short write transactions. No network filesystem or multi-host shared-file deployment. SQL migrations are checksummed and transactional. SQLite does not supply database roles: authorization belongs to API services, and OS permissions protect the file. Payment verification still uses the approved payment providers; selecting SQLite does not implement or bypass checkout/authentication workflows. Existing PostgreSQL/MinIO volumes are preserved, not converted or deleted.

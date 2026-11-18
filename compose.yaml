@@ -1,0 +1,32 @@
+name: exam-prep-sqlite
+services:
+  api:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      NODE_ENV: production
+      APP_ENV: local
+      DATABASE_URL: file:/data/exam-prep.sqlite
+      PUBLIC_WEB_ORIGIN: http://localhost:3000
+      CORS_ORIGINS: http://localhost:3000
+    ports: ['127.0.0.1:3001:3001']
+    volumes: ['sqlite-data:/data']
+    command: ['sh', '-c', 'node node_modules/@exam-prep/db/scripts/migrate.mjs && node dist/main.js']
+  worker:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      NODE_ENV: production
+      APP_ENV: local
+      DATABASE_URL: file:/data/exam-prep.sqlite
+      PUBLIC_WEB_ORIGIN: http://localhost:3000
+      CORS_ORIGINS: http://localhost:3000
+    ports: ['127.0.0.1:3002:3002']
+    volumes: ['sqlite-data:/data']
+    command: ['sh', '-c', 'node node_modules/@exam-prep/db/scripts/migrate.mjs && node dist/worker.js']
+volumes:
+  sqlite-data:

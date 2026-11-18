@@ -2,22 +2,28 @@
   "name": "exam-prep-marketplace",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@11.12.0",
+  "packageManager": "pnpm@11.13.1",
   "engines": {
     "node": ">=22.22.3 <23"
   },
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "pnpm build:server && turbo run dev dev:worker --filter=@exam-prep/api --filter=@exam-prep/web",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "test:int": "turbo run test:int",
-    "test:e2e": "turbo run test:e2e",
-    "db:migrate": "pnpm --filter @exam-prep/db run migrate",
+    "test:int": "turbo run test:int --filter=@exam-prep/api --filter=@exam-prep/db",
+    "test:e2e": "pnpm build && node --env-file-if-exists=.env scripts/smoke.mjs",
+    "db:migrate": "pnpm --filter @exam-prep/db run migrate:deploy",
     "db:seed": "pnpm --filter @exam-prep/db run seed",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "setup": "node scripts/setup.mjs",
+    "build:server": "turbo run build --filter=@exam-prep/api...",
+    "db:migrate:dev": "pnpm --filter @exam-prep/db run migrate",
+    "services:up": "pnpm db:migrate",
+    "services:stop": "node -e \"console.log('SQLite has no database service to stop')\"",
+    "check:public-env": "node scripts/check-public-env.mjs"
   },
   "devDependencies": {
     "prettier": "3.10.1",

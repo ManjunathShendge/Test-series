@@ -1,42 +1,76 @@
-# Local setup specification
+# Local development
 
-No package manifests or runnable code exist yet. M0 must implement this procedure and verify it on a clean clone; the commands below are planned interfaces.
+The foundation runs API, worker and web against one local SQLite file. Mobile remains a standalone student demo. Real identity, catalogue, payments and attempt APIs are later milestones. Storage follows the 16 November 2026 SQLite decision in [DECISIONS](DECISIONS.md).
 
-## Prerequisites and compatibility
+## Prerequisites
 
-Git, Node supported by selected Next/Nest/Expo releases, pinned pnpm, Docker Compose, Java/Android SDK for Android, Xcode on macOS or hosted EAS builds for iOS. Windows developers can use PowerShell and Docker Desktop/WSL2; local iOS compilation requires macOS. Select compatible stable versions from official documentation in M0 and record exact versions in packageManager/engines, lockfile and CI; no undocumented “latest” dependencies.
+Node **22.23.5** (`.node-version`), pnpm **11.13.1** and Git. Docker is needed only to build the container images. On Windows use `pnpm.cmd` if PowerShell blocks `pnpm.ps1`; no execution-policy change is needed. Native Android needs Java/Android SDK; iOS compilation needs macOS/Xcode or EAS. See DECISIONS X1 about the existing path containing spaces before native Android builds.
 
-M0 creates workspace/turbo config, strict tsconfig, lint/format config, package scripts, .gitignore, safe .env.example per app, Compose, CI, Dockerfiles and health endpoints. These are implementation deliverables, not files created by this documentation task.
+## First run
 
-## Clean-clone flow after M0
-
-```powershell
+```sh
 pnpm install --frozen-lockfile
-docker compose up -d
-pnpm db:migrate
+pnpm setup
+pnpm services:up
 pnpm db:seed
 pnpm dev
 ```
 
-Compose: Postgres with pg_trgm/btree_gin, MinIO, Mailpit, Firebase Auth emulator. Named volumes preserve data. Migrate command uses dev workflow only locally; deploy uses a separate noninteractive migrate deploy command. Seed deterministic synthetic student/examiner/reviewer/ops/finance accounts and one complete free paper, no real personal data. Emulator-only test credentials must never enable production auth bypass.
+`setup` copies safe examples only when destinations are absent. Root `.env` supplies shared server/CLI configuration; web/mobile have separate public-only examples. Existing files are preserved.
 
-Web proposed localhost:3000; API :3001; Postgres :5432; MinIO :9000; Mailpit UI :8025; Firebase emulator :9099. Confirm collisions and record actual ports in M0. Physical devices reach host LAN/tunnel, not their own localhost. Use isolated public HTTPS test ingress only when exercising provider sandbox callbacks.
+`DATABASE_URL` is a `file:` URL. Relative paths resolve against the workspace root for API, worker and CLI alike; the default is `data/exam-prep.sqlite` (gitignored). `services:up` is an alias for `db:migrate`: there is no database service to start. Migrations in `packages/db/migrations/sqlite` are checksummed and applied in transactions, and the migrator creates the data directory. `db:seed` is idempotent and restricted to local/test. Domain accounts and papers will be seeded once their services exist.
 
-## Environment contract
+Connections enable WAL, foreign keys, `synchronous = FULL` and a 5-second busy timeout. API and worker share the file on one host; never place it on a network filesystem or share it across hosts. Node prints an `ExperimentalWarning` for `node:sqlite`; that is expected on Node 22.
 
-| Group | Variables to define/validate | Exposure |
-|---|---|---|
-| Common | NODE_ENV, APP_ENV, LOG_LEVEL, PUBLIC_WEB_ORIGIN, API_PORT, CORS_ORIGINS | Whitelisted config only |
-| Database | DATABASE_URL, DIRECT_DATABASE_URL, WORKER_DATABASE_URL | Server secret; distinct roles/pool mode |
-| Storage | S3_ENDPOINT, S3_REGION, S3_BUCKET_CONTENT, S3_BUCKET_PRIVATE, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY | Server only |
-| Auth | FIREBASE_PROJECT_ID, credential reference, FIREBASE_AUTH_EMULATOR_HOST locally | Admin credentials server only; public client config separate |
-| Billing | RAZORPAY_KEY_ID/SECRET/WEBHOOK_SECRET; APPLE_BUNDLE_ID/ISSUER_ID/KEY_ID/private key reference; GOOGLE_PACKAGE_NAME/credential reference/PUBSUB_AUDIENCE | Server only except documented checkout public ID |
-| Optional services | EMAIL_PROVIDER, EMAIL_FROM, provider credential; EXPO_ACCESS_TOKEN; LLM_ENABLED/MODEL/API_KEY/MONTHLY_CAP_PAISE | Disabled/fake locally |
-| Privacy/telemetry | KYC_ENCRYPTION_KEY_REF, SENTRY_DSN, POSTHOG_KEY/HOST | Public keys only where vendor supports; no privileged tokens |
-| Clients | NEXT_PUBLIC_API_BASE_URL, EXPO_PUBLIC_API_BASE_URL, Firebase public config | Compile-time public; never put secrets here |
+`dev` builds server dependencies before starting API, worker and web. The API TypeScript watcher recompiles the server graph; Node watchers restart API and worker independently. Mobile starts separately with `pnpm --filter @exam-prep/mobile start` (development client), or `pnpm --filter @exam-prep/mobile exec expo start --go` for the existing Expo Go demo.
 
-Parse at boot with Zod; enabled provider missing config fails readiness; disabled provider does not require credentials. No secrets in docs or seed. Emulator flags prohibited in production. Feature flags in DB are typed/versioned; environment config constrains maximum capabilities.
+## Local endpoints
 
-## Verification and troubleshooting
+| Service | Address |
+|---|---|
+| Web | http://localhost:3000 |
+| API | http://localhost:3001 (domain routes use `/v1`) |
+| Worker health | http://localhost:3002/health/ready |
+| Database | `data/exam-prep.sqlite` |
 
-`pnpm dev` starts API+worker+web; mobile starts separately with `pnpm --filter mobile start`. Liveness checks process; readiness checks dependencies/migration compatibility. Run typecheck, lint, unit/integration tests and build. Native dependency changes require rebuild, not a metro cache workaround. Failed database startup: inspect port/volume and logs; never destroy volumes as an automatic fix. Failed worker: check direct/session pool connection and extension/schema permissions. Document actual tool versions and observed outputs in PROJECT_STATUS.
+API/web development listeners can be accessed from devices through the host LAN address and appropriate firewall rules. Android emulators use `10.0.2.2` for the host.
+
+SQLite has no database roles. Authorization belongs to API services; OS file permissions protect the database. Provider credentials and adapters arrive with their milestones. `docker/firebase` holds the Auth emulator configuration for M1; it is not wired into Compose yet.
+
+## Checks
+
+```sh
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm check:public-env
+pnpm db:migrate
+pnpm test:int
+pnpm test:e2e
+```
+
+Unit tests need no services. Empty contracts/engine/web suites explicitly allow no tests while they remain scaffolds; this is not coverage. `test:int` runs SQLite storage checks (migrations, roles, billing idempotency, append-only ledger and audit, transactional rollback, file BLOBs, job leases, schema mismatch) against temporary files, plus HTTP failure-path checks.
+
+`test:e2e` builds server/web, starts temporary API/worker/web listeners on 43101/43102/43100, verifies readiness, HTML and CORS, then stops its own processes. It uses the configured database, so run `db:migrate` first. This is a foundation HTTP smoke test, not browser or native user-journey coverage.
+
+CI runs these checks, applies migrations, seeds twice and builds API/web images. It does not publish or deploy. `check:public-env` validates public variable names against an allowlist; it is not a general secret or question-key scanner. Synthetic mobile solutions remain bundled for the demo.
+
+API `/health/live` is dependency-free. `/health/ready` returns 503 when the database or schema version is unavailable. Auth/email are not readiness dependencies until their adapters exist.
+
+## Containers
+
+```sh
+docker build -f apps/api/Dockerfile -t exam-prep-api:local .
+docker build -f apps/web/Dockerfile -t exam-prep-web:local .
+docker compose --profile app up
+```
+
+API and worker share an image; worker command is `node dist/worker.js`. In Compose both mount the `sqlite-data` volume, migrate on start and bind to host loopback. Supply server environment at runtime. Web public variables are build-time arguments. Images run as non-root users and exclude environment files and confidential source inputs. These are packaging foundations, not production deployment approval.
+
+## Troubleshooting
+
+- `unable to open database file`: run `pnpm db:migrate` first, and check that `DATABASE_URL` points at a writable local directory.
+- `Database schema is incompatible`: the file was created by a different migration set. Do not delete data automatically; move the file aside if it is disposable.
+- Invalid database URLs, ports/origins or production emulator flags fail application startup. Errors identify variable names without printing credentials.
+- Upgrade local Node with your Node manager if it is below the engine range; installing dependencies does not upgrade it. On Windows: `winget install --id OpenJS.NodeJS.22 --version 22.23.5 --exact`.
+- The earlier PostgreSQL/MinIO Compose files are preserved in `docs/archive/`. Existing Docker volumes from that setup were not converted or deleted.
