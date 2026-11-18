@@ -5,7 +5,7 @@ const local = {
   APP_ENV: 'local',
   PUBLIC_WEB_ORIGIN: 'http://localhost:3000',
   CORS_ORIGINS: 'http://localhost:3000',
-  DATABASE_URL: 'file:./data/test.sqlite',
+  DATABASE_URL: 'postgresql://exam_app:local_app_only@127.0.0.1:15432/exam_prep',
   FIREBASE_PROJECT_ID: 'demo-exam-prep',
   FIREBASE_AUTH_EMULATOR_HOST: 'localhost:9099',
 };
@@ -28,6 +28,29 @@ describe('environment boundary', () => {
     expect(() => parseEnvironment({ ...local, DATABASE_URL: 'https://localhost' })).toThrow(
       'DATABASE_URL',
     );
+  });
+  it('rejects SQLite file URLs and URLs without a database name', () => {
+    expect(() => parseEnvironment({ ...local, DATABASE_URL: 'file:./data/x.sqlite' })).toThrow(
+      'DATABASE_URL',
+    );
+    expect(() => parseEnvironment({ ...local, DATABASE_URL: 'postgresql://h:5432' })).toThrow(
+      'DATABASE_URL',
+    );
+    expect(() => parseEnvironment({ ...local, WORKER_DATABASE_URL: 'mysql://h/db' })).toThrow(
+      'WORKER_DATABASE_URL',
+    );
+  });
+  it('requires verified database TLS in deployed environments', () => {
+    const staging = {
+      ...local,
+      APP_ENV: 'staging',
+      FIREBASE_PROJECT_ID: 'exam-prep-staging',
+      FIREBASE_AUTH_EMULATOR_HOST: undefined,
+      CORS_ORIGINS: 'https://staging.example.test',
+      PUBLIC_WEB_ORIGIN: 'https://staging.example.test',
+    };
+    expect(() => parseEnvironment(staging)).toThrow('DATABASE_CA_CERT_PATH');
+    expect(parseEnvironment({ ...staging, DATABASE_CA_CERT_PATH: 'ca.pem' }).APP_ENV).toBe('staging');
   });
   it('does not expose secrets in validation errors', () => {
     expect(() => parseEnvironment({ ...local, DATABASE_URL: 'private-token' })).not.toThrow(

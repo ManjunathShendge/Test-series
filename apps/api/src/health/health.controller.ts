@@ -1,6 +1,6 @@
 import { Controller, Get, Inject, ServiceUnavailableException } from '@nestjs/common';
 import { checkDatabase, DATABASE } from '../database/database.module.js';
-import type { createDatabase } from '@exam-prep/db';
+import type { Database } from '@exam-prep/db';
 
 /**
  * Liveness answers "is this process alive" and must stay dependency free, so a
@@ -10,7 +10,7 @@ import type { createDatabase } from '@exam-prep/db';
  */
 @Controller('health')
 export class HealthController {
-  constructor(@Inject(DATABASE) private readonly database: ReturnType<typeof createDatabase>) {}
+  constructor(@Inject(DATABASE) private readonly database: Database) {}
   @Get('live')
   live(): { status: 'ok'; uptimeSeconds: number } {
     return { status: 'ok', uptimeSeconds: Math.floor(process.uptime()) };

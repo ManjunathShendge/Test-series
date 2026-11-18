@@ -5,10 +5,15 @@ const origin = z.url().refine((value) => {
   const url = new URL(value);
   return ['http:', 'https:'].includes(url.protocol) && url.origin === value;
 }, 'Expected an HTTP(S) origin without a path');
-const databaseUrl = z.string().refine(
-  (value) => value.startsWith('file:') && value.length > 5 && !value.includes(':memory:') && !value.includes('\\0'),
-  'Expected a persistent SQLite file URL (file:./data/exam-prep.sqlite)',
-);
+const databaseUrl = z.string().refine((value) => {
+  if (!URL.canParse(value)) return false;
+  const url = new URL(value);
+  return (
+    ['postgres:', 'postgresql:'].includes(url.protocol) &&
+    url.hostname !== '' &&
+    url.pathname.length > 1
+  );
+}, 'Expected a postgresql:// URL with host and database name');
 const schema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -21,6 +26,9 @@ const schema = z
       .transform((s) => s.split(',').map((v) => v.trim()))
       .pipe(z.array(origin).min(1)),
     DATABASE_URL: databaseUrl,
+    // Worker uses a session-mode connection (Supabase session pooler); defaults to DATABASE_URL.
+    WORKER_DATABASE_URL: databaseUrl.optional(),
+    DATABASE_CA_CERT_PATH: z.string().min(1).optional(),
     FIREBASE_PROJECT_ID: z.string().min(1).optional(),
     FIREBASE_AUTH_EMULATOR_HOST: z
       .string()
@@ -46,6 +54,13 @@ const schema = z
         code: 'custom',
         path: ['APP_ENV'],
         message: 'Deployed environments require a real project and HTTPS origins',
+      });
+    }
+    if (['staging', 'production'].includes(env.APP_ENV) && !env.DATABASE_CA_CERT_PATH) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['DATABASE_CA_CERT_PATH'],
+        message: 'Deployed environments require verified database TLS',
       });
     }
     if (env.API_PORT === env.WORKER_PORT)

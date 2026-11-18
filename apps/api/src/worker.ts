@@ -4,7 +4,10 @@ import { checkDatabase, createDatabase } from '@exam-prep/db';
 import { parseEnvironment } from './config/env.js';
 
 const env = parseEnvironment(process.env);
-const database = createDatabase(env.DATABASE_URL);
+const database = createDatabase(env.WORKER_DATABASE_URL ?? env.DATABASE_URL, {
+  caCertPath: env.DATABASE_CA_CERT_PATH,
+  max: 4,
+});
 let ready = false;
 const server = createServer(async (request, response) => {
   response.setHeader('Content-Type', 'application/json');
@@ -19,7 +22,7 @@ const server = createServer(async (request, response) => {
   try {
     if (!ready) throw new Error('Starting or stopping');
     await checkDatabase(database);
-    database.prepare('SELECT id FROM jobs LIMIT 1').all();
+    await database.query('SELECT id FROM jobs LIMIT 1');
     response.end(JSON.stringify({ status: 'ok', checks: { database: 'ok', queue: 'ok' } }));
   } catch {
     response.writeHead(503).end(JSON.stringify({ status: 'unavailable' }));
@@ -33,13 +36,13 @@ async function stop(): Promise<void> {
   stopping = true;
   ready = false;
   server.close();
-  database.close();
+  await database.end();
 }
 process.once('SIGINT', () => void stop());
 process.once('SIGTERM', () => void stop());
 try {
   await checkDatabase(database);
-  database.prepare('SELECT id FROM jobs LIMIT 1').all();
+  await database.query('SELECT id FROM jobs LIMIT 1');
   ready = true;
   console.log(
     `Worker ready on port ${env.WORKER_PORT}; domain consumers arrive in later milestones`,
