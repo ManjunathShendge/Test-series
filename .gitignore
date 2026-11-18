@@ -73,3 +73,7 @@ data/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+
+# Local credential notes; never commit.
+credentials*.txt
+*.credentials

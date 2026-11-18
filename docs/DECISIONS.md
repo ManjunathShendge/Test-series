@@ -127,4 +127,19 @@ These record how the client demo was built. None changes a launch invariant. Ite
 
 ## SQLite storage decision (16 November 2026, owner instruction)
 
+> Superseded on 18 November 2026 by "PostgreSQL on Supabase" below.
+
 The owner requested SQLite for all application storage, including authentication, authorization and billing records. This supersedes earlier PostgreSQL, pg-boss and S3 storage decisions. Server data and file BLOBs use one SQLite file; mobile keeps its existing local SQLite cache. API and worker share the server file on one host with WAL, foreign keys, a busy timeout and short write transactions. No network filesystem or multi-host shared-file deployment. SQL migrations are checksummed and transactional. SQLite does not supply database roles: authorization belongs to API services, and OS permissions protect the file. Payment verification still uses the approved payment providers; selecting SQLite does not implement or bypass checkout/authentication workflows. Existing PostgreSQL/MinIO volumes are preserved, not converted or deleted.
+
+## PostgreSQL on Supabase (18 November 2026, owner instruction)
+
+Supersedes the 16 November SQLite storage decision for server data. D04's PostgreSQL requirement stands again; SQLite remains the mobile on-device store (E14, X2).
+
+- **Provider:** Supabase managed PostgreSQL in the Mumbai region (ap-south-1) for staging and production. Local development and CI use PostgreSQL 17 in Docker, matching the Supabase major version (17.12 observed on 18 November).
+- **Supabase scope:** database only. Firebase stays the identity provider (D01). Supabase Auth, the Data API (auto-generated REST endpoints, which must be disabled) and Edge Functions are not used; the NestJS API is the only path to data, so the server keeps authority over entitlement, price, time and score. Supabase Storage may be evaluated later as the S3-compatible object store.
+- **Connections:** API through the transaction pooler (port 6543); worker and migrations through the session pooler (port 5432). Direct connections are IPv6-only and are not used. TLS verifies Supabase's CA certificate in deployed environments.
+- **Data access:** `pg` (node-postgres) with parameterized SQL, a checksummed transactional SQL migrator and a PostgreSQL job table claimed with `FOR UPDATE SKIP LOCKED` and leases. This replaces the earlier Prisma and pg-boss choices in D04/ARCHITECTURE: it works through the transaction pooler without prepared-statement settings, keeps one migration format, and preserves the tested idempotency, append-only and lease semantics. Revisit if domain work shows a clear need for an ORM.
+- **Files:** binary content leaves the database. The SQLite `stored_files` BLOB table is not carried over; object storage is chosen when file uploads are built.
+- **Roles:** local Docker separates migrator, API and worker roles. Equivalent restricted roles on Supabase are created before staging serves traffic.
+- **Push notifications:** unaffected. Expo Push stays the provider (NOTIFICATIONS); Supabase has no push delivery service.
+- Plan tier, backups and point-in-time recovery terms must be confirmed on the Supabase plan before production (E11).

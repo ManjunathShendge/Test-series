@@ -1,6 +1,6 @@
 # Infrastructure and deployment
 
-> **Storage superseded (16 November 2026):** the owner chose SQLite for all server storage, including files and the job queue; see the SQLite decision in [DECISIONS](DECISIONS.md). PostgreSQL, pg-boss, S3 and multi-replica sections below predate that decision and have not been revised. Production hosting for a single-host SQLite deployment still needs its own design pass.
+> **Storage (18 November 2026):** PostgreSQL on Supabase (Mumbai), accessed with `pg` and a PostgreSQL job table instead of Prisma and pg-boss; see "PostgreSQL on Supabase" in [DECISIONS](DECISIONS.md). Where this document names pg-boss, read the job table; object storage is still to be chosen. API compute hosting is still undecided (spike S3).
 
 Local -> isolated staging -> production. Prefer India-region compute/Postgres/private objects (PRD: AWS Mumbai). Free-tier candidates in requirement.text are historical suggestions, not verified current offers. Do not assume they cover a 500-student beta or any paid/live test workload. Validate region, commercial terms, capacity, backup/PITR, egress and actual bill before selection.
 

@@ -14,8 +14,8 @@ Use `docs/ROADMAP.md` and `docs/PROJECT_STATUS.md` to choose the next authorized
 - `apps/mobile`: Expo development builds, expo-router; students only.
 - `packages/contracts`: Zod request/response contracts.
 - `packages/engine`: pure TypeScript attempt reducer, timing, scoring functions.
-- `packages/db`: SQLite (`node:sqlite`) for all server storage, including files and the job table; checksummed SQL migrations, seeds. Owner decision 16 November 2026 in DECISIONS supersedes PostgreSQL, pg-boss and S3; ARCHITECTURE/INFRA production sections still predate it.
-- Firebase Google/email plus Apple on iOS.
+- `packages/db`: `pg` with parameterized SQL, checksummed SQL migrations, PostgreSQL job table, seeds. PostgreSQL 17 with pg_trgm and btree_gin: Docker locally and in CI, Supabase (Mumbai) for staging/production, database only. See "PostgreSQL on Supabase" in DECISIONS.
+- Object storage chosen when uploads are built; Firebase Google/email plus Apple on iOS.
 - Web payments: Razorpay. Mobile payments: Apple IAP and Google Play Billing.
 - No Redis, Firestore, external search, embeddings, vector DB, fine-tuning, or OCR at launch.
 
@@ -26,7 +26,7 @@ Use `docs/ROADMAP.md` and `docs/PROJECT_STATUS.md` to choose the next authorized
 3. Never expose keys or solutions through student paper payloads, bundles, assets, logs, or caches before authorized review. Staff authoring/review access is separately authorized.
 4. Server decides entitlement, price, time, section eligibility, score, and payment status.
 5. Money uses integer minor units; launch currency INR (paise). Ledger and audit records are append-only.
-6. Mutations affecting admin/reviewer actions commit with audit records. Domain jobs use a transactional outbox and the SQLite job table with leased claims.
+6. Mutations affecting admin/reviewer actions commit with audit records. Domain jobs use a transactional outbox and the PostgreSQL job table with leased claims.
 7. Provider callbacks are untrusted until verified. Fulfilment, refunds, payout allocation, and job consumers are idempotent.
 8. Durable answer persistence precedes UI confirmation. Never discard an answer on an ambiguous network response.
 9. Backend SDKs stay behind `apps/api/src/providers/`; necessary client auth/billing SDKs stay behind client adapters. Never put privileged secrets on clients.
