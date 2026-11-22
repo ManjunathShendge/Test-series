@@ -402,3 +402,68 @@ Checks run: web build; computed `backdrop-filter: blur(18px)` on the pill; scree
 - Hover lifts on Motion-animated elements use the CSS `translate` property (Motion leaves an inline `transform` that would otherwise override them); hero load animations use `backwards` fill so hover transforms apply afterwards. `main { overflow-x: clip }` restored for side slide-ins.
 
 Checks run: web typecheck, lint, `next build`; in Chromium: sections fade in when reached, steps slide out (opacity 0) after scrolling past and back in, exam card hover gives `translate: 0 -3px` after its reveal, no horizontal overflow while scrolling at 390 and 820 px, no `sf-init` under reduced motion or without JavaScript, no page errors.
+
+## 22 November 2026: demo catalogue in Supabase staging
+
+- `packages/db/seeds/demo-catalogue.mjs` (`seed:demo`) writes the mobile demo data (`seeds/demo-catalogue.json`, exported from `apps/mobile/src/lib/demo`) into the real schema: 3 categories, 3 exams with stage, official-pattern template and sections, 10 subjects, 89 topics, 4 examiner personas (approved, placeholder Firebase IDs nobody can sign in with, no KYC or bank details), 100 approved questions with keys and solutions, 3 series and 11 live tests (4 free, 7 paid at the demo's placeholder prices) with 29 sections and 290 QC-approved items.
+- Deterministic IDs and skip-if-present, so re-runs add nothing and published tests are never edited. Staging requires `APP_ENV=staging` plus `CONFIRM_DEMO_SEED=staging`; production is refused.
+- No student accounts, purchases, entitlements, attempts, ratings or coupons were created.
+
+Checks run: local run then re-run (no new rows); staging run over the session pooler with verified TLS, then re-run (no new rows). As `exam_app` on staging: 3 exams, 11 live tests, 3 series and 4 examiners visible; questions not readable directly (RLS; students receive them through `get_test_questions_for_attempt`). Database integration tests 34/34 passed.
+
+## 22 November 2026: public catalogue API
+
+- Contracts `packages/contracts/src/catalogue`; API module `apps/api/src/modules/catalogue` (controller, service, parameterised repository). Endpoints: `GET /v1/exams`, `/v1/exams/:id`, `/v1/tests` (filters, search, keyset cursor), `/v1/tests/:id`, `/v1/series/:id`, `/v1/examiners/:id`. Public, no sign-in; short public cache headers.
+- Only live tests of active exams by approved examiners and published series are returned. Responses are positive allowlists: no questions, keys, solutions or examiner contact/KYC/bank fields.
+- Migration 006 adds `public_examiner_cards` (DATA_MODEL) so examiner names can be shown without opening `profiles` to the API role. Applied locally and on staging (schema version 6); on staging `anon`/`authenticated` cannot execute it, `exam_app` can.
+
+Checks run: lint, typecheck, unit and integration suites across the workspace (new `apps/api/test/integration/catalogue.test.mjs`: counts and ordering, full pagination without duplicates, filters and search, no leaked keys in any payload, drafts/unpublished series/suspended examiners hidden, malformed input rejected). Built API probed against the local database and against Supabase staging: all six endpoints returned the seeded data.
+Not done: authenticated per-student fields (owned, attempted, followed), OpenAPI generation, clients still read the bundled demo data.
+
+## 22 November 2026: web catalogue pages (W2b)
+
+UI/UX Pro guidance applied (local search: server-component data fetching, metadata API, error.tsx, no-results with a next step, wrapping filter chips, URL deep links); design MASTER tokens and card rules.
+- Pages in `apps/web/app/(public)/(catalogue)`: `/exams` (exam cards with live/free counts, next exam date, last cutoff), `/exams/[slug]` (pattern facts, filter chips as URL links, test grid with cursor "More tests", official pattern table, syllabus, free-test, key-date and subject side cards), `/tests/[slug]` (facts, price card, sections and marking table, rules derived from the test's own sections, examiner and series links, more tests), `/series/[slug]` (tests in release order, price and validity), `/examiners/[id]` (tier, followers, exams, series, latest tests).
+- Data: `src/lib/api/catalogue.ts` reads the public API server-side, validates every response against the shared contracts, caches for 60 s; `API_BASE_URL` (server) points at the API. Pages render per request, so builds do not need the API.
+- States: error page with retry; real 404 status for unknown or malformed ids (no streaming loading screen, which would have turned 404s into 200s); empty states with a next action.
+- SEO: per-page titles, descriptions and canonicals, BreadcrumbList JSON-LD, sitemap now lists exams, tests, series and examiners from the API (falls back to static pages when the API is unreachable). Header/footer "Exams" go to `/exams`; landing exam cards link to their exam pages.
+- `check:public-env` allowlist gains `NEXT_PUBLIC_SITE_URL` (public canonical origin, added in W0); CI would otherwise fail.
+
+Checks run: workspace lint, typecheck and build; `check:public-env`. Against the local API and database, every page at 1440, 820 and 390 px: 200 status, no horizontal overflow, no element past the phone viewport, no page errors; unknown test/exam/series/examiner return 404 with noindex. Fixed during review: hidden card on the exam index (now one grid), free-test card saying "or in the series", single-column overflow on tablets and phones.
+Open: `/sign-in` (W2a) is linked from Start/Buy buttons and still 404s; buying needs web payments (M9a); per-student state (owned, attempted, followed).
+
+## 23 November 2026: authentication and authorization end to end (AU1, AU2)
+
+AU1 API authorization:
+- `RolesGuard` with `@Roles(...)` and `@RequireAdminPermission(...)` (`apps/api/src/modules/identity/http/roles.guard.ts`), used after `FirebaseAuthGuard`; `IdentityService.resolveAccess` requires a verified email, an unblocked account and an active registered device, and reads roles and admin flags from the database on every request. `IdentityModule` exports the guards for domain modules. New contract error code `FORBIDDEN` (additive).
+- No production route needs a role yet (all current routes are public or self-service); examiner, QC and admin endpoints adopt the guard from M3.
+
+AU2 website log in and sign up (`apps/web`, Firebase JS SDK 13.4.0 pinned, same as mobile):
+- `/sign-in` (Log in / Sign up switch, 18+ confirmation before any method, Google popup, email and password with show/hide, inline field errors and a focused error summary), email verification step (check, resend with 60 s cooldown, use another account), two-device limit step (remove a device and continue), blocked and existing-account errors (no merge on email, invariant 10).
+- `/forgot-password` (same confirmation whether or not an account exists), `/onboarding` (name, target exams from the catalogue API, stage, language; PATCH /me), `/account` (profile, preferences, devices with remove, log out).
+- `AuthProvider` registers the browser as a `web` device through POST /identity/session and keeps the device id in local storage; `RequireSession` sends signed-out visitors to `/sign-in?next=` and first-time students through onboarding; `next` accepts same-site paths only. Header shows "My account" once signed in (UI hint only).
+- Auth pages are `noindex, nofollow`; Firebase is not loaded on marketing or catalogue pages.
+
+Checks run: workspace lint, typecheck, unit tests, build, `check:public-env`, smoke test; integration 34 database + 19 API (4 new authorization tests: token and device required, role and admin-flag matrix, role removal/blocking/device revocation effective on the next request). Browser at 1440 and 390 px against the local API and the real Firebase project, without creating accounts: protected pages redirect with `next`, validation and 18+ errors, focused error summary, Firebase wrong-password message, password reveal, reset request (HTTP 200, neutral message), noindex, no overflow, no page errors, zero Firebase requests on the landing page; CORS preflight allows the website origin and refuses others.
+Not run: a full sign-up with a real inbox and a Google popup (needs a real account; owner to try), Firebase Auth emulator end-to-end (CLI not installed, API does not accept emulator tokens). Open: rate limiting on /identity/session, account deletion/export (security audit list), Sign in with Apple (A1).
+
+### 23 November 2026: smoother website sign-in (owner feedback)
+
+Owner could not sign in or up. Causes found: only the website dev server was running (the API on 3001 was down, so every sign-in stopped after Firebase), and closing or losing the Google popup showed a red "closed before it finished" error.
+- 18+ confirmation is now a statement beside the buttons ("By continuing, you confirm you are 18 or older…") instead of a tick box that blocked Google and email. The app still uses the tick box; align when the owner confirms.
+- Google: closing the window is silent; blocked popups fall back to a full-page redirect; the button frees itself about a second after the person returns to the page (Firebase otherwise needs ~9 s because Google's COOP hides the closed window).
+- Email verification continues on its own (checks every 4 s and on tab focus) after the link is clicked; the manual button stays as a backup.
+- Server unreachable: "Connecting to MakeMePrepare" with automatic retries (2 s doubling to 30 s, and on focus) instead of an error; "Signing you in…" shows immediately after Firebase accepts.
+- Fixed: "Use a different account" during the last second of sign-up left the form unable to submit; it is disabled until sign-up finishes.
+
+Checks run against the owner's running dev site and the real Firebase project with synthetic `@example.test` accounts (deleted afterwards): sign-up reaches "Check your inbox" in about 2.5 s; unverified log-in lands on the same step; switching account and logging in again works; closing Google shows no error and re-enables the button in about 1.4 s after focus returns; no page errors. Web typecheck and lint pass. Not run: completing Google or a real inbox verification (needs the owner's account).
+
+### 23 November 2026: auth alignment with the PRD (18+, landing page, first admin)
+
+- 18+ is now recorded, not assumed (migration 007, DATA_MODEL): `is_age_verified_18_plus` defaults to FALSE with `age_confirmed_at`; existing profiles keep their sign-in confirmation; users cannot withdraw or rewrite it. `Profile.ageConfirmed` added; `onboarded` requires a stage and the confirmation; PATCH /me accepts `ageConfirmed: true` and refuses a stage without it (`AGE_CONFIRMATION_REQUIRED`). Supersedes the "statement beside the buttons" above.
+- Website: sign-in has no age step (legal line only); onboarding asks once with a tick box, hidden when already confirmed (accounts made in the app, which still confirms at sign-in). After onboarding, or signing in with nothing requested, students go to their first target exam (`/exams/<slug>`), else `/exams`; a requested `next` still wins. Exam pages addressed by id redirect (308) to the slug URL.
+- First super admin: `pnpm --filter @exam-prep/db bootstrap-super-admin` (owner connection; email typed twice; existing, unblocked, non-demo account; refuses once any super admin exists; audited in the same transaction). Later staff roles are granted by an admin in the product (M2/M3), not by invite or sign-up.
+
+Checks run: integration 37 database (3 new: bootstrap refusals/grant/audit, blocked and demo refusals, 18+ recorded and not withdrawable) + 21 API (2 new: website age-in-onboarding, app age-at-sign-in), workspace unit tests (mobile fixture updated for `ageConfirmed`), web build, typecheck and lint. Browser at 1440 and 390 px against the local dev site and the real catalogue API, with Firebase and the identity API mocked: new web account sees the 18+ tick only in onboarding, blocked submit sends nothing, PATCH carries `ageConfirmed: true`, lands on `/exams/ibps-po`; app-made account has no tick and no `ageConfirmed` in the PATCH; onboarded account lands on its first exam; `next=/account` is honoured; no overflow or page errors.
+Not run: the same flow with a real verified account (needs a real inbox or Google account); migration 007 on Supabase staging (waiting for the owner's go-ahead; staging is still at schema version 6, so the current API build must not be pointed at it until then).
+

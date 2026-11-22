@@ -5,6 +5,7 @@ import type {
   Device,
   DeviceLimitDetails,
   Profile,
+  Role,
   SessionResponse,
   UpdateMeRequest,
 } from '@exam-prep/contracts';
@@ -12,6 +13,15 @@ import { DATABASE } from '../../../database/database.module.js';
 import { ApiError, notFound } from '../../../common/errors/api-error.js';
 import type { VerifiedIdentity } from '../../../providers/firebase/identity-verifier.js';
 import { identityRepository as repo, type DeviceRow, type ProfileRow } from '../repositories/identity.repository.js';
+
+export type AdminPermission = 'ops' | 'finance' | 'super';
+
+/** The authorized caller attached to the request by RolesGuard. */
+export interface AccessContext {
+  profileId: string;
+  roles: Role[];
+  admin: Record<AdminPermission, boolean>;
+}
 
 const pgCode = (error: unknown) => (error as { code?: unknown } | null)?.code;
 
@@ -24,7 +34,8 @@ function toProfile(row: ProfileRow): Profile {
     preparationStage: row.preparation_stage as Profile['preparationStage'],
     targetExamIds: row.target_exam_ids ?? [],
     roles: row.roles as Profile['roles'],
-    onboarded: row.preparation_stage !== null,
+    ageConfirmed: row.is_age_verified_18_plus,
+    onboarded: row.preparation_stage !== null && row.is_age_verified_18_plus,
   };
 }
 
@@ -47,7 +58,11 @@ export class IdentityService {
   async createSession(identity: VerifiedIdentity, request: CreateSessionRequest): Promise<SessionResponse> {
     const profileId = await this.resolveProfileId(identity);
     return withUser(this.db, profileId, async (client) => {
-      const profile = await this.requireUsableProfile(client, profileId);
+      let profile = await this.requireUsableProfile(client, profileId);
+      if (request.ageConfirmed && !profile.is_age_verified_18_plus) {
+        await repo.confirmAge(client, profileId);
+        profile = { ...profile, is_age_verified_18_plus: true };
+      }
       const device = await this.registerDevice(client, profileId, request);
       return { profile: toProfile(profile), device: toDevice(device, device.id) };
     });
@@ -59,6 +74,12 @@ export class IdentityService {
 
   async updateMe(identity: VerifiedIdentity, deviceId: string | undefined, changes: UpdateMeRequest): Promise<Profile> {
     return this.asRegisteredDevice(identity, deviceId, async (client, profile) => {
+      // Onboarding is complete only with an 18+ confirmation (PRD 12); the server enforces it.
+      const confirmed = profile.is_age_verified_18_plus || changes.ageConfirmed === true;
+      if (changes.preparationStage !== undefined && !confirmed) {
+        throw new ApiError(400, 'AGE_CONFIRMATION_REQUIRED', 'Confirm you are 18 or older to continue');
+      }
+      if (changes.ageConfirmed) await repo.confirmAge(client, profile.id);
       if (changes.targetExamIds?.length) {
         const unique = [...new Set(changes.targetExamIds)];
         if ((await repo.countActiveExams(client, unique)) !== unique.length) {
@@ -70,7 +91,9 @@ export class IdentityService {
       if (changes.preferredLanguage !== undefined) fields.preferred_language = changes.preferredLanguage;
       if (changes.preparationStage !== undefined) fields.preparation_stage = changes.preparationStage;
       if (changes.targetExamIds !== undefined) fields.target_exam_ids = [...new Set(changes.targetExamIds)];
-      return toProfile(await repo.updateProfile(client, profile.id, fields));
+      // A request that only confirms age has no other column to write.
+      const updated = Object.keys(fields).length ? await repo.updateProfile(client, profile.id, fields) : await repo.getProfile(client, profile.id);
+      return toProfile(updated!);
     });
   }
 
@@ -142,6 +165,23 @@ export class IdentityService {
         details,
       );
     }
+  }
+
+  /**
+   * Who is calling, for authorization: a verified, unblocked user on one of their active
+   * devices, with their roles and admin permissions read from the database (never from the
+   * token or the client).
+   */
+  async resolveAccess(identity: VerifiedIdentity, deviceId: string | undefined): Promise<AccessContext> {
+    return this.asRegisteredDevice(identity, deviceId, async (client, profile) => {
+      const access = await repo.getAccess(client, profile.id);
+      if (!access) throw new ApiError(403, 'ACCOUNT_BLOCKED', 'This account cannot be used. Contact support.');
+      return {
+        profileId: access.id,
+        roles: access.roles as Role[],
+        admin: { ops: access.is_ops_admin, finance: access.is_finance_admin, super: access.is_super_admin },
+      };
+    });
   }
 
   /** Runs an action for a verified user on an active, registered device of theirs. */

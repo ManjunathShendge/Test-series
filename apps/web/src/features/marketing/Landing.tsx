@@ -147,6 +147,12 @@ function Exams() {
               <ExamShape variant={i} />
               <h3 className="t-title">{e.name}</h3>
               <p className="t-secondary">{e.body}</p>
+              <Link href={e.href} className={`u-link ${styles.examLink}`}>
+                {e.link}
+                <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 12h14m-5-5 5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </Link>
             </RevealItem>
           ))}
         </Reveal>

@@ -23,9 +23,9 @@ export const steps = [
 ] as const;
 
 export const exams = [
-  { name: 'SSC', body: 'Staff Selection Commission exams, starting with the Combined Graduate Level Tier 1.' },
-  { name: 'Banking', body: 'Bank recruitment exams, starting with the IBPS PO Preliminary.' },
-  { name: 'Railways', body: 'Railway recruitment exams, starting with the RRB NTPC CBT 1.' },
+  { name: 'SSC', body: 'Staff Selection Commission exams, starting with the Combined Graduate Level Tier 1.', href: '/exams/ssc-cgl', link: 'SSC CGL tests' },
+  { name: 'Banking', body: 'Bank recruitment exams, starting with the IBPS PO Preliminary.', href: '/exams/ibps-po', link: 'IBPS PO tests' },
+  { name: 'Railways', body: 'Railway recruitment exams, starting with the RRB NTPC CBT 1.', href: '/exams/rrb-ntpc', link: 'RRB NTPC tests' },
 ] as const;
 
 export const examinerPoints = [

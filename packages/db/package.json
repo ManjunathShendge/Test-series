@@ -25,7 +25,9 @@
     "migrate": "pnpm build && node --env-file-if-exists=../../.env scripts/migrate.mjs",
     "migrate:deploy": "pnpm migrate",
     "seed": "pnpm build && node --env-file-if-exists=../../.env seeds/index.mjs",
+    "seed:demo": "pnpm build && node --env-file-if-exists=../../.env seeds/demo-catalogue.mjs",
     "test:int": "node --env-file-if-exists=../../.env --test test/integration/*.test.mjs",
+    "bootstrap-super-admin": "pnpm build && node --env-file-if-exists=../../.env scripts/bootstrap-super-admin.mjs",
     "provision-roles": "pnpm build && node scripts/provision-roles.mjs",
     "provision-keepalive-role": "pnpm build && node scripts/provision-keepalive-role.mjs"
   },

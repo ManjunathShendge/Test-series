@@ -400,3 +400,13 @@
 .faqButton:active {
   transform: scale(0.995);
 }
+.examLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  min-height: 44px;
+  color: var(--brand);
+  font-weight: 600;
+  text-decoration: none;
+}

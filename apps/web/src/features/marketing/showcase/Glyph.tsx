@@ -18,6 +18,9 @@ const PATHS = {
   phone: 'M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm3 17h2',
   sync: 'M20 12a8 8 0 0 1-14.3 5M4 12a8 8 0 0 1 14.3-5M18 3v4h-4M6 21v-4h4',
   arrow: 'M5 12h14m-5-5 5 5-5 5',
+  calendar: 'M4 6h16v15H4zM4 10h16M8 3v4m8-4v4',
+  language: 'M3 5h12M9 3v2m1.5 0C9.5 10 7 13 4 15m3-6c1 2 3 4 6 5m3 6 4-9 4 9m-7-3h6',
+  layers: 'm12 3 9 5-9 5-9-5zm-9 9 9 5 9-5M3 16l9 5 9-5',
 } as const;
 
 export type GlyphName = keyof typeof PATHS;

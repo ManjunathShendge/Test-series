@@ -27,7 +27,7 @@ pnpm dev
 | `exam_app` | API (`DATABASE_URL`) | Row reads/writes only; cannot create, alter or drop tables |
 | `exam_worker` | Worker (`WORKER_DATABASE_URL`) | Row reads/writes only |
 
-`db:migrate` applies `packages/db/migrations/postgres` in one transaction under an advisory lock; a changed, already-applied migration is rejected. `db:seed` is idempotent and restricted to local/test. Domain accounts and papers will be seeded once their services exist.
+`db:migrate` applies `packages/db/migrations/postgres` in one transaction under an advisory lock; a changed, already-applied migration is rejected. `db:seed` is idempotent and restricted to local/test. `pnpm --filter @exam-prep/db seed:demo` adds the synthetic demo catalogue (the mobile demo's exams, examiner personas, series, 11 live tests and their questions, from `seeds/demo-catalogue.json`); it is idempotent, allowed on local/test, and on staging only with `APP_ENV=staging CONFIRM_DEMO_SEED=staging`. It creates no student accounts, purchases, entitlements or attempts.
 
 `dev` builds server dependencies before starting API, worker and web. The API TypeScript watcher recompiles the server graph; Node watchers restart API and worker independently. Mobile starts separately with `pnpm --filter @exam-prep/mobile start` (development client), or `pnpm --filter @exam-prep/mobile exec expo start --go` for the existing Expo Go demo. Current device testing is Expo Go on a physical iPhone on the same Wi-Fi: set `EXPO_PUBLIC_API_BASE_URL` in `apps/mobile/.env` to the computer's LAN address and allow port 3001 through the Windows firewall.
 
@@ -133,3 +133,8 @@ pnpm dlx eas-cli@latest build --profile development --platform ios
 The cloud build cannot read the gitignored `.env`, so the two build-time values must be EAS environment variables; a build without `GOOGLE_IOS_URL_SCHEME` stops with an error. The `EXPO_PUBLIC_` values reach the app from your local `.env` through Metro. Install the finished build from its link, enable Developer Mode on the iPhone (Settings > Privacy & Security), then run `pnpm --filter @exam-prep/mobile start` and open the installed app instead of Expo Go. Rebuild only when native packages or these build-time values change.
 
 Android later: add the Android app in Firebase with the same package and the SHA-1 from `eas credentials`; the web client ID is enough in code.
+
+## Website sign-in (local)
+
+`apps/web/.env.local` (gitignored) holds the Firebase web config (`NEXT_PUBLIC_FIREBASE_API_KEY`, `_AUTH_DOMAIN`, `_PROJECT_ID`, `_APP_ID`; same project as the app and the API's `FIREBASE_PROJECT_ID`) and `NEXT_PUBLIC_API_BASE_URL` (the API as the browser reaches it). The website's origin must be in the API's `CORS_ORIGINS` (local default `http://localhost:3000`). For Google on a deployed domain, add the domain under Firebase console > Authentication > Settings > Authorized domains; `localhost` is authorized by default. Firebase loads only on `/sign-in`, `/forgot-password`, `/onboarding` and `/account`.
+

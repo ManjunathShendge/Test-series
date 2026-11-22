@@ -3,12 +3,13 @@
 import { AnimatePresence, motion, useMotionValueEvent, useReducedMotion, useScroll } from 'motion/react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { AUTH_HINT_EVENT, getSignedInHint } from '@/lib/storage/device';
 import { Logo } from '@/ui/primitives/Logo';
 import styles from './SiteHeader.module.css';
 
 const NAV = [
   { href: '/#how-it-works', label: 'How it works' },
-  { href: '/#exams', label: 'Exams' },
+  { href: '/exams', label: 'Exams' },
   { href: '/#app', label: 'App' },
   { href: '/#examiners', label: 'For examiners' },
   { href: '/#faq', label: 'FAQ' },
@@ -29,6 +30,19 @@ export function SiteHeader({ overHero = true }: { overHero?: boolean }) {
   const reduced = useReducedMotion();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  // UI hint only (set by the sign-in flow); read after mount so server and client HTML match.
+  const [signedIn, setSignedIn] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setSignedIn(getSignedInHint());
+    sync();
+    window.addEventListener(AUTH_HINT_EVENT, sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener(AUTH_HINT_EVENT, sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
 
   useMotionValueEvent(scrollY, 'change', (y) => setScrolled(y > 24));
 
@@ -59,12 +73,20 @@ export function SiteHeader({ overHero = true }: { overHero?: boolean }) {
           <div className={styles.actions}>
             {/* Log in and Start free share one glass segment, as in the owner's nav reference. */}
             <div className={styles.segment}>
-              <Link href="/sign-in" className={`${styles.segLink} ${styles.login}`}>
-                Log in
-              </Link>
-              <Link href="/sign-in?mode=signup" className={`btn btn-primary ${styles.segPrimary}`}>
-                Start free
-              </Link>
+              {signedIn ? (
+                <Link href="/account" className={`btn btn-primary ${styles.segPrimary}`}>
+                  My account
+                </Link>
+              ) : (
+                <>
+                  <Link href="/sign-in" className={`${styles.segLink} ${styles.login}`}>
+                    Log in
+                  </Link>
+                  <Link href="/sign-in?mode=signup" className={`btn btn-primary ${styles.segPrimary}`}>
+                    Start free
+                  </Link>
+                </>
+              )}
             </div>
             <button
               type="button"
@@ -107,8 +129,8 @@ export function SiteHeader({ overHero = true }: { overHero?: boolean }) {
                   {n.label}
                 </Link>
               ))}
-              <Link href="/sign-in" className={`btn btn-secondary btn-full ${styles.sheetLogin}`} onClick={() => setOpen(false)}>
-                Log in
+              <Link href={signedIn ? '/account' : '/sign-in'} className={`btn btn-secondary btn-full ${styles.sheetLogin}`} onClick={() => setOpen(false)}>
+                {signedIn ? 'My account' : 'Log in'}
               </Link>
             </motion.nav>
           ) : null}

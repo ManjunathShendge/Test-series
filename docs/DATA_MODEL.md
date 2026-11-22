@@ -117,8 +117,16 @@ The owner-supplied `Supabase_Database_Schema_Documentation.md` (see DECISIONS "D
 | 003_catalogue | 3 (hierarchy, syllabus, templates), 4 (passages, questions, indexes, AI cache), 5 (series, tests, sections, test questions), 11 (question and test policies) | Implemented 19 November 2026 |
 | 004_qc_attempts | 6 (reviewer mappings, QC reviews, per-question reviews, student reports, auto-hide trigger), 7 (attempts, answers, saved questions, ratings), 11 (attempt and answer policies) | Implemented 19 November 2026 |
 | 005_commerce_functions | 8 (Pass plans, coupons, purchases, entitlements, Pass pools, payouts), 9 (CMS banners), 10 (all five functions), 11 (purchase and payout policies), 12 (buckets) | Implemented 19 November 2026 |
+| 006_public_examiners | Addition: `public_examiner_cards(uuid[])` | Implemented 22 November 2026 |
+| 007_age_confirmation | Deviation: recorded 18+ confirmation on `profiles` | Implemented 23 November 2026 |
 
-All twelve schema sections are implemented; `bootstrap_state` is at schema version 5.
+All twelve schema sections are implemented; `bootstrap_state` is at schema version 7.
+
+006 addition: the public catalogue needs examiner display names, but `profiles` is readable by the API role only for the signed-in user (schema policy). `public_examiner_cards` is a `SECURITY DEFINER` function returning a fixed allowlist (name, avatar, tier, account type, institute, bio, experience, followers, exams) for approved, unblocked, undeleted examiners only; never email, phone, roles, KYC, bank or payout fields. Execute is granted to `exam_app` only; the migrator revokes it from Supabase's `anon`/`authenticated`.
+
+007 deviation (PRD 12 "gate the platform to 18+"): the schema defaulted `is_age_verified_18_plus` to TRUE, so every profile looked confirmed. It now defaults to FALSE and `age_confirmed_at` records when the person confirmed (CHECK: confirmed implies a time). The app confirms at sign-in, the website in onboarding; `Profile.onboarded` requires both a preparation stage and the confirmation. Existing profiles had confirmed on every sign-in, so they keep TRUE with `created_at` as the time. `protect_profile_privileges` also stops a non-admin from withdrawing or rewriting a confirmation.
+
+First super admin: `pnpm --filter @exam-prep/db bootstrap-super-admin` (owner connection, `BOOTSTRAP_ADMIN_EMAIL` and the same address in `CONFIRM_BOOTSTRAP_ADMIN`) adds `admin` and `is_super_admin` to an existing, unblocked, non-demo account and writes a `bootstrap_super_admin` row to `admin_audit_logs` in the same transaction. It refuses once any super admin exists; every later staff grant is made by an admin in the product.
 
 002 replaces the M0 primitives `users`, `roles`, `user_roles`, `sessions`, `billing_orders`, `billing_events`, `ledger_entries` and `audit_events`. A verified-fulfilment inbox and append-only ledger return with the commerce tables. `bootstrap_state` is at schema version 2; `jobs` is unchanged.
 

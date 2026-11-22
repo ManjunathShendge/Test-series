@@ -6,10 +6,19 @@ export interface ProfileRow {
   full_name: string;
   preferred_language: 'en' | 'hi';
   preparation_stage: string | null;
+  is_age_verified_18_plus: boolean;
   target_exam_ids: string[] | null;
   roles: string[];
   is_blocked: boolean;
   deleted_at: Date | null;
+}
+
+export interface AccessRow {
+  id: string;
+  roles: string[];
+  is_ops_admin: boolean;
+  is_finance_admin: boolean;
+  is_super_admin: boolean;
 }
 
 export interface DeviceRow {
@@ -21,7 +30,7 @@ export interface DeviceRow {
 }
 
 const PROFILE_COLUMNS =
-  'id, email, full_name, preferred_language, preparation_stage, target_exam_ids, roles::text[] AS roles, is_blocked, deleted_at';
+  'id, email, full_name, preferred_language, preparation_stage, is_age_verified_18_plus, target_exam_ids, roles::text[] AS roles, is_blocked, deleted_at';
 const DEVICE_COLUMNS = 'id, device_name, platform, is_active, last_active_at';
 
 /** Parameterised SQL only. Authorization is decided by the service, with RLS as a second barrier. */
@@ -40,6 +49,14 @@ export const identityRepository = {
     return rows[0];
   },
 
+  async getAccess(db: Queryable, id: string): Promise<AccessRow | undefined> {
+    const { rows } = await db.query<AccessRow>(
+      'SELECT id, roles::text[] AS roles, is_ops_admin, is_finance_admin, is_super_admin FROM profiles WHERE id = $1',
+      [id],
+    );
+    return rows[0];
+  },
+
   async updateProfile(
     db: Queryable,
     id: string,
@@ -52,6 +69,14 @@ export const identityRepository = {
       [id, ...entries.map(([, value]) => value)],
     );
     return rows[0]!;
+  },
+
+  /** Records the 18+ confirmation once; a later confirmation keeps the first time. */
+  async confirmAge(db: Queryable, id: string): Promise<void> {
+    await db.query(
+      'UPDATE profiles SET is_age_verified_18_plus = true, age_confirmed_at = COALESCE(age_confirmed_at, now()) WHERE id = $1 AND NOT is_age_verified_18_plus',
+      [id],
+    );
   },
 
   async countActiveExams(db: Queryable, ids: string[]): Promise<number> {

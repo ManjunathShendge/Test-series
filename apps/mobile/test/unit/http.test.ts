@@ -15,6 +15,7 @@ const profile = {
   preparationStage: 'starting',
   targetExamIds: [],
   roles: ['student'],
+  ageConfirmed: true,
   onboarded: false,
 };
 

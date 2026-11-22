@@ -9,6 +9,8 @@ export const ErrorCode = z.enum([
   'ACCOUNT_EXISTS_WITH_DIFFERENT_SIGN_IN',
   'DEVICE_NOT_REGISTERED',
   'DEVICE_LIMIT_REACHED',
+  /** Signed in, but the account lacks the role or admin permission the endpoint requires. */
+  'FORBIDDEN',
   'VALIDATION_FAILED',
   'NOT_FOUND',
   'INTERNAL',

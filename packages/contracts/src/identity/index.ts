@@ -23,7 +23,9 @@ export const Profile = z.object({
   preparationStage: PreparationStage.nullable(),
   targetExamIds: z.array(z.uuid()),
   roles: z.array(Role),
-  /** True once onboarding has been completed (a preparation stage is set). */
+  /** The person has confirmed they are 18 or older (recorded with a time on the server). */
+  ageConfirmed: z.boolean(),
+  /** True once onboarding is complete: a preparation stage is set and 18+ is confirmed. */
   onboarded: z.boolean(),
 });
 export type Profile = z.infer<typeof Profile>;
@@ -44,8 +46,11 @@ export const CreateSessionRequest = z.strictObject({
   deviceId: z.uuid().optional(),
   deviceName: z.string().trim().min(1).max(80),
   platform: Platform,
-  /** 18+ confirmation from the sign-in screen (proposed policy, MOBILE.md). */
-  ageConfirmed: z.literal(true),
+  /**
+   * 18+ confirmation (PRD 12) when the client asks for it at sign-in, as the app does. The
+   * website asks once during onboarding instead (PATCH /v1/me), so it omits this field.
+   */
+  ageConfirmed: z.literal(true).optional(),
 });
 export type CreateSessionRequest = z.infer<typeof CreateSessionRequest>;
 
@@ -63,6 +68,8 @@ export const UpdateMeRequest = z
     preferredLanguage: Language,
     preparationStage: PreparationStage,
     targetExamIds: z.array(z.uuid()).max(10),
+    /** One-way 18+ confirmation; required before onboarding can be completed. */
+    ageConfirmed: z.literal(true),
   })
   .partial()
   .refine((value) => Object.keys(value).length > 0, 'At least one field is required');

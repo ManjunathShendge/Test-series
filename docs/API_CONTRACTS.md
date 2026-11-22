@@ -10,7 +10,7 @@ Authenticated requests carry Firebase bearer token, registered device/session pr
 |---|---|---|
 | GET /config | Public | Safe versioned flags, minimum app version, allowed auth/billing modes; no secrets |
 | POST /identity/session | Verified identity | Register/login device, bootstrap profile; two-device limit serialized |
-| GET/PATCH /me | Self | Preferences, profile, onboarding; role fields excluded |
+| GET/PATCH /me | Self | Preferences, profile, onboarding; role fields excluded. `ageConfirmed: true` records the one-time 18+ confirmation (cannot be withdrawn); setting `preparationStage` before it is confirmed is 400 `AGE_CONFIRMATION_REQUIRED`. `onboarded` = stage set and 18+ confirmed |
 | GET/DELETE /me/devices/:id | Self | Inspect/revoke device session |
 | POST /me/deletion | Reauthenticated self | Idempotent deletion request/status workflow |
 | GET /exams, /exams/:id, /tests, /series/:id, /examiners/:id | Public | Published metadata only, filters, cursor |
@@ -44,6 +44,8 @@ Authenticated requests carry Firebase bearer token, registered device/session pr
 | POST /admin/payouts/calculate, /:id/approve, /:id/mark-paid | Finance | Preview, allocation, reference and idempotency |
 | Admin CRUD /exams,/templates,/reviewers,/examiners,/banners,/settings | Explicit permission | Version check, ownership/capability and audit |
 
+Implemented 22 November 2026 (`packages/contracts/src/catalogue`): `GET /v1/exams`, `/v1/exams/:id`, `/v1/tests` (query `exam`, `examiner`, `type`, `access`, `featured`, `q`, `cursor`, `limit` 1-50, default 20; unknown fields rejected), `/v1/tests/:id`, `/v1/series/:id`, `/v1/examiners/:id`. Exam, test and series ids accept the UUID or the slug; examiner ids are UUIDs. Live tests of active exams by approved examiners only; no questions, keys or solutions; `Cache-Control: public, max-age=60, stale-while-revalidate=300`. Per-student fields (owned, attempted, followed) arrive with authenticated variants in later milestones.
+
 Paths above describe resource families; define exact single-resource PATCH routes in contracts during their milestone. No implicit catch-all admin mutation endpoint.
 
 ## Error and replay semantics
@@ -51,6 +53,8 @@ Paths above describe resource families; define exact single-resource PATCH route
 ```json
 {"error":{"code":"ATTEMPT_CLOSED","message":"This attempt has ended.","requestId":"opaque-id","details":{"status":"auto_submitted"}}}
 ```
+
+Role-protected routes use `FirebaseAuthGuard` then `RolesGuard` (`@Roles(...)`, `@RequireAdminPermission('ops'|'finance'|'super')`, implemented 23 November 2026): verified email, unblocked account, active registered device (`x-device-id`), and a role read from the database on every request; a missing role or admin flag answers 403 `FORBIDDEN`. Services still check ownership and RLS remains the last barrier.
 
 400 invalid input; 401 unauthenticated; 403 permission/device failure; 404 inaccessible resource; 409 revision/idempotency/session conflict; 422 business validation; 429 limit with Retry-After; 503 retriable dependency. Stable codes include ENTITLEMENT_REQUIRED, DEVICE_LIMIT, SESSION_REPLACED, SEQUENCE_GAP, PRICE_CHANGED, PURCHASE_PENDING, PAYMENT_REUSED, QC_BLOCKED. Avoid sensitive details.
 

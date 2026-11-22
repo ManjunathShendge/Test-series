@@ -4,6 +4,13 @@ import { readdir, readFile } from 'node:fs/promises';
 // enforced by the API verifying ID tokens and by Firebase Auth settings).
 const allowed = new Set([
   'NEXT_PUBLIC_API_BASE_URL',
+  // Canonical public origin for metadata, sitemap and structured data; a public URL.
+  'NEXT_PUBLIC_SITE_URL',
+  // Firebase web config for the website's sign-in (same project as the app).
+  'NEXT_PUBLIC_FIREBASE_API_KEY',
+  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
+  'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+  'NEXT_PUBLIC_FIREBASE_APP_ID',
   'EXPO_PUBLIC_API_BASE_URL',
   'EXPO_PUBLIC_FIREBASE_API_KEY',
   'EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN',

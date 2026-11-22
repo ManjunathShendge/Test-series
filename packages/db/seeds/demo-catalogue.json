@@ -1,0 +1,2525 @@
+{
+ "exams": [
+  {
+   "id": "ssc-cgl-t1",
+   "name": "SSC CGL Tier 1",
+   "shortName": "SSC CGL",
+   "category": "SSC",
+   "pattern": "100 questions, 200 marks, 60 minutes. Four sections of 25. Negative marking 0.50 per wrong answer.",
+   "syllabus": [
+    "General Intelligence & Reasoning",
+    "General Awareness",
+    "Quantitative Aptitude",
+    "English Comprehension"
+   ],
+   "nextDate": "2027-02-14",
+   "lastCutoff": 153.5,
+   "testCount": 48,
+   "followerCount": 128400
+  },
+  {
+   "id": "ibps-po-pre",
+   "name": "IBPS PO Prelims",
+   "shortName": "IBPS PO",
+   "category": "Banking",
+   "pattern": "100 questions, 100 marks, 60 minutes with sectional timing of 20 minutes each. Negative marking 0.25.",
+   "syllabus": [
+    "English Language (30)",
+    "Quantitative Aptitude (35)",
+    "Reasoning Ability (35)"
+   ],
+   "nextDate": "2026-12-05",
+   "lastCutoff": 68.25,
+   "testCount": 36,
+   "followerCount": 96200
+  },
+  {
+   "id": "rrb-ntpc-cbt1",
+   "name": "RRB NTPC CBT 1",
+   "shortName": "RRB NTPC",
+   "category": "Railways",
+   "pattern": "100 questions, 100 marks, 90 minutes. Negative marking one-third mark per wrong answer.",
+   "syllabus": [
+    "General Awareness (40)",
+    "Mathematics (30)",
+    "General Intelligence & Reasoning (30)"
+   ],
+   "nextDate": "2027-01-20",
+   "lastCutoff": 72.9,
+   "testCount": 29,
+   "followerCount": 74800
+  }
+ ],
+ "examiners": [
+  {
+   "id": "ex-anita",
+   "name": "Anita Deshmukh",
+   "credentials": "Ex-SSC CGL selected (AIR 212), 9 years teaching Quant",
+   "bio": "Builds papers that mirror the current CGL difficulty curve. Every solution is written for a 40-second read.",
+   "tier": "top",
+   "followers": 41200,
+   "publishedTests": 62,
+   "examIds": [
+    "ssc-cgl-t1",
+    "rrb-ntpc-cbt1"
+   ],
+   "isFollowed": true
+  },
+  {
+   "id": "ex-rahul",
+   "name": "Rahul Varma",
+   "credentials": "Former PO, SBI; Banking faculty since 2016",
+   "bio": "Puzzle-heavy reasoning sets and data interpretation modelled on the last three IBPS cycles.",
+   "tier": "verified",
+   "followers": 28750,
+   "publishedTests": 41,
+   "examIds": [
+    "ibps-po-pre"
+   ],
+   "isFollowed": false
+  },
+  {
+   "id": "ex-meera",
+   "name": "Meera Iyer",
+   "credentials": "MA English, CELTA; 11 years of competitive English coaching",
+   "bio": "Grammar and comprehension sets with bilingual explanations for Hindi-medium aspirants.",
+   "tier": "verified",
+   "followers": 19300,
+   "publishedTests": 35,
+   "examIds": [
+    "ssc-cgl-t1",
+    "ibps-po-pre"
+   ],
+   "isFollowed": true
+  },
+  {
+   "id": "ex-suresh",
+   "name": "Suresh Kumar Yadav",
+   "credentials": "RRB NTPC 2019 selected; GA and Current Affairs specialist",
+   "bio": "Monthly current affairs woven into full-pattern mocks. Hindi-first, English complete.",
+   "tier": "new",
+   "followers": 4100,
+   "publishedTests": 9,
+   "examIds": [
+    "rrb-ntpc-cbt1"
+   ],
+   "isFollowed": false
+  }
+ ],
+ "tests": [
+  {
+   "id": "t-cgl-mini-1",
+   "examId": "ssc-cgl-t1",
+   "examinerId": "ex-anita",
+   "seriesId": "s-cgl-sprint",
+   "title": "SSC CGL Tier 1 Mini Mock 1",
+   "kind": "full-mock",
+   "languages": [
+    "en",
+    "hi"
+   ],
+   "questionCount": 40,
+   "durationMinutes": 30,
+   "totalMarks": 80,
+   "pricePaise": 0,
+   "availability": "free",
+   "attempts": 18420,
+   "isFeatured": true,
+   "publishedAt": "2026-10-28T09:00:00Z",
+   "sections": [
+    {
+     "id": "reasoning",
+     "name": {
+      "en": "General Intelligence & Reasoning",
+      "hi": "सामान्य बुद्धि एवं तर्कशक्ति"
+     },
+     "bankKey": "reasoning",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    },
+    {
+     "id": "ga",
+     "name": {
+      "en": "General Awareness",
+      "hi": "सामान्य जागरूकता"
+     },
+     "bankKey": "ga",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    },
+    {
+     "id": "quant",
+     "name": {
+      "en": "Quantitative Aptitude",
+      "hi": "मात्रात्मक अभियोग्यता"
+     },
+     "bankKey": "quant",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    },
+    {
+     "id": "english",
+     "name": {
+      "en": "English Comprehension"
+     },
+     "bankKey": "english",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    }
+   ],
+   "instructions": [
+    "The test has 40 questions across four sections and lasts 30 minutes.",
+    "Each correct answer carries 2 marks. 0.50 mark is deducted for every wrong answer. Unattempted questions carry no penalty.",
+    "You may move between sections freely. The paper auto-submits when time runs out.",
+    "Answers are saved on this device as you go and synced in the background.",
+    "Use \"Mark for Review\" to flag a question. A marked question with a selected answer is still evaluated."
+   ]
+  },
+  {
+   "id": "t-cgl-mini-2",
+   "examId": "ssc-cgl-t1",
+   "examinerId": "ex-anita",
+   "seriesId": "s-cgl-sprint",
+   "title": "SSC CGL Tier 1 Mini Mock 2",
+   "kind": "full-mock",
+   "languages": [
+    "en",
+    "hi"
+   ],
+   "questionCount": 40,
+   "durationMinutes": 30,
+   "totalMarks": 80,
+   "pricePaise": 4900,
+   "availability": "owned",
+   "attempts": 9310,
+   "publishedAt": "2026-11-02T09:00:00Z",
+   "sections": [
+    {
+     "id": "reasoning",
+     "name": {
+      "en": "General Intelligence & Reasoning",
+      "hi": "सामान्य बुद्धि एवं तर्कशक्ति"
+     },
+     "bankKey": "reasoning",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    },
+    {
+     "id": "ga",
+     "name": {
+      "en": "General Awareness",
+      "hi": "सामान्य जागरूकता"
+     },
+     "bankKey": "ga",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    },
+    {
+     "id": "quant",
+     "name": {
+      "en": "Quantitative Aptitude",
+      "hi": "मात्रात्मक अभियोग्यता"
+     },
+     "bankKey": "quant",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    },
+    {
+     "id": "english",
+     "name": {
+      "en": "English Comprehension"
+     },
+     "bankKey": "english",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    }
+   ],
+   "instructions": [
+    "The test has 40 questions across four sections and lasts 30 minutes.",
+    "Each correct answer carries 2 marks. 0.50 mark is deducted for every wrong answer. Unattempted questions carry no penalty.",
+    "You may move between sections freely. The paper auto-submits when time runs out.",
+    "Answers are saved on this device as you go and synced in the background.",
+    "Use \"Mark for Review\" to flag a question. A marked question with a selected answer is still evaluated."
+   ]
+  },
+  {
+   "id": "t-cgl-mini-3",
+   "examId": "ssc-cgl-t1",
+   "examinerId": "ex-anita",
+   "seriesId": "s-cgl-sprint",
+   "title": "SSC CGL Tier 1 Mini Mock 3",
+   "kind": "full-mock",
+   "languages": [
+    "en",
+    "hi"
+   ],
+   "questionCount": 40,
+   "durationMinutes": 30,
+   "totalMarks": 80,
+   "pricePaise": 4900,
+   "availability": "paid",
+   "attempts": 6124,
+   "publishedAt": "2026-11-09T09:00:00Z",
+   "sections": [
+    {
+     "id": "reasoning",
+     "name": {
+      "en": "General Intelligence & Reasoning",
+      "hi": "सामान्य बुद्धि एवं तर्कशक्ति"
+     },
+     "bankKey": "reasoning",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    },
+    {
+     "id": "ga",
+     "name": {
+      "en": "General Awareness",
+      "hi": "सामान्य जागरूकता"
+     },
+     "bankKey": "ga",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    },
+    {
+     "id": "quant",
+     "name": {
+      "en": "Quantitative Aptitude",
+      "hi": "मात्रात्मक अभियोग्यता"
+     },
+     "bankKey": "quant",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    },
+    {
+     "id": "english",
+     "name": {
+      "en": "English Comprehension"
+     },
+     "bankKey": "english",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    }
+   ],
+   "instructions": [
+    "The test has 40 questions across four sections and lasts 30 minutes.",
+    "Each correct answer carries 2 marks. 0.50 mark is deducted for every wrong answer. Unattempted questions carry no penalty.",
+    "You may move between sections freely. The paper auto-submits when time runs out.",
+    "Answers are saved on this device as you go and synced in the background.",
+    "Use \"Mark for Review\" to flag a question. A marked question with a selected answer is still evaluated."
+   ]
+  },
+  {
+   "id": "t-cgl-quant-sec",
+   "examId": "ssc-cgl-t1",
+   "examinerId": "ex-anita",
+   "title": "Quantitative Aptitude Sectional: Arithmetic",
+   "kind": "sectional",
+   "languages": [
+    "en",
+    "hi"
+   ],
+   "questionCount": 10,
+   "durationMinutes": 10,
+   "totalMarks": 20,
+   "pricePaise": 1900,
+   "availability": "paid",
+   "attempts": 4480,
+   "publishedAt": "2026-11-05T09:00:00Z",
+   "sections": [
+    {
+     "id": "quant",
+     "name": {
+      "en": "Quantitative Aptitude",
+      "hi": "मात्रात्मक अभियोग्यता"
+     },
+     "bankKey": "quant",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    }
+   ],
+   "instructions": [
+    "This sectional has 10 questions and lasts 10 minutes.",
+    "Each correct answer carries 2 marks. 0.50 mark is deducted for every wrong answer."
+   ]
+  },
+  {
+   "id": "t-cgl-english-sec",
+   "examId": "ssc-cgl-t1",
+   "examinerId": "ex-meera",
+   "title": "English Sectional: Grammar & Vocabulary",
+   "kind": "sectional",
+   "languages": [
+    "en"
+   ],
+   "questionCount": 10,
+   "durationMinutes": 8,
+   "totalMarks": 20,
+   "pricePaise": 0,
+   "availability": "free",
+   "attempts": 12930,
+   "publishedAt": "2026-10-21T09:00:00Z",
+   "sections": [
+    {
+     "id": "english",
+     "name": {
+      "en": "English Comprehension"
+     },
+     "bankKey": "english",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    }
+   ],
+   "instructions": [
+    "This sectional has 10 questions and lasts 8 minutes.",
+    "Each correct answer carries 2 marks. 0.50 mark is deducted for every wrong answer."
+   ]
+  },
+  {
+   "id": "t-cgl-pyq-2025",
+   "examId": "ssc-cgl-t1",
+   "examinerId": "ex-anita",
+   "title": "CGL 2025 Shift 2: Previous Year Practice",
+   "kind": "pyq",
+   "languages": [
+    "en",
+    "hi"
+   ],
+   "questionCount": 40,
+   "durationMinutes": 30,
+   "totalMarks": 80,
+   "pricePaise": 2900,
+   "availability": "paid",
+   "attempts": 7705,
+   "publishedAt": "2026-10-15T09:00:00Z",
+   "sections": [
+    {
+     "id": "reasoning",
+     "name": {
+      "en": "General Intelligence & Reasoning",
+      "hi": "सामान्य बुद्धि एवं तर्कशक्ति"
+     },
+     "bankKey": "reasoning",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    },
+    {
+     "id": "ga",
+     "name": {
+      "en": "General Awareness",
+      "hi": "सामान्य जागरूकता"
+     },
+     "bankKey": "ga",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    },
+    {
+     "id": "quant",
+     "name": {
+      "en": "Quantitative Aptitude",
+      "hi": "मात्रात्मक अभियोग्यता"
+     },
+     "bankKey": "quant",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    },
+    {
+     "id": "english",
+     "name": {
+      "en": "English Comprehension"
+     },
+     "bankKey": "english",
+     "questionCount": 10,
+     "marksPerQuestion": 2,
+     "negativeMarks": 0.5
+    }
+   ],
+   "instructions": [
+    "The test has 40 questions across four sections and lasts 30 minutes.",
+    "Each correct answer carries 2 marks. 0.50 mark is deducted for every wrong answer. Unattempted questions carry no penalty.",
+    "You may move between sections freely. The paper auto-submits when time runs out.",
+    "Answers are saved on this device as you go and synced in the background.",
+    "Use \"Mark for Review\" to flag a question. A marked question with a selected answer is still evaluated."
+   ]
+  },
+  {
+   "id": "t-ibps-mini-1",
+   "examId": "ibps-po-pre",
+   "examinerId": "ex-rahul",
+   "seriesId": "s-ibps-pre",
+   "title": "IBPS PO Prelims Mini Mock 1",
+   "kind": "full-mock",
+   "languages": [
+    "en",
+    "hi"
+   ],
+   "questionCount": 30,
+   "durationMinutes": 24,
+   "totalMarks": 30,
+   "pricePaise": 0,
+   "availability": "free",
+   "attempts": 15210,
+   "publishedAt": "2026-11-01T09:00:00Z",
+   "sections": [
+    {
+     "id": "english",
+     "name": {
+      "en": "English Comprehension"
+     },
+     "bankKey": "english",
+     "questionCount": 10,
+     "durationMinutes": 8,
+     "marksPerQuestion": 1,
+     "negativeMarks": 0.25
+    },
+    {
+     "id": "quant",
+     "name": {
+      "en": "Quantitative Aptitude",
+      "hi": "मात्रात्मक अभियोग्यता"
+     },
+     "bankKey": "quant",
+     "questionCount": 10,
+     "durationMinutes": 8,
+     "marksPerQuestion": 1,
+     "negativeMarks": 0.25
+    },
+    {
+     "id": "reasoning",
+     "name": {
+      "en": "General Intelligence & Reasoning",
+      "hi": "सामान्य बुद्धि एवं तर्कशक्ति"
+     },
+     "bankKey": "reasoning",
+     "questionCount": 10,
+     "durationMinutes": 8,
+     "marksPerQuestion": 1,
+     "negativeMarks": 0.25
+    }
+   ],
+   "instructions": [
+    "The test has 30 questions across three sections and lasts 24 minutes.",
+    "Each section has a fixed time of 8 minutes. When a section closes, it locks and the next one opens.",
+    "Each correct answer carries 1 mark. 0.25 mark is deducted for every wrong answer.",
+    "Answers are saved on this device as you go and synced in the background."
+   ]
+  },
+  {
+   "id": "t-ibps-mini-2",
+   "examId": "ibps-po-pre",
+   "examinerId": "ex-rahul",
+   "seriesId": "s-ibps-pre",
+   "title": "IBPS PO Prelims Mini Mock 2",
+   "kind": "full-mock",
+   "languages": [
+    "en",
+    "hi"
+   ],
+   "questionCount": 30,
+   "durationMinutes": 24,
+   "totalMarks": 30,
+   "pricePaise": 3900,
+   "availability": "paid",
+   "attempts": 8032,
+   "publishedAt": "2026-11-08T09:00:00Z",
+   "sections": [
+    {
+     "id": "english",
+     "name": {
+      "en": "English Comprehension"
+     },
+     "bankKey": "english",
+     "questionCount": 10,
+     "durationMinutes": 8,
+     "marksPerQuestion": 1,
+     "negativeMarks": 0.25
+    },
+    {
+     "id": "quant",
+     "name": {
+      "en": "Quantitative Aptitude",
+      "hi": "मात्रात्मक अभियोग्यता"
+     },
+     "bankKey": "quant",
+     "questionCount": 10,
+     "durationMinutes": 8,
+     "marksPerQuestion": 1,
+     "negativeMarks": 0.25
+    },
+    {
+     "id": "reasoning",
+     "name": {
+      "en": "General Intelligence & Reasoning",
+      "hi": "सामान्य बुद्धि एवं तर्कशक्ति"
+     },
+     "bankKey": "reasoning",
+     "questionCount": 10,
+     "durationMinutes": 8,
+     "marksPerQuestion": 1,
+     "negativeMarks": 0.25
+    }
+   ],
+   "instructions": [
+    "The test has 30 questions across three sections and lasts 24 minutes.",
+    "Each section has a fixed time of 8 minutes. When a section closes, it locks and the next one opens.",
+    "Each correct answer carries 1 mark. 0.25 mark is deducted for every wrong answer.",
+    "Answers are saved on this device as you go and synced in the background."
+   ]
+  },
+  {
+   "id": "t-ibps-reasoning-sec",
+   "examId": "ibps-po-pre",
+   "examinerId": "ex-rahul",
+   "title": "Reasoning Sectional: Puzzles & Series",
+   "kind": "sectional",
+   "languages": [
+    "en",
+    "hi"
+   ],
+   "questionCount": 10,
+   "durationMinutes": 8,
+   "totalMarks": 10,
+   "pricePaise": 1900,
+   "availability": "paid",
+   "attempts": 3875,
+   "publishedAt": "2026-11-06T09:00:00Z",
+   "sections": [
+    {
+     "id": "reasoning",
+     "name": {
+      "en": "General Intelligence & Reasoning",
+      "hi": "सामान्य बुद्धि एवं तर्कशक्ति"
+     },
+     "bankKey": "reasoning",
+     "questionCount": 10,
+     "marksPerQuestion": 1,
+     "negativeMarks": 0.25
+    }
+   ],
+   "instructions": [
+    "10 questions, 8 minutes. 1 mark each, 0.25 negative."
+   ]
+  },
+  {
+   "id": "t-rrb-mini-1",
+   "examId": "rrb-ntpc-cbt1",
+   "examinerId": "ex-suresh",
+   "seriesId": "s-rrb-ntpc",
+   "title": "RRB NTPC CBT 1 Mini Mock 1",
+   "kind": "full-mock",
+   "languages": [
+    "en",
+    "hi"
+   ],
+   "questionCount": 30,
+   "durationMinutes": 27,
+   "totalMarks": 30,
+   "pricePaise": 0,
+   "availability": "free",
+   "attempts": 11020,
+   "publishedAt": "2026-10-30T09:00:00Z",
+   "sections": [
+    {
+     "id": "ga",
+     "name": {
+      "en": "General Awareness",
+      "hi": "सामान्य जागरूकता"
+     },
+     "bankKey": "ga",
+     "questionCount": 10,
+     "marksPerQuestion": 1,
+     "negativeMarks": 0.3333333333333333
+    },
+    {
+     "id": "quant",
+     "name": {
+      "en": "Mathematics",
+      "hi": "गणित"
+     },
+     "bankKey": "quant",
+     "questionCount": 10,
+     "marksPerQuestion": 1,
+     "negativeMarks": 0.3333333333333333
+    },
+    {
+     "id": "reasoning",
+     "name": {
+      "en": "General Intelligence & Reasoning",
+      "hi": "सामान्य बुद्धि एवं तर्कशक्ति"
+     },
+     "bankKey": "reasoning",
+     "questionCount": 10,
+     "marksPerQuestion": 1,
+     "negativeMarks": 0.3333333333333333
+    }
+   ],
+   "instructions": [
+    "The test has 30 questions across three sections and lasts 27 minutes.",
+    "Each correct answer carries 1 mark. One-third mark is deducted for every wrong answer.",
+    "Answers are saved on this device as you go and synced in the background."
+   ]
+  },
+  {
+   "id": "t-rrb-ga-sec",
+   "examId": "rrb-ntpc-cbt1",
+   "examinerId": "ex-suresh",
+   "title": "General Awareness Sectional: Polity & Geography",
+   "kind": "sectional",
+   "languages": [
+    "en",
+    "hi"
+   ],
+   "questionCount": 10,
+   "durationMinutes": 8,
+   "totalMarks": 10,
+   "pricePaise": 1900,
+   "availability": "owned",
+   "attempts": 2210,
+   "publishedAt": "2026-11-04T09:00:00Z",
+   "sections": [
+    {
+     "id": "ga",
+     "name": {
+      "en": "General Awareness",
+      "hi": "सामान्य जागरूकता"
+     },
+     "bankKey": "ga",
+     "questionCount": 10,
+     "marksPerQuestion": 1,
+     "negativeMarks": 0.3333333333333333
+    }
+   ],
+   "instructions": [
+    "10 questions, 8 minutes. 1 mark each, one-third negative."
+   ]
+  }
+ ],
+ "series": [
+  {
+   "id": "s-cgl-sprint",
+   "examId": "ssc-cgl-t1",
+   "examinerId": "ex-anita",
+   "title": "CGL Tier 1 Sprint Series",
+   "description": "Three mini mocks available now, with a new one each week until the exam. Each is tuned to the latest shift analysis.",
+   "testIds": [
+    "t-cgl-mini-1",
+    "t-cgl-mini-2",
+    "t-cgl-mini-3"
+   ],
+   "pricePaise": 29900,
+   "validityDays": 180,
+   "syllabusCoverage": 0.86,
+   "owned": false
+  },
+  {
+   "id": "s-ibps-pre",
+   "examId": "ibps-po-pre",
+   "examinerId": "ex-rahul",
+   "title": "IBPS PO Prelims Foundation Pack",
+   "description": "Sectionally timed mini mocks plus puzzle drills. Built for the December cycle.",
+   "testIds": [
+    "t-ibps-mini-1",
+    "t-ibps-mini-2"
+   ],
+   "pricePaise": 24900,
+   "validityDays": 120,
+   "syllabusCoverage": 0.78,
+   "owned": false
+  },
+  {
+   "id": "s-rrb-ntpc",
+   "examId": "rrb-ntpc-cbt1",
+   "examinerId": "ex-suresh",
+   "title": "NTPC CBT 1 Hindi-first Series",
+   "description": "Complete Hindi with English, monthly current affairs woven into every mock.",
+   "testIds": [
+    "t-rrb-mini-1"
+   ],
+   "pricePaise": 19900,
+   "validityDays": 150,
+   "syllabusCoverage": 0.71,
+   "owned": true
+  }
+ ],
+ "bank": {
+  "reasoning": [
+   {
+    "id": "r1",
+    "topic": "Number Series",
+    "stem": {
+     "en": "Find the next term: 2, 6, 12, 20, 30, ?",
+     "hi": "अगला पद ज्ञात करें: 2, 6, 12, 20, 30, ?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "40"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "42"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "44"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "46"
+      }
+     }
+    ]
+   },
+   {
+    "id": "r2",
+    "topic": "Classification",
+    "stem": {
+     "en": "Choose the odd one out.",
+     "hi": "असंगत को चुनें।"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "Apple",
+       "hi": "सेब"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "Mango",
+       "hi": "आम"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "Potato",
+       "hi": "आलू"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "Banana",
+       "hi": "केला"
+      }
+     }
+    ]
+   },
+   {
+    "id": "r3",
+    "topic": "Coding-Decoding",
+    "stem": {
+     "en": "If each letter is replaced by its position in the alphabet and summed, CAT = 24. What is DOG?",
+     "hi": "यदि प्रत्येक अक्षर को वर्णमाला में उसके स्थान से बदलकर जोड़ा जाए तो CAT = 24 है। DOG का मान क्या होगा?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "24"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "25"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "26"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "27"
+      }
+     }
+    ]
+   },
+   {
+    "id": "r4",
+    "topic": "Direction Sense",
+    "stem": {
+     "en": "A man walks 5 km north, turns right and walks 3 km, then turns right again and walks 5 km. How far and in which direction is he from the start?",
+     "hi": "एक व्यक्ति 5 किमी उत्तर चलता है, दाएँ मुड़कर 3 किमी चलता है, फिर दाएँ मुड़कर 5 किमी चलता है। वह प्रारंभिक बिंदु से कितनी दूर और किस दिशा में है?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "3 km East",
+       "hi": "3 किमी पूर्व"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "3 km West",
+       "hi": "3 किमी पश्चिम"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "8 km North",
+       "hi": "8 किमी उत्तर"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "5 km South",
+       "hi": "5 किमी दक्षिण"
+      }
+     }
+    ]
+   },
+   {
+    "id": "r5",
+    "topic": "Blood Relations",
+    "stem": {
+     "en": "Pointing to a photograph, Ravi said, 'She is the daughter of my grandfather's only son.' How is the woman related to Ravi?",
+     "hi": "एक तस्वीर की ओर इशारा करते हुए रवि ने कहा, 'वह मेरे दादा के इकलौते पुत्र की पुत्री है।' वह महिला रवि से किस प्रकार संबंधित है?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "Mother",
+       "hi": "माता"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "Sister",
+       "hi": "बहन"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "Aunt",
+       "hi": "बुआ"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "Cousin",
+       "hi": "चचेरी बहन"
+      }
+     }
+    ]
+   },
+   {
+    "id": "r6",
+    "topic": "Analogy",
+    "stem": {
+     "en": "Book : Pages :: Tree : ?",
+     "hi": "पुस्तक : पृष्ठ :: वृक्ष : ?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "Roots",
+       "hi": "जड़ें"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "Forest",
+       "hi": "वन"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "Leaves",
+       "hi": "पत्तियाँ"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "Wood",
+       "hi": "लकड़ी"
+      }
+     }
+    ]
+   },
+   {
+    "id": "r7",
+    "topic": "Coding-Decoding",
+    "stem": {
+     "en": "In a certain code, PEN is written as QFO. How is INK written in that code?",
+     "hi": "एक निश्चित कूट में PEN को QFO लिखा जाता है। उसी कूट में INK को कैसे लिखा जाएगा?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "JOL"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "HMJ"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "JOK"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "IOL"
+      }
+     }
+    ]
+   },
+   {
+    "id": "r8",
+    "topic": "Syllogism",
+    "stem": {
+     "en": "Statements: All pens are tools. Some tools are heavy. Conclusions: I. Some pens are heavy. II. All tools are pens.",
+     "hi": "कथन: सभी पेन उपकरण हैं। कुछ उपकरण भारी हैं। निष्कर्ष: I. कुछ पेन भारी हैं। II. सभी उपकरण पेन हैं।"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "Only I follows",
+       "hi": "केवल I अनुसरण करता है"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "Only II follows",
+       "hi": "केवल II अनुसरण करता है"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "Both follow",
+       "hi": "दोनों अनुसरण करते हैं"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "Neither follows",
+       "hi": "कोई अनुसरण नहीं करता"
+      }
+     }
+    ]
+   },
+   {
+    "id": "r9",
+    "topic": "Clocks",
+    "stem": {
+     "en": "What is the angle between the hour and minute hands at 3:00?",
+     "hi": "3:00 बजे घंटे और मिनट की सुइयों के बीच का कोण क्या है?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "60°"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "75°"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "90°"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "120°"
+      }
+     }
+    ]
+   },
+   {
+    "id": "r10",
+    "topic": "Venn Diagrams",
+    "stem": {
+     "en": "In a class of 40 students, 25 play cricket, 20 play football and 8 play both. How many play neither?",
+     "hi": "40 विद्यार्थियों की एक कक्षा में 25 क्रिकेट, 20 फुटबॉल और 8 दोनों खेलते हैं। कितने विद्यार्थी कोई भी खेल नहीं खेलते?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "3"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "5"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "7"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "13"
+      }
+     }
+    ]
+   }
+  ],
+  "ga": [
+   {
+    "id": "g1",
+    "topic": "World Geography",
+    "stem": {
+     "en": "What is the capital of Australia?",
+     "hi": "ऑस्ट्रेलिया की राजधानी क्या है?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "Sydney",
+       "hi": "सिडनी"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "Melbourne",
+       "hi": "मेलबर्न"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "Canberra",
+       "hi": "कैनबरा"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "Perth",
+       "hi": "पर्थ"
+      }
+     }
+    ]
+   },
+   {
+    "id": "g2",
+    "topic": "Books & Authors",
+    "stem": {
+     "en": "Who wrote 'The Discovery of India'?",
+     "hi": "'द डिस्कवरी ऑफ इंडिया' किसने लिखी?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "Mahatma Gandhi",
+       "hi": "महात्मा गांधी"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "Jawaharlal Nehru",
+       "hi": "जवाहरलाल नेहरू"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "Rabindranath Tagore",
+       "hi": "रवींद्रनाथ टैगोर"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "B. R. Ambedkar",
+       "hi": "बी. आर. अंबेडकर"
+      }
+     }
+    ]
+   },
+   {
+    "id": "g3",
+    "topic": "Indian Polity",
+    "stem": {
+     "en": "The Constitution of India came into force on",
+     "hi": "भारत का संविधान किस दिन लागू हुआ?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "15 August 1947",
+       "hi": "15 अगस्त 1947"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "26 November 1949",
+       "hi": "26 नवंबर 1949"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "26 January 1950",
+       "hi": "26 जनवरी 1950"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "2 October 1950",
+       "hi": "2 अक्टूबर 1950"
+      }
+     }
+    ]
+   },
+   {
+    "id": "g4",
+    "topic": "Chemistry",
+    "stem": {
+     "en": "What is the chemical symbol of gold?",
+     "hi": "सोने का रासायनिक प्रतीक क्या है?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "Ag"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "Au"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "Gd"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "Go"
+      }
+     }
+    ]
+   },
+   {
+    "id": "g5",
+    "topic": "Indian Geography",
+    "stem": {
+     "en": "Which river is known as the 'Sorrow of Bihar'?",
+     "hi": "किस नदी को 'बिहार का शोक' कहा जाता है?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "Gandak",
+       "hi": "गंडक"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "Son",
+       "hi": "सोन"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "Kosi",
+       "hi": "कोसी"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "Damodar",
+       "hi": "दामोदर"
+      }
+     }
+    ]
+   },
+   {
+    "id": "g6",
+    "topic": "Indian Polity",
+    "stem": {
+     "en": "Who was the first woman President of India?",
+     "hi": "भारत की पहली महिला राष्ट्रपति कौन थीं?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "Indira Gandhi",
+       "hi": "इंदिरा गांधी"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "Pratibha Patil",
+       "hi": "प्रतिभा पाटिल"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "Sarojini Naidu",
+       "hi": "सरोजिनी नायडू"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "Droupadi Murmu",
+       "hi": "द्रौपदी मुर्मू"
+      }
+     }
+    ]
+   },
+   {
+    "id": "g7",
+    "topic": "Indian Polity",
+    "stem": {
+     "en": "Article 21 of the Indian Constitution deals with",
+     "hi": "भारतीय संविधान का अनुच्छेद 21 किससे संबंधित है?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "Right to equality",
+       "hi": "समानता का अधिकार"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "Right to life and personal liberty",
+       "hi": "जीवन और व्यक्तिगत स्वतंत्रता का अधिकार"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "Right to education",
+       "hi": "शिक्षा का अधिकार"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "Freedom of religion",
+       "hi": "धर्म की स्वतंत्रता"
+      }
+     }
+    ]
+   },
+   {
+    "id": "g8",
+    "topic": "Biology",
+    "stem": {
+     "en": "Deficiency of Vitamin C causes",
+     "hi": "विटामिन C की कमी से कौन सा रोग होता है?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "Rickets",
+       "hi": "रिकेट्स"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "Beriberi",
+       "hi": "बेरीबेरी"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "Scurvy",
+       "hi": "स्कर्वी"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "Night blindness",
+       "hi": "रतौंधी"
+      }
+     }
+    ]
+   },
+   {
+    "id": "g9",
+    "topic": "Economy",
+    "stem": {
+     "en": "The headquarters of the Reserve Bank of India is in",
+     "hi": "भारतीय रिज़र्व बैंक का मुख्यालय कहाँ है?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "New Delhi",
+       "hi": "नई दिल्ली"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "Mumbai",
+       "hi": "मुंबई"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "Kolkata",
+       "hi": "कोलकाता"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "Chennai",
+       "hi": "चेन्नई"
+      }
+     }
+    ]
+   },
+   {
+    "id": "g10",
+    "topic": "Indian Geography",
+    "stem": {
+     "en": "The Tropic of Cancer passes through how many Indian states?",
+     "hi": "कर्क रेखा भारत के कितने राज्यों से होकर गुजरती है?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "6"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "7"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "8"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "9"
+      }
+     }
+    ]
+   }
+  ],
+  "quant": [
+   {
+    "id": "q1",
+    "topic": "Percentage",
+    "stem": {
+     "en": "What is 15% of 240?",
+     "hi": "240 का 15% क्या है?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "32"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "34"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "36"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "38"
+      }
+     }
+    ]
+   },
+   {
+    "id": "q2",
+    "topic": "Average",
+    "stem": {
+     "en": "The average of the first 10 natural numbers is",
+     "hi": "प्रथम 10 प्राकृतिक संख्याओं का औसत है"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "5"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "5.5"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "6"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "6.5"
+      }
+     }
+    ]
+   },
+   {
+    "id": "q3",
+    "topic": "Time, Speed & Distance",
+    "stem": {
+     "en": "A 150 m long train crosses a pole in 15 seconds. What is its speed in km/h?",
+     "hi": "150 मीटर लंबी एक ट्रेन 15 सेकंड में एक खंभे को पार करती है। उसकी गति किमी/घंटा में क्या है?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "30"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "36"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "40"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "45"
+      }
+     }
+    ]
+   },
+   {
+    "id": "q4",
+    "topic": "Simple Interest",
+    "stem": {
+     "en": "Find the simple interest on ₹5,000 at 8% per annum for 3 years.",
+     "hi": "₹5,000 पर 8% वार्षिक दर से 3 वर्ष का साधारण ब्याज ज्ञात करें।"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "₹1,000"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "₹1,200"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "₹1,400"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "₹1,500"
+      }
+     }
+    ]
+   },
+   {
+    "id": "q5",
+    "topic": "Algebra",
+    "stem": {
+     "en": "If 3x − 7 = 11, then x =",
+     "hi": "यदि 3x − 7 = 11, तो x ="
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "4"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "5"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "6"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "7"
+      }
+     }
+    ]
+   },
+   {
+    "id": "q6",
+    "topic": "Ratio & Proportion",
+    "stem": {
+     "en": "Two numbers are in the ratio 3 : 5 and their sum is 64. The larger number is",
+     "hi": "दो संख्याएँ 3 : 5 के अनुपात में हैं और उनका योग 64 है। बड़ी संख्या है"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "24"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "32"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "40"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "48"
+      }
+     }
+    ]
+   },
+   {
+    "id": "q7",
+    "topic": "Number System",
+    "stem": {
+     "en": "The LCM of 12, 18 and 24 is",
+     "hi": "12, 18 और 24 का लघुत्तम समापवर्त्य है"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "48"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "72"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "96"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "144"
+      }
+     }
+    ]
+   },
+   {
+    "id": "q8",
+    "topic": "Mensuration",
+    "stem": {
+     "en": "The area of a circle of radius 7 cm is (take π = 22/7)",
+     "hi": "7 सेमी त्रिज्या वाले वृत्त का क्षेत्रफल है (π = 22/7 लें)"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "44 cm²"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "154 cm²"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "308 cm²"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "616 cm²"
+      }
+     }
+    ]
+   },
+   {
+    "id": "q9",
+    "topic": "Profit & Loss",
+    "stem": {
+     "en": "An article costing ₹500 is sold at a profit of 20%. The selling price is",
+     "hi": "₹500 की लागत वाली वस्तु 20% लाभ पर बेची जाती है। विक्रय मूल्य है"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "₹550"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "₹580"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "₹600"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "₹620"
+      }
+     }
+    ]
+   },
+   {
+    "id": "q10",
+    "topic": "Simplification",
+    "stem": {
+     "en": "√0.0049 = ?",
+     "hi": "√0.0049 = ?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "0.007"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "0.07"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "0.7"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "7"
+      }
+     }
+    ]
+   }
+  ],
+  "english": [
+   {
+    "id": "e1",
+    "topic": "Synonyms",
+    "stem": {
+     "en": "Choose the word closest in meaning to 'ABUNDANT'."
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "Scarce"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "Plentiful"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "Modest"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "Fragile"
+      }
+     }
+    ]
+   },
+   {
+    "id": "e2",
+    "topic": "Antonyms",
+    "stem": {
+     "en": "Choose the word opposite in meaning to 'TRANSPARENT'."
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "Clear"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "Opaque"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "Lucid"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "Visible"
+      }
+     }
+    ]
+   },
+   {
+    "id": "e3",
+    "topic": "Spotting Errors",
+    "stem": {
+     "en": "Identify the part with an error: 'She (A) / don't like (B) / coffee in the morning. (C) / No error (D)'"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "She"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "don't like"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "coffee in the morning."
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "No error"
+      }
+     }
+    ]
+   },
+   {
+    "id": "e4",
+    "topic": "Fill in the Blanks",
+    "stem": {
+     "en": "He has been working here ______ 2015."
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "for"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "from"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "since"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "by"
+      }
+     }
+    ]
+   },
+   {
+    "id": "e5",
+    "topic": "One Word Substitution",
+    "stem": {
+     "en": "A person who can speak many languages"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "Linguist"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "Polyglot"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "Orator"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "Bilingual"
+      }
+     }
+    ]
+   },
+   {
+    "id": "e6",
+    "topic": "Idioms & Phrases",
+    "stem": {
+     "en": "What does the idiom 'to hit the nail on the head' mean?"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "To injure oneself"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "To do or say exactly the right thing"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "To work very hard"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "To start a fight"
+      }
+     }
+    ]
+   },
+   {
+    "id": "e7",
+    "topic": "Spelling",
+    "stem": {
+     "en": "Choose the correctly spelt word."
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "Accomodation"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "Acommodation"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "Accommodation"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "Accomadation"
+      }
+     }
+    ]
+   },
+   {
+    "id": "e8",
+    "topic": "Active & Passive Voice",
+    "stem": {
+     "en": "Change to passive voice: 'They built the bridge.'"
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "The bridge is built by them."
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "The bridge was built by them."
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "The bridge has been built by them."
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "The bridge had built by them."
+      }
+     }
+    ]
+   },
+   {
+    "id": "e9",
+    "topic": "Subject-Verb Agreement",
+    "stem": {
+     "en": "Neither of the boys ______ present at the meeting."
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "were"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "are"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "was"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "have been"
+      }
+     }
+    ]
+   },
+   {
+    "id": "e10",
+    "topic": "Synonyms",
+    "stem": {
+     "en": "Choose the word closest in meaning to 'CANDID'."
+    },
+    "options": [
+     {
+      "id": "A",
+      "text": {
+       "en": "Secretive"
+      }
+     },
+     {
+      "id": "B",
+      "text": {
+       "en": "Frank"
+      }
+     },
+     {
+      "id": "C",
+      "text": {
+       "en": "Rude"
+      }
+     },
+     {
+      "id": "D",
+      "text": {
+       "en": "Timid"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "solutions": {
+  "r1": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "Differences are 4, 6, 8, 10, so the next difference is 12: 30 + 12 = 42.",
+    "hi": "अंतर 4, 6, 8, 10 हैं, अतः अगला अंतर 12 है: 30 + 12 = 42।"
+   },
+   "averageTimeSeconds": 38,
+   "percentCorrect": 81
+  },
+  "r2": {
+   "correctOptionId": "C",
+   "solution": {
+    "en": "Apple, mango and banana are fruits; potato is a vegetable.",
+    "hi": "सेब, आम और केला फल हैं; आलू एक सब्ज़ी है।"
+   },
+   "averageTimeSeconds": 14,
+   "percentCorrect": 94
+  },
+  "r3": {
+   "correctOptionId": "C",
+   "solution": {
+    "en": "D = 4, O = 15, G = 7. Sum = 26.",
+    "hi": "D = 4, O = 15, G = 7। योग = 26।"
+   },
+   "averageTimeSeconds": 41,
+   "percentCorrect": 72
+  },
+  "r4": {
+   "correctOptionId": "A",
+   "solution": {
+    "en": "North 5, East 3, then South 5 brings him level with the start, 3 km to the east.",
+    "hi": "उत्तर 5, पूर्व 3, फिर दक्षिण 5 उसे प्रारंभ बिंदु की सीध में 3 किमी पूर्व में लाता है।"
+   },
+   "averageTimeSeconds": 52,
+   "percentCorrect": 66
+  },
+  "r5": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "Grandfather's only son is Ravi's father; the father's daughter is Ravi's sister.",
+    "hi": "दादा का इकलौता पुत्र रवि का पिता है; पिता की पुत्री रवि की बहन है।"
+   },
+   "averageTimeSeconds": 44,
+   "percentCorrect": 70
+  },
+  "r6": {
+   "correctOptionId": "C",
+   "solution": {
+    "en": "A book is made up of pages; a tree is covered in leaves.",
+    "hi": "पुस्तक पृष्ठों से बनी होती है; वृक्ष पत्तियों से ढका होता है।"
+   },
+   "averageTimeSeconds": 18,
+   "percentCorrect": 88
+  },
+  "r7": {
+   "correctOptionId": "A",
+   "solution": {
+    "en": "Each letter moves one step forward: I→J, N→O, K→L.",
+    "hi": "प्रत्येक अक्षर एक स्थान आगे बढ़ता है: I→J, N→O, K→L।"
+   },
+   "averageTimeSeconds": 29,
+   "percentCorrect": 83
+  },
+  "r8": {
+   "correctOptionId": "D",
+   "solution": {
+    "en": "Some tools being heavy says nothing about pens; all tools being pens reverses the first statement. Neither follows.",
+    "hi": "कुछ उपकरण भारी होने से पेन के बारे में कुछ नहीं कहा जा सकता; सभी उपकरण पेन होना पहले कथन का उलटा है। कोई अनुसरण नहीं करता।"
+   },
+   "averageTimeSeconds": 61,
+   "percentCorrect": 48
+  },
+  "r9": {
+   "correctOptionId": "C",
+   "solution": {
+    "en": "At 3:00 the hands are a quarter turn apart: 90°.",
+    "hi": "3:00 पर सुइयाँ एक चौथाई चक्र दूर हैं: 90°।"
+   },
+   "averageTimeSeconds": 12,
+   "percentCorrect": 92
+  },
+  "r10": {
+   "correctOptionId": "A",
+   "solution": {
+    "en": "At least one game: 25 + 20 − 8 = 37. Neither: 40 − 37 = 3.",
+    "hi": "कम से कम एक खेल: 25 + 20 − 8 = 37। कोई नहीं: 40 − 37 = 3।"
+   },
+   "averageTimeSeconds": 55,
+   "percentCorrect": 63
+  },
+  "g1": {
+   "correctOptionId": "C",
+   "solution": {
+    "en": "Canberra is the capital; Sydney and Melbourne are larger cities.",
+    "hi": "कैनबरा राजधानी है; सिडनी और मेलबर्न बड़े शहर हैं।"
+   },
+   "averageTimeSeconds": 11,
+   "percentCorrect": 77
+  },
+  "g2": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "Nehru wrote it in Ahmednagar Fort prison during 1942-46.",
+    "hi": "नेहरू ने इसे 1942-46 के दौरान अहमदनगर किले की जेल में लिखा।"
+   },
+   "averageTimeSeconds": 13,
+   "percentCorrect": 85
+  },
+  "g3": {
+   "correctOptionId": "C",
+   "solution": {
+    "en": "Adopted on 26 November 1949, it came into force on 26 January 1950.",
+    "hi": "26 नवंबर 1949 को अंगीकृत, यह 26 जनवरी 1950 को लागू हुआ।"
+   },
+   "averageTimeSeconds": 9,
+   "percentCorrect": 91
+  },
+  "g4": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "Au, from the Latin 'aurum'. Ag is silver.",
+    "hi": "Au, लैटिन 'aurum' से। Ag चाँदी है।"
+   },
+   "averageTimeSeconds": 8,
+   "percentCorrect": 89
+  },
+  "g5": {
+   "correctOptionId": "C",
+   "solution": {
+    "en": "The Kosi changes course frequently and floods north Bihar.",
+    "hi": "कोसी बार-बार मार्ग बदलती है और उत्तर बिहार में बाढ़ लाती है।"
+   },
+   "averageTimeSeconds": 15,
+   "percentCorrect": 74
+  },
+  "g6": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "Pratibha Patil served from 2007 to 2012.",
+    "hi": "प्रतिभा पाटिल ने 2007 से 2012 तक कार्य किया।"
+   },
+   "averageTimeSeconds": 10,
+   "percentCorrect": 86
+  },
+  "g7": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "Article 21: protection of life and personal liberty.",
+    "hi": "अनुच्छेद 21: जीवन और व्यक्तिगत स्वतंत्रता का संरक्षण।"
+   },
+   "averageTimeSeconds": 12,
+   "percentCorrect": 79
+  },
+  "g8": {
+   "correctOptionId": "C",
+   "solution": {
+    "en": "Scurvy results from lack of ascorbic acid (Vitamin C).",
+    "hi": "स्कर्वी एस्कॉर्बिक अम्ल (विटामिन C) की कमी से होता है।"
+   },
+   "averageTimeSeconds": 10,
+   "percentCorrect": 82
+  },
+  "g9": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "RBI moved its central office from Kolkata to Mumbai in 1937.",
+    "hi": "RBI ने 1937 में अपना केंद्रीय कार्यालय कोलकाता से मुंबई स्थानांतरित किया।"
+   },
+   "averageTimeSeconds": 9,
+   "percentCorrect": 88
+  },
+  "g10": {
+   "correctOptionId": "C",
+   "solution": {
+    "en": "Gujarat, Rajasthan, Madhya Pradesh, Chhattisgarh, Jharkhand, West Bengal, Tripura and Mizoram.",
+    "hi": "गुजरात, राजस्थान, मध्य प्रदेश, छत्तीसगढ़, झारखंड, पश्चिम बंगाल, त्रिपुरा और मिज़ोरम।"
+   },
+   "averageTimeSeconds": 21,
+   "percentCorrect": 58
+  },
+  "q1": {
+   "correctOptionId": "C",
+   "solution": {
+    "en": "15% of 240 = 0.15 × 240 = 36.",
+    "hi": "240 का 15% = 0.15 × 240 = 36।"
+   },
+   "averageTimeSeconds": 22,
+   "percentCorrect": 90
+  },
+  "q2": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "Sum 1..10 = 55; 55 ÷ 10 = 5.5.",
+    "hi": "1..10 का योग = 55; 55 ÷ 10 = 5.5।"
+   },
+   "averageTimeSeconds": 19,
+   "percentCorrect": 84
+  },
+  "q3": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "Speed = 150 m / 15 s = 10 m/s = 10 × 18/5 = 36 km/h.",
+    "hi": "गति = 150 मी / 15 से = 10 मी/से = 10 × 18/5 = 36 किमी/घंटा।"
+   },
+   "averageTimeSeconds": 47,
+   "percentCorrect": 71
+  },
+  "q4": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "SI = P × R × T / 100 = 5000 × 8 × 3 / 100 = ₹1,200.",
+    "hi": "SI = P × R × T / 100 = 5000 × 8 × 3 / 100 = ₹1,200।"
+   },
+   "averageTimeSeconds": 31,
+   "percentCorrect": 86
+  },
+  "q5": {
+   "correctOptionId": "C",
+   "solution": {
+    "en": "3x = 18, so x = 6.",
+    "hi": "3x = 18, अतः x = 6।"
+   },
+   "averageTimeSeconds": 16,
+   "percentCorrect": 93
+  },
+  "q6": {
+   "correctOptionId": "C",
+   "solution": {
+    "en": "Parts total 8; one part = 64 ÷ 8 = 8. Larger = 5 × 8 = 40.",
+    "hi": "कुल भाग 8; एक भाग = 64 ÷ 8 = 8। बड़ी संख्या = 5 × 8 = 40।"
+   },
+   "averageTimeSeconds": 33,
+   "percentCorrect": 80
+  },
+  "q7": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "12 = 2²·3, 18 = 2·3², 24 = 2³·3. LCM = 2³·3² = 72.",
+    "hi": "12 = 2²·3, 18 = 2·3², 24 = 2³·3। ल.स. = 2³·3² = 72।"
+   },
+   "averageTimeSeconds": 36,
+   "percentCorrect": 76
+  },
+  "q8": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "Area = πr² = (22/7) × 49 = 154 cm².",
+    "hi": "क्षेत्रफल = πr² = (22/7) × 49 = 154 सेमी²।"
+   },
+   "averageTimeSeconds": 27,
+   "percentCorrect": 85
+  },
+  "q9": {
+   "correctOptionId": "C",
+   "solution": {
+    "en": "SP = 500 × 1.20 = ₹600.",
+    "hi": "SP = 500 × 1.20 = ₹600।"
+   },
+   "averageTimeSeconds": 20,
+   "percentCorrect": 89
+  },
+  "q10": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "0.0049 = 49 × 10⁻⁴, so the root is 7 × 10⁻² = 0.07.",
+    "hi": "0.0049 = 49 × 10⁻⁴, अतः वर्गमूल 7 × 10⁻² = 0.07।"
+   },
+   "averageTimeSeconds": 25,
+   "percentCorrect": 73
+  },
+  "e1": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "Abundant means existing in large quantities: plentiful."
+   },
+   "averageTimeSeconds": 12,
+   "percentCorrect": 87
+  },
+  "e2": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "Transparent (see-through) is opposed by opaque (not see-through)."
+   },
+   "averageTimeSeconds": 11,
+   "percentCorrect": 84
+  },
+  "e3": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "Third-person singular 'she' takes 'doesn't', not 'don't'."
+   },
+   "averageTimeSeconds": 24,
+   "percentCorrect": 69
+  },
+  "e4": {
+   "correctOptionId": "C",
+   "solution": {
+    "en": "'Since' marks the starting point of a period that continues to now."
+   },
+   "averageTimeSeconds": 15,
+   "percentCorrect": 78
+  },
+  "e5": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "A polyglot speaks several languages; a linguist studies language."
+   },
+   "averageTimeSeconds": 17,
+   "percentCorrect": 62
+  },
+  "e6": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "To hit the nail on the head is to be exactly right."
+   },
+   "averageTimeSeconds": 13,
+   "percentCorrect": 81
+  },
+  "e7": {
+   "correctOptionId": "C",
+   "solution": {
+    "en": "Double c, double m: accommodation."
+   },
+   "averageTimeSeconds": 14,
+   "percentCorrect": 57
+  },
+  "e8": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "Simple past active becomes was/were + past participle: was built."
+   },
+   "averageTimeSeconds": 26,
+   "percentCorrect": 75
+  },
+  "e9": {
+   "correctOptionId": "C",
+   "solution": {
+    "en": "'Neither of' is singular, so the verb is 'was'."
+   },
+   "averageTimeSeconds": 22,
+   "percentCorrect": 54
+  },
+  "e10": {
+   "correctOptionId": "B",
+   "solution": {
+    "en": "Candid means truthful and straightforward: frank."
+   },
+   "averageTimeSeconds": 12,
+   "percentCorrect": 80
+  }
+ }
+}

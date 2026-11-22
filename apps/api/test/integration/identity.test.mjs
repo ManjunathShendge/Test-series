@@ -146,3 +146,52 @@ test('blocked accounts cannot sign in', async (t) => {
   const res = await session(jwt);
   assert.deepEqual([res.status, res.body.error.code], [403, 'ACCOUNT_BLOCKED']);
 });
+
+test('website sign-in without 18+ confirmation: onboarding cannot finish until it is confirmed, once', async (t) => {
+  const { call, db } = await api(t);
+  const { jwt, uid } = await token();
+  // The website omits ageConfirmed at sign-in and asks during onboarding.
+  const web = await call('POST', '/identity/session', { jwt, body: { deviceName: 'Chrome on Windows', platform: 'web' } });
+  assert.equal(web.status, 200);
+  assert.deepEqual([web.body.profile.ageConfirmed, web.body.profile.onboarded], [false, false]);
+  const device = web.body.device.id;
+
+  const noAge = await call('PATCH', '/me', { jwt, device, body: { preparationStage: 'starting' } });
+  assert.deepEqual([noAge.status, noAge.body.error.code], [400, 'AGE_CONFIRMATION_REQUIRED']);
+  const falseAge = await call('PATCH', '/me', { jwt, device, body: { ageConfirmed: false, preparationStage: 'starting' } });
+  assert.deepEqual([falseAge.status, falseAge.body.error.code], [400, 'VALIDATION_FAILED']);
+  // Other preferences can be saved before confirming.
+  assert.equal((await call('PATCH', '/me', { jwt, device, body: { fullName: 'Ravi K' } })).status, 200);
+
+  const done = await call('PATCH', '/me', { jwt, device, body: { ageConfirmed: true, preparationStage: 'starting' } });
+  assert.deepEqual([done.status, done.body.ageConfirmed, done.body.onboarded], [200, true, true]);
+  const first = (await db.owner.query('SELECT age_confirmed_at FROM profiles WHERE firebase_uid = $1', [uid])).rows[0].age_confirmed_at;
+  assert.ok(first);
+
+  // Confirming again (or alone) is accepted and keeps the first time.
+  const again = await call('PATCH', '/me', { jwt, device, body: { ageConfirmed: true } });
+  assert.equal(again.status, 200);
+  const second = (await db.owner.query('SELECT age_confirmed_at FROM profiles WHERE firebase_uid = $1', [uid])).rows[0].age_confirmed_at;
+  assert.equal(second.getTime(), first.getTime());
+
+  // The person cannot withdraw it through their own database context either.
+  const id = done.body.id;
+  const client = await db.app.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query("SELECT set_config('app.user_id', $1, true)", [id]);
+    await assert.rejects(client.query('UPDATE profiles SET is_age_verified_18_plus = false WHERE id = $1', [id]), /cannot be withdrawn/);
+  } finally {
+    await client.query('ROLLBACK');
+    client.release();
+  }
+});
+
+test('the app confirms 18+ at sign-in, which is recorded for the account', async (t) => {
+  const { session, db } = await api(t);
+  const { jwt, uid } = await token();
+  const res = await session(jwt);
+  assert.equal(res.body.profile.ageConfirmed, true);
+  const row = (await db.owner.query('SELECT is_age_verified_18_plus, age_confirmed_at FROM profiles WHERE firebase_uid = $1', [uid])).rows[0];
+  assert.ok(row.is_age_verified_18_plus && row.age_confirmed_at);
+});
