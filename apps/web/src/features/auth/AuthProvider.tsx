@@ -177,3 +177,12 @@ export function homeFor(profile: Profile): string {
   const first = profile.targetExamIds[0];
   return first ? `/exams/${first}` : '/exams';
 }
+
+/** Staff areas do not need student onboarding (target exams, stage); the API authorizes each call. */
+export function isStaffArea(path: string | null): boolean {
+  return path === '/admin' || (path?.startsWith('/admin/') ?? false) || (path?.startsWith('/admin?') ?? false);
+}
+
+export function isStaff(profile: Profile): boolean {
+  return profile.roles.includes('admin') || profile.roles.includes('qc_reviewer');
+}

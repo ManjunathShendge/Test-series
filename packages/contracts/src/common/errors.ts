@@ -11,6 +11,16 @@ export const ErrorCode = z.enum([
   'DEVICE_LIMIT_REACHED',
   /** Signed in, but the account lacks the role or admin permission the endpoint requires. */
   'FORBIDDEN',
+  /** A unique value (for example a slug or name) is already used. details.field names it. */
+  'ALREADY_EXISTS',
+  /** Someone saved this record after it was loaded; reload and reapply the change. */
+  'STALE_EDIT',
+  /** The record is referenced (by a template, test or question) and cannot be removed or changed this way. */
+  'IN_USE',
+  /** A published template is frozen; publish a new version instead. */
+  'TEMPLATE_LOCKED',
+  /** The draft template is incomplete or inconsistent. details.issues lists why. */
+  'TEMPLATE_NOT_PUBLISHABLE',
   'VALIDATION_FAILED',
   'NOT_FOUND',
   'INTERNAL',

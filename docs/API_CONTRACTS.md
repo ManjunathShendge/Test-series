@@ -14,6 +14,10 @@ Authenticated requests carry Firebase bearer token, registered device/session pr
 | GET/DELETE /me/devices/:id | Self | Inspect/revoke device session |
 | POST /me/deletion | Reauthenticated self | Idempotent deletion request/status workflow |
 | GET /exams, /exams/:id, /tests, /series/:id, /examiners/:id | Public | Published metadata only, filters, cursor |
+| GET/POST/PATCH/DELETE /admin/catalogue/categories[/:id] | Admin, ops or super | Categories; delete only without exams |
+| GET/POST/PATCH /admin/catalogue/exams[/:id], GET .../exams/:id/history | Admin, ops or super | Exam details (`expectedUpdatedAt`, 409 `STALE_EDIT`); new exams hidden; shown only with a published template; slug locked while shown with live tests; history from the audit log |
+| POST /admin/catalogue/exams/:id/stages, PUT/DELETE /stages/:id; POST .../subjects, PUT/DELETE /subjects/:id; POST /subjects/:id/topics, PUT/DELETE /topics/:id | Admin, ops or super | Stages and syllabus tree; responses return the whole exam; delete refused (409 `IN_USE`) when templates, tests, questions or topic targets use it; topics added in bulk, duplicates skipped case-insensitively |
+| POST /admin/catalogue/exams/:id/templates, GET/PUT/DELETE /templates/:id, POST /templates/:id/{publish,new-version,retire,reinstate} | Admin, ops or super | Draft saves allowed while inconsistent (`issues` lists why); publish 422 `TEMPLATE_NOT_PUBLISHABLE`; published templates 409 `TEMPLATE_LOCKED`; new version copies into a draft (repeat returns it) and publishing it retires the previous one |
 | PUT/DELETE /examiners/:id/follow | Student | Idempotent follow state |
 | POST /examiner/applications | Examiner applicant | Profile/agreement and ten-question sample submission |
 | POST /assets/upload-intents | Authorized owner/staff | Restricted upload URL, MIME/size limits and object scope |

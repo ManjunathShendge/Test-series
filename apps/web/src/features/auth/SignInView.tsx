@@ -15,7 +15,7 @@ import {
 } from '@/lib/auth';
 import { ApiRequestError } from '@/lib/api/http';
 import { Glyph } from '@/features/marketing/showcase/Glyph';
-import { homeFor, safeNext, useAuth } from './AuthProvider';
+import { homeFor, isStaff, isStaffArea, safeNext, useAuth } from './AuthProvider';
 import { DeviceRows } from './DeviceRows';
 import { Alert, BusyButton, Field, GoogleMark, Notice, Waiting } from './ui';
 import styles from './auth.module.css';
@@ -50,6 +50,8 @@ export function SignInView() {
   useEffect(() => {
     if (state.status !== 'ready') return;
     if (state.profile.onboarded) router.replace(requested ?? homeFor(state.profile));
+    // Staff going to (or by default to) the console skip student onboarding.
+    else if (isStaff(state.profile) && (!requested || isStaffArea(requested))) router.replace(requested ?? '/admin');
     else router.replace(`/onboarding${requested ? `?next=${encodeURIComponent(requested)}` : ''}`);
   }, [state, requested, router]);
 

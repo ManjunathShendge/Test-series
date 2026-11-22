@@ -66,6 +66,7 @@ async function insert(client, table, row, conflict = 'id') {
     Object.values(row),
   );
   counts[table] = (counts[table] ?? 0) + rowCount;
+  return rowCount === 1;
 }
 
 const db = createDatabase(url, { max: 1, caCertPath: process.env.DATABASE_CA_CERT_PATH || undefined });
@@ -94,7 +95,9 @@ try {
         last_cutoff_score: exam.lastCutoff ?? null,
       });
       await insert(c, 'exam_stages', { id: stageId, exam_id: examId, name: p.stage[0], slug: p.stage[1] });
-      await insert(c, 'exam_templates', {
+      // A template is published once its sections exist and is frozen afterwards (migration 008),
+      // so sections are only written for a template created by this run.
+      const newTemplate = await insert(c, 'exam_templates', {
         id: templateId, exam_id: examId, stage_id: stageId, name: p.template.name, total_questions: p.template.questions,
         total_duration_seconds: p.template.seconds, has_sectional_timing: p.template.sectional,
         default_positive_marks: p.template.pos, default_negative_marks: p.template.neg,
@@ -106,16 +109,19 @@ try {
         await insert(c, 'subjects', { id: subjectId, exam_id: examId, name: subjectName });
         const sectionId = uid(`template-section:${exam.id}:${pool}`);
         ids[exam.id].templateSection[pool] = sectionId;
-        await insert(c, 'exam_template_sections', {
-          id: sectionId, template_id: templateId, subject_id: subjectId, name: subjectName, section_order: order++,
-          question_count: count, duration_seconds: seconds ?? null, positive_marks: p.template.pos, negative_marks: p.template.neg,
-        });
+        if (newTemplate) {
+          await insert(c, 'exam_template_sections', {
+            id: sectionId, template_id: templateId, subject_id: subjectId, name: subjectName, section_order: order++,
+            question_count: count, duration_seconds: seconds ?? null, positive_marks: p.template.pos, negative_marks: p.template.neg,
+          });
+        }
         for (const topic of new Set(demo.bank[pool].map((q) => q.topic))) {
           const topicId = uid(`topic:${exam.id}:${pool}:${topic}`);
           ids[exam.id].topic[`${pool}:${topic}`] = topicId;
           await insert(c, 'topics', { id: topicId, subject_id: subjectId, name: topic });
         }
       }
+      if (newTemplate) await c.query('UPDATE exam_templates SET published_at = now() WHERE id = $1', [templateId]);
     }
 
     // Examiner personas: profile plus approved examiner profile, no KYC or payout details.

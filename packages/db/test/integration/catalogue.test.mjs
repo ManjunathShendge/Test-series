@@ -8,7 +8,7 @@ test('exam hierarchy, syllabus and templates enforce uniqueness and references',
   const exam = await seedExam(owner);
   await assert.rejects(owner.query("INSERT INTO exam_stages (exam_id, name, slug) VALUES ($1, 'Again', 'tier-1')", [exam.exam]), /duplicate key/);
   await assert.rejects(owner.query("INSERT INTO topics (subject_id, name) VALUES ($1, 'Percentages')", [exam.subject]), /duplicate key/);
-  await assert.rejects(owner.query("INSERT INTO exam_template_sections (template_id, name, section_order, question_count, positive_marks, negative_marks) VALUES ($1, 'Dup', 1, 1, 1, 0)", [exam.template]), /duplicate key/);
+  await assert.rejects(owner.query("INSERT INTO exam_template_sections (template_id, name, section_order, question_count, positive_marks, negative_marks) VALUES ($1, 'Dup', 1, 1, 1, 0)", [exam.template]), /published template/);
   await assert.rejects(owner.query('DELETE FROM exam_categories WHERE id = $1', [exam.category]), /foreign key/);
   const defaults = (await owner.query('SELECT pyq_max_percentage, trigram_high_threshold, price_band_max_new_paise FROM exams WHERE id = $1', [exam.exam])).rows[0];
   assert.deepEqual(defaults, { pyq_max_percentage: '10.00', trigram_high_threshold: '0.750', price_band_max_new_paise: 4900 });

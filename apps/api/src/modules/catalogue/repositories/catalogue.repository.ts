@@ -144,8 +144,10 @@ export const catalogueRepository = {
 
   async examTemplate(db: Queryable, examId: string): Promise<{ template: TemplateRow; sections: SectionRow[] } | undefined> {
     const { rows } = await db.query<TemplateRow & { id: string }>(
-      `SELECT id, name, total_questions, total_duration_seconds, has_sectional_timing
-         FROM exam_templates WHERE exam_id = $1 AND is_active ORDER BY created_at, id LIMIT 1`,
+      `SELECT t.id, t.name, t.total_questions, t.total_duration_seconds, t.has_sectional_timing
+         FROM exam_templates t JOIN exam_stages s ON s.id = t.stage_id
+        WHERE t.exam_id = $1 AND t.is_active AND t.published_at IS NOT NULL
+        ORDER BY s.display_order, t.published_at DESC, t.id LIMIT 1`,
       [examId],
     );
     const template = rows[0];

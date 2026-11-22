@@ -7,3 +7,4 @@ export const CONTRACTS_PACKAGE = '@exam-prep/contracts' as const;
 export * from './common/errors.js';
 export * from './identity/index.js';
 export * from './catalogue/index.js';
+export * from './admin/index.js';

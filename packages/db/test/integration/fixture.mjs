@@ -37,7 +37,7 @@ export async function profile(db, owner, roles = ['student']) {
   return rows[0].id;
 }
 
-/** Category > exam > stage, subject > topic, and a one-section template (owner = admin setup). */
+/** Category > exam > stage, subject > topic, and a published one-section template (owner = admin setup). */
 export async function seedExam(owner) {
   const q = async (sql, params) => (await owner.query(sql, params)).rows[0].id;
   const tag = randomUUID().slice(0, 8);
@@ -48,6 +48,7 @@ export async function seedExam(owner) {
   const topic = await q("INSERT INTO topics (subject_id, name) VALUES ($1, 'Percentages') RETURNING id", [subject]);
   const template = await q("INSERT INTO exam_templates (exam_id, stage_id, name, total_questions, total_duration_seconds) VALUES ($1, $2, 'Full Length Mock', 2, 600) RETURNING id", [exam, stage]);
   const templateSection = await q("INSERT INTO exam_template_sections (template_id, subject_id, name, section_order, question_count, positive_marks, negative_marks) VALUES ($1, $2, 'Quant', 1, 2, 2, 0.5) RETURNING id", [template, subject]);
+  await owner.query('UPDATE exam_templates SET published_at = now() WHERE id = $1', [template]);
   return { category, exam, stage, subject, topic, template, templateSection };
 }
 
