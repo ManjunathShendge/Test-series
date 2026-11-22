@@ -1,18 +1,23 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter, Outfit } from 'next/font/google';
 import type { ReactNode } from 'react';
+import { isIndexable, site } from '@/lib/config/site';
+import './globals.css';
 
-// Product name MakeMePrepare on makemeprepare.com (DECISIONS O10, 22 November 2026).
-const SITE_URL = 'https://makemeprepare.com';
+// Same families as mobile (DECISIONS V4), self-hosted by next/font so no request leaves for Google.
+const outfit = Outfit({ subsets: ['latin'], weight: ['500', '600', '700'], variable: '--font-outfit', display: 'swap' });
+const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600', '700'], variable: '--font-inter', display: 'swap' });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: { default: 'MakeMePrepare', template: '%s | MakeMePrepare' },
-  description: 'Reviewed mock tests for SSC, Banking and Railways exams, written by examiners who have cleared them.',
-  applicationName: 'MakeMePrepare',
+  metadataBase: new URL(site.url),
+  title: { default: `${site.name}: reviewed mock tests for SSC, Banking and Railways`, template: `%s | ${site.name}` },
+  description: site.description,
+  applicationName: site.name,
   alternates: { canonical: '/' },
-  openGraph: { type: 'website', siteName: 'MakeMePrepare', url: SITE_URL, locale: 'en_IN' },
-  // Until the public site (milestone W1) ships, keep the placeholder out of search indexes.
-  robots: { index: false, follow: false },
+  openGraph: { type: 'website', siteName: site.name, url: site.url, locale: site.locale },
+  twitter: { card: 'summary_large_image' },
+  robots: isIndexable() ? { index: true, follow: true } : { index: false, follow: false },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
@@ -21,10 +26,37 @@ export const viewport: Viewport = {
   themeColor: '#001D39',
 };
 
+const organization = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': `${site.url}/#organization`,
+      name: site.name,
+      url: site.url,
+      logo: `${site.url}/brand/logo.png`,
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${site.url}/#website`,
+      name: site.name,
+      url: site.url,
+      inLanguage: 'en-IN',
+      publisher: { '@id': `${site.url}/#organization` },
+    },
+  ],
+};
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en-IN" className={`${outfit.variable} ${inter.variable}`}>
+      <body>
+        <a href="#main" className="skip-link">
+          Skip to content
+        </a>
+        {children}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }} />
+      </body>
     </html>
   );
 }

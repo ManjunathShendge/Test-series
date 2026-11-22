@@ -1,0 +1,737 @@
+/* ================= Hero panel ================= */
+.frame {
+  padding: 12px 12px 0;
+}
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+  /* Clear of the floating nav pill (16px inset + 64px) with generous air above the copy. */
+  padding-top: calc(var(--header-height) + var(--space-4xl) + var(--space-lg));
+  padding-bottom: var(--space-xl);
+  /* The reference's sky gradient in our palette: canvas tint into ice, sky at the edge. */
+  background:
+    radial-gradient(60% 70% at 78% 30%, rgb(255 255 255 / 0.75), transparent 70%),
+    radial-gradient(50% 60% at 100% 0%, rgb(123 189 232 / 0.75), transparent 70%),
+    linear-gradient(160deg, var(--surface-muted) 0%, var(--ice-100) 55%, var(--sky-300) 120%);
+  color: var(--text);
+}
+.glow {
+  position: absolute;
+  right: 4%;
+  top: 8%;
+  width: 46%;
+  height: 70%;
+  background: radial-gradient(closest-side, rgb(5 105 214 / 0.16), transparent);
+  pointer-events: none;
+}
+.top {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: var(--space-2xl);
+  align-items: center;
+}
+.copy {
+  display: grid;
+  gap: var(--space-xl);
+  align-content: center;
+}
+.title {
+  display: grid;
+  font-size: clamp(2.375rem, 5vw, 4rem);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  font-weight: 600;
+  color: var(--navy-900);
+}
+.gradientText {
+  background: linear-gradient(90deg, var(--navy-700) 0%, var(--brand) 60%, var(--steel-500) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.lead {
+  max-width: 34rem;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--navy-700);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-lg);
+}
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-height: 52px;
+  padding: 6px 6px 6px var(--space-xl);
+  border-radius: var(--radius-full);
+  background: var(--primary);
+  color: var(--white);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 10px 24px rgb(10 65 116 / 0.28);
+  transition:
+    background-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+.ctaDisc {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--navy-900);
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+.ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 48px;
+  color: var(--navy-900);
+  font-weight: 600;
+  text-decoration: none;
+}
+.ghostDisc {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid var(--navy-700);
+  color: var(--navy-700);
+  transition:
+    background-color var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out);
+}
+@media (hover: hover) {
+  .cta:hover {
+    background: var(--primary-pressed);
+    box-shadow: 0 14px 30px rgb(10 65 116 / 0.34);
+  }
+  .cta:hover .ctaDisc {
+    transform: translateX(3px) rotate(-30deg);
+  }
+  .ghost:hover .ghostDisc {
+    background: var(--navy-700);
+    color: var(--white);
+  }
+}
+.cta:active {
+  transform: scale(0.98);
+}
+.trust {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-lg);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--navy-700);
+}
+.trust li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Visual column: illustration with the glass widget overlapping its right edge. */
+.visual {
+  position: relative;
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+}
+.illustration {
+  position: relative;
+  width: min(100%, 520px);
+  aspect-ratio: 280 / 260;
+  transition: transform var(--dur-page) var(--ease-out);
+}
+@media (hover: hover) {
+  .visual:hover .illustration {
+    transform: translateY(-4px) rotate(-1deg);
+  }
+}
+.illustrationLayer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.illustrationFloat {
+  animation: float 4.4s ease-in-out infinite alternate;
+}
+@keyframes float {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+.glass {
+  position: absolute;
+  right: -1%;
+  top: 44%;
+  width: 196px;
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  background: rgb(255 255 255 / 0.74);
+  border: 1px solid rgb(255 255 255 / 0.9);
+  box-shadow: 0 16px 40px rgb(0 29 57 / 0.12);
+  backdrop-filter: blur(14px);
+  animation: rise 700ms var(--ease-out) 450ms backwards;
+}
+.glassLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--navy-700);
+}
+.glassValue {
+  margin-top: 2px;
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--brand);
+}
+.glassCaption {
+  font-size: 0.6875rem;
+  color: var(--steel-500);
+}
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 64px;
+  margin-top: var(--space-md);
+}
+.bars span {
+  flex: 1;
+  border-radius: 6px;
+  background: linear-gradient(180deg, var(--sky-300), var(--ice-100));
+  transform-origin: 50% 100%;
+  animation: grow 600ms var(--ease-out) both;
+}
+.bars .barTop {
+  background: linear-gradient(180deg, var(--brand), var(--navy-700));
+}
+@keyframes grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* Load entrance: fade and rise, staggered by inline delays. */
+.rise {
+  animation: rise 640ms var(--ease-out) backwards;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ================= Five-card bento row ================= */
+.cards {
+  list-style: none;
+  margin-top: var(--space-2xl);
+  margin-bottom: 0;
+  padding-block: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-md);
+}
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 232px;
+  padding: var(--space-lg);
+  border-radius: 22px;
+  background: rgb(255 255 255 / 0.78);
+  border: 1px solid rgb(255 255 255 / 0.9);
+  overflow: hidden;
+  transition:
+    transform var(--dur-slow) var(--ease-out),
+    translate var(--dur-slow) var(--ease-out),
+    box-shadow var(--dur-slow) var(--ease-out);
+}
+@media (hover: hover) {
+  .card:hover {
+    translate: 0 -4px;
+    box-shadow: 0 18px 36px rgb(0 29 57 / 0.12);
+  }
+  .card:hover .cardArrow {
+    transform: translateX(3px);
+    background: var(--navy-700);
+    color: var(--white);
+  }
+  .card:hover .art svg {
+    transform: translateY(-4px) rotate(-2deg) scale(1.03);
+  }
+}
+.cardHead {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+.cardTitle {
+  font-family: var(--font-inter), sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--navy-900);
+}
+.cardText {
+  margin-top: 2px;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--steel-500);
+}
+.cardArrow {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 50%;
+  border: 1.5px solid var(--navy-700);
+  color: var(--navy-700);
+  transition:
+    transform var(--dur-slow) var(--ease-out),
+    translate var(--dur-slow) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out);
+}
+.art {
+  margin: auto calc(var(--space-lg) * -1) calc(var(--space-lg) * -1);
+}
+.art svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform var(--dur-page) var(--ease-out);
+}
+.artBloom {
+  margin-top: auto;
+  margin-bottom: calc(var(--space-lg) * -1.6);
+}
+/* Wider cards (tablet) must not scale the art up and stretch the row. */
+.art svg {
+  max-height: 150px;
+}
+.artBloom svg {
+  width: auto;
+  margin-left: auto;
+}
+.cardNavy {
+  justify-content: space-between;
+  background: var(--inverse);
+  border-color: var(--inverse);
+  color: var(--white);
+}
+.spark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--navy-900);
+}
+.statement {
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 1.1875rem;
+  font-weight: 500;
+  line-height: 1.25;
+}
+.statement span {
+  color: var(--accent);
+}
+.miniLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--navy-700);
+}
+.miniTotal {
+  margin-top: var(--space-xs);
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 1.625rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--navy-900);
+}
+.miniCaption {
+  font-size: 0.6875rem;
+  color: var(--steel-500);
+}
+.miniRows {
+  list-style: none;
+  margin: auto 0 0;
+  padding: var(--space-md) 0 0;
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--navy-900);
+}
+.miniRows li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.miniRows b {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.miniRows i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.dotNavy {
+  background: var(--navy-700);
+}
+.dotBrand {
+  background: var(--brand);
+}
+.dotSky {
+  background: var(--sky-300);
+}
+
+/* ================= About band ================= */
+.about {
+  padding-block: var(--space-4xl) var(--space-3xl);
+  background: var(--surface);
+}
+.aboutIntro {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: var(--space-3xl);
+  align-items: end;
+  margin-bottom: var(--space-3xl);
+}
+.kicker {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--steel-500);
+}
+.aboutTitle {
+  font-size: clamp(1.75rem, 3.2vw, 2.5rem);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+  color: var(--navy-900);
+}
+.aboutSide {
+  display: grid;
+  gap: var(--space-lg);
+  justify-items: start;
+  color: var(--steel-500);
+}
+.aboutLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 44px;
+  font-weight: 600;
+  color: var(--navy-900);
+  text-decoration: none;
+}
+.aboutLink svg {
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+.aboutLink:hover svg {
+  transform: translateX(4px);
+}
+.stats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-lg);
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  min-height: 236px;
+  padding: var(--space-xl);
+  border-radius: 24px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  transition:
+    transform var(--dur-slow) var(--ease-out),
+    translate var(--dur-slow) var(--ease-out),
+    box-shadow var(--dur-slow) var(--ease-out);
+}
+@media (hover: hover) {
+  .stat:hover {
+    translate: 0 -4px;
+    box-shadow: var(--shadow-raised);
+  }
+}
+.statIcon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: auto;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--navy-700);
+}
+.statLabel {
+  margin-top: var(--space-xl);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--navy-700);
+}
+.statValue {
+  font-family: var(--font-outfit), sans-serif;
+  font-size: clamp(2.25rem, 3.4vw, 2.75rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--navy-900);
+}
+.statText {
+  margin-top: var(--space-sm);
+  font-size: 0.875rem;
+  color: var(--steel-500);
+}
+.statSky {
+  background: var(--sky-300);
+  border-color: var(--sky-300);
+}
+.statSky .statIcon {
+  border-color: transparent;
+}
+.statSky .statText,
+.statSky .statLabel {
+  color: var(--navy-900);
+}
+.statVisual {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+  background: var(--inverse);
+  border-color: var(--inverse);
+}
+.paletteArt {
+  position: absolute;
+  inset: var(--space-xl) var(--space-xl) auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  transform: rotate(-8deg) translateY(-10px);
+  opacity: 0.9;
+}
+.paletteArt span {
+  aspect-ratio: 1;
+  border-radius: 8px;
+}
+.p_a {
+  background: var(--success);
+}
+.p_n {
+  background: var(--error);
+}
+.p_m {
+  background: var(--review);
+  border-radius: 50% !important;
+}
+.p_u {
+  background: var(--navy-700);
+}
+.statBadge {
+  position: absolute;
+  left: var(--space-lg);
+  right: var(--space-lg);
+  bottom: var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-lg);
+  background: var(--brand);
+  color: var(--white);
+  font-size: 0.8125rem;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 0.3);
+}
+.statBadge .statValue {
+  color: var(--white);
+  font-size: 2rem;
+}
+
+/* ================= Responsive ================= */
+@media (max-width: 1100px) {
+  /* Five cards as a full 3 + 2 arrangement, no empty slot. */
+  .cards {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  .card {
+    grid-column: span 2;
+  }
+  .card:nth-child(n + 4) {
+    grid-column: span 3;
+  }
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 900px) {
+  .top,
+  .aboutIntro {
+    grid-template-columns: 1fr;
+  }
+  .aboutIntro {
+    gap: var(--space-xl);
+  }
+  .visual {
+    min-height: 0;
+  }
+  .illustration {
+    width: min(100%, 420px);
+  }
+}
+@media (max-width: 640px) {
+  .frame {
+    padding: 8px 8px 0;
+  }
+  .hero {
+    border-radius: 24px;
+    padding-top: calc(var(--header-height) + var(--space-3xl));
+  }
+  .actions {
+    gap: var(--space-sm);
+  }
+  .cta {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+  .glass {
+    width: 160px;
+    top: auto;
+    bottom: 2%;
+    padding: var(--space-md);
+  }
+  .glassValue {
+    font-size: 1.375rem;
+  }
+  .bars {
+    height: 44px;
+  }
+  /* Cards become a swipeable row instead of a cramped stack. */
+  .cards {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: var(--space-sm);
+    margin-inline: 0;
+    scrollbar-width: none;
+  }
+  .cards::-webkit-scrollbar {
+    display: none;
+  }
+  .card {
+    flex: 0 0 72%;
+    scroll-snap-align: start;
+  }
+  .stats {
+    grid-template-columns: 1fr;
+  }
+  .stat {
+    min-height: 0;
+  }
+  .statIcon {
+    margin-bottom: var(--space-xs);
+  }
+  .statVisual {
+    min-height: 220px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .illustrationFloat,
+  .bars span,
+  .glass,
+  .rise {
+    animation: none;
+  }
+}
+
+/* ---------- Micro-interactions ---------- */
+@media (hover: hover) {
+  /* Glass widget lifts and its bars bounce in sequence. */
+  .glass {
+    transition:
+      transform var(--dur-slow) var(--ease-out),
+      translate var(--dur-slow) var(--ease-out),
+      box-shadow var(--dur-slow) var(--ease-out);
+  }
+  .glass:hover {
+    translate: 0 -3px;
+    box-shadow: 0 22px 48px rgb(0 29 57 / 0.16);
+  }
+  .glass:hover .bars span {
+    animation: barBounce 500ms var(--ease-out) both;
+  }
+  .glass:hover .bars span:nth-child(2) { animation-delay: 40ms; }
+  .glass:hover .bars span:nth-child(3) { animation-delay: 80ms; }
+  .glass:hover .bars span:nth-child(4) { animation-delay: 120ms; }
+  .glass:hover .bars span:nth-child(5) { animation-delay: 160ms; }
+  .glass:hover .bars span:nth-child(6) { animation-delay: 200ms; }
+  .glass:hover .bars span:nth-child(7) { animation-delay: 240ms; }
+  /* Trust ticks and mini-result dots pop on hover. */
+  .trust li svg,
+  .miniRows i {
+    transition: transform var(--dur-slow) cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .trust li:hover svg,
+  .miniRows li:hover i {
+    transform: scale(1.3);
+  }
+  .spark {
+    transition: transform 600ms var(--ease-out);
+  }
+  .cardNavy:hover .spark {
+    transform: rotate(90deg);
+  }
+  .aboutLink:hover {
+    color: var(--brand);
+  }
+}
+@keyframes barBounce {
+  0% {
+    transform: scaleY(1);
+  }
+  40% {
+    transform: scaleY(0.6);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}

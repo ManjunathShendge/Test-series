@@ -1,0 +1,479 @@
+/*
+ * MakeMePrepare web tokens. Same values as apps/mobile/src/ui/tokens (DECISIONS V1-V9,
+ * design-system/exam-prep-marketplace/MASTER.md). Components use the semantic names;
+ * raw hex lives only here.
+ */
+:root {
+  --navy-900: #001d39;
+  --navy-700: #0a4174;
+  --steel-500: #49769f;
+  --teal-500: #4e8ea2;
+  --cyan-400: #6ea2b3;
+  --sky-300: #7bbde8;
+  --ice-100: #bdd8e9;
+  --brand-500: #0569d6;
+  --white: #ffffff;
+
+  --background: #f2f7fb;
+  --surface: var(--white);
+  --surface-muted: #e4eef6;
+  --text: var(--navy-900);
+  --text-secondary: var(--steel-500);
+  --primary: var(--navy-700);
+  --primary-pressed: var(--navy-900);
+  --primary-soft: var(--ice-100);
+  --accent: var(--sky-300);
+  --brand: var(--brand-500);
+  --inverse: var(--navy-900);
+  --inverse-raised: var(--navy-700);
+  --on-inverse: var(--white);
+  --on-inverse-secondary: var(--ice-100);
+  --success: #166534;
+  --success-soft: #dcfce7;
+  --warning: #92400e;
+  --warning-soft: #fef3c7;
+  --error: #b91c1c;
+  --error-soft: #fee2e2;
+  --review: #6d28d9;
+  --review-soft: #ede9fe;
+  --border: #d3e3ef;
+  --focus: var(--navy-700);
+
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+  --space-4xl: 80px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 999px;
+
+  --shadow-card: 0 4px 12px rgb(0 29 57 / 0.06);
+  --shadow-raised: 0 8px 20px rgb(0 29 57 / 0.18);
+
+  /* Motion: feedback stays in MASTER's 120-200ms band; reveals use --dur-page. */
+  --dur-fast: 120ms;
+  --dur-base: 160ms;
+  --dur-slow: 200ms;
+  --dur-page: 320ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --gutter: 20px;
+  --max-width: 1160px;
+  --header-height: 72px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: var(--header-height);
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-weight: 600;
+  margin: 0;
+  text-wrap: balance;
+}
+
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+a {
+  color: inherit;
+}
+
+/* Side slide-ins start off-canvas; they must never widen the page. */
+main {
+  overflow-x: clip;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.on-inverse :focus-visible {
+  outline-color: var(--accent);
+}
+
+/* Type scale: mobile scale with a desktop step for headings. */
+.t-hero {
+  font-size: clamp(2.25rem, 5.5vw, 4rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.t-display {
+  font-size: clamp(1.75rem, 3.6vw, 2.75rem);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+}
+.t-title {
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+.t-body-lg {
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+.t-small {
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.t-caption {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  font-weight: 500;
+}
+.t-secondary {
+  color: var(--text-secondary);
+}
+.t-brand {
+  color: var(--brand);
+}
+.eyebrow {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+.on-inverse .eyebrow {
+  color: var(--accent);
+}
+
+.logo-wordmark {
+  display: inline-flex;
+}
+@media (max-width: 400px) {
+  .logo-compact .logo-wordmark {
+    display: none;
+  }
+}
+
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--space-lg);
+  top: -100px;
+  z-index: 100;
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--surface);
+  border-radius: var(--radius-full);
+  font-weight: 600;
+}
+.skip-link:focus {
+  top: var(--space-lg);
+}
+
+/* Buttons: pill, 48px minimum, press scale 0.98 like the mobile Button. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0 var(--space-lg);
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out),
+    translate var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active {
+  transform: scale(0.98);
+}
+.btn[aria-disabled='true'],
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.btn-lg {
+  min-height: 56px;
+  padding: 0 var(--space-xl);
+}
+.btn-full {
+  width: 100%;
+}
+.btn-primary {
+  background: var(--primary);
+  color: var(--white);
+}
+.btn-secondary {
+  background: var(--surface);
+  color: var(--primary);
+  border-color: var(--border);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--primary);
+}
+.btn-light {
+  background: var(--surface);
+  color: var(--inverse);
+}
+.btn-accent {
+  background: var(--accent);
+  color: var(--navy-900);
+}
+.btn-inverse-ghost {
+  background: transparent;
+  color: var(--on-inverse);
+}
+@media (hover: hover) {
+  .btn-primary:hover {
+    background: var(--primary-pressed);
+    box-shadow: var(--shadow-raised);
+  }
+  .btn-secondary:hover,
+  .btn-ghost:hover {
+    background: var(--surface-muted);
+  }
+  .btn-light:hover,
+  .btn-accent:hover {
+    background: var(--primary-soft);
+  }
+  .btn-inverse-ghost:hover {
+    background: rgb(255 255 255 / 0.12);
+  }
+}
+
+/* Cards: white on the canvas, large radius, hairline border, soft navy shadow. */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-xl);
+}
+.card-link {
+  display: block;
+  text-decoration: none;
+  transition:
+    transform var(--dur-base) var(--ease-out),
+    translate var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+@media (hover: hover) {
+  .card-link:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-raised);
+  }
+}
+.card-link:active {
+  transform: scale(0.99);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 6px var(--space-md);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--primary-soft);
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.chip-muted {
+  background: var(--surface-muted);
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+.section {
+  padding-block: var(--space-4xl);
+}
+@media (max-width: 640px) {
+  .section {
+    padding-block: var(--space-3xl);
+  }
+}
+
+/* ---------- Section fade on scroll (classes added by SectionFade after hydration) ---------- */
+.sf-init {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0);
+  transition:
+    opacity 800ms var(--ease-out),
+    transform 800ms var(--ease-out);
+}
+.sf-init.sf-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- Micro-interactions ---------- */
+/* Buttons: a 1px lift and a deeper shadow on hover; any arrow inside nudges forward. */
+@media (hover: hover) {
+  .btn:not(:disabled):not([aria-disabled='true']):hover {
+    transform: translateY(-1px);
+  }
+  .btn-secondary:hover,
+  .btn-light:hover,
+  .btn-accent:hover {
+    box-shadow: var(--shadow-card);
+  }
+}
+.btn:not(:disabled):not([aria-disabled='true']):active {
+  transform: translateY(0) scale(0.97);
+}
+.btn svg {
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+.btn:hover svg {
+  transform: translateX(2px);
+}
+
+/* Text links in content and the footer: an underline that grows from the left. */
+.u-link,
+footer a {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1.5px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition:
+    background-size var(--dur-page) var(--ease-out),
+    color var(--dur-base) var(--ease-out);
+}
+.u-link:hover,
+footer a:hover {
+  background-size: 100% 1.5px;
+}
+footer a[aria-label] {
+  background-image: none;
+}
+
+/* Logo: the mark tilts slightly on hover. */
+a[aria-label='MakeMePrepare home'] img:first-child {
+  transition: transform var(--dur-page) var(--ease-out);
+}
+a[aria-label='MakeMePrepare home']:hover img:first-child {
+  transform: rotate(-6deg) scale(1.04);
+}
+
+/* Cards: a gentle lift wherever a card is interactive-looking. */
+@media (hover: hover) {
+  .card {
+    transition:
+      transform var(--dur-slow) var(--ease-out),
+      translate var(--dur-slow) var(--ease-out),
+      box-shadow var(--dur-slow) var(--ease-out),
+      border-color var(--dur-slow) var(--ease-out);
+  }
+  .card:hover {
+    translate: 0 -3px;
+    box-shadow: var(--shadow-raised);
+    border-color: var(--sky-300);
+  }
+}
+
+/* Small icon badges pop on hover of their card or row. */
+.pop-icon {
+  transition: transform var(--dur-page) cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+:hover > .pop-icon,
+:hover > * > .pop-icon {
+  transform: scale(1.12) rotate(-6deg);
+}
+
+/* Eyebrow labels: a short brand rule slides out ahead of the text when its section arrives. */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.sf-in .eyebrow::before,
+.eyebrow-static::before {
+  content: '';
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  animation: eyebrowRule 600ms var(--ease-out) 200ms both;
+}
+@keyframes eyebrowRule {
+  from {
+    width: 0;
+    opacity: 0;
+  }
+  to {
+    width: 18px;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

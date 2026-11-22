@@ -341,3 +341,64 @@ U0 implemented:
 - Web: metadata base https://makemeprepare.com, title template, description, Open Graph defaults, theme colour; `robots: noindex` until the W1 public site ships.
 
 Checks run: mobile and web typecheck and lint; mobile unit tests (32 passed); `expo config` shows name, icon, adaptive icon and splash; `expo export --platform ios` bundled with the logo asset; `next build` passed and serves `/icon.png` and `/apple-icon.png`. Not verified: icon and splash on a device (the native icon and splash need a new development build; Expo Go shows its own), welcome header spacing on a 320pt-wide screen.
+
+## 22 November 2026: milestone W0 web foundation
+
+Owner re-prioritised: web app first (needed today), mobile motion (U1/U2) after. Order: W0 foundation, W1 public site, W2 student web app on the mobile demo data.
+
+Implemented:
+- `app/globals.css`: the mobile tokens as CSS variables (palette, logo blue, semantic colours, spacing, radii, shadows, motion durations), type scale, pill buttons with press scale, cards, chips, focus ring, skip link and a global reduced-motion override.
+- Fonts: Outfit and Inter through `next/font/google` (self-hosted at build time).
+- Motion 14.14.0 and Lenis 1.3.27 (pinned). `SmoothScroll` (Lenis, off under reduced motion), `Reveal`/`RevealItem` (fade-up on entering view, server-rendered content stays readable without JavaScript).
+- `Logo` (derived assets; horizontal lockup that drops the wordmark under 400px), `SiteHeader` (transparent over the navy hero, solid white once scrolled, phone menu with an animated icon, Escape to close), `SiteFooter`, `(public)` route group layout.
+- SEO base: `src/lib/config/site.ts` (canonical origin from `NEXT_PUBLIC_SITE_URL`, default https://makemeprepare.com), metadata title template, canonical, Open Graph and Twitter card, 1200x630 share image with alt text, Organization and WebSite JSON-LD, `robots.ts` and `sitemap.ts`. Indexing is allowed only with `SITE_INDEXABLE=true`; every other environment serves `Disallow: /` and `noindex`.
+
+Checks run: web typecheck, lint and `next build` (static `/`, `/robots.txt`, `/sitemap.xml`, `/opengraph-image.png`); served build screenshotted at 1280, 390 and 360 px: header clear over navy, solid after scroll, no wrapping on phones. Console shows only 404s from prefetching `/sign-in` and the policy pages, which W1/W2 add.
+
+## 22 November 2026: milestone W1 public site
+
+Implemented (`apps/web/src/features/marketing`, `app/(public)`):
+- Landing page in the mobile visual language: navy launch-gradient hero with CSS line reveal and an animated sample of the app dashboard (count-up figures, ring drawn in, gentle float, labelled "Sample dashboard"); promise cards; how it works; feature bento in the dashboard tile colours with the CBT palette states and a score-versus-cutoff line that draws in; exams (SSC, Banking, Railways); examiner band ("portal opens soon", no revenue figures); FAQ accordion; final call to action.
+- Copy stays inside decided scope: no prices, revenue shares, test counts, ratings or testimonials. The exams section names the proposed launch exams (O01 is still a proposed default; update the copy if the founder changes them).
+- SEO: one h1, ordered headings, canonical, FAQPage JSON-LD matching the visible FAQ, FAQ answers kept in the HTML when collapsed, hero animated in CSS so it paints before hydration.
+- `/privacy`, `/terms`, `/refunds`: "being finalised" pages that state what each policy will cover without inventing terms; `noindex, follow`, excluded from the sitemap.
+
+Checks run: web typecheck, lint, `next build` (all routes static). Served build screenshotted full-page at 1280 and 390 px; fixed an orphaned bento card, a flat trend scale and ring text inheriting caption size. With reduced motion every heading and paragraph is visible and figures show final values; with JavaScript off the h1 and FAQ answers are in the HTML, but scroll-revealed sections stay at opacity 0. No page errors in the console.
+Not done: Lighthouse/Core Web Vitals run, real policy text (legal), examiner portal, `/sign-in` (W2).
+
+## 22 November 2026: W1b product showcase and app download
+
+Owner brief with six SaaS landing references (layout and composition only; brand colours, fonts and components stay ours). Implemented in `apps/web/src/features/marketing/showcase`:
+- "One account, every screen" (`#app`, after How it works): tinted ice-to-sky stage with a dotted texture; browser-window student dashboard (sidebar, greeting, four stat cards, score-versus-cutoff chart that draws in, continue-attempt card, recent results, section accuracy, quick action) with sample data; the mobile home screen in a phone frame overlapping the window; two floating notification cards; three highlights. Scroll moves the window from a 14 degree tilt to flat and drifts the cards and phone at different rates (Motion `useScroll`); none of it runs with reduced motion.
+- App download band (after Exams): navy panel, three benefits, two phones (CBT attempt screen with the five-state palette, and home), a notification card, store buttons marked "Coming soon" that link nowhere. Before launch, swap in the official Google Play and App Store badge artwork and listing URLs.
+- "App" link added to header and footer. Phone: dashboard drops sidebar and recent results; floating cards hide below 860 px; the download band shows one phone at its designed size.
+
+Checks run: web typecheck, lint, `next build`; screenshots at 1280, 820 and 390 px with fixes for card and phone overlaps and a cramped two-phone layout; no page errors; no horizontal overflow at any width; reduced motion leaves the window untransformed.
+
+## 22 November 2026: W1d hero and about band after the NOVACORE reference
+
+The W1c round (wider layout, 90% hero, scroll choreography) was reverted at the owner's request. The owner then supplied the NOVACORE landing reference for design only, brand guidelines unchanged.
+
+Implemented in `apps/web/src/features/marketing/hero`:
+- Hero: rounded light panel (canvas tint to ice to sky, 12 px frame) with the navigation integrated; headline "Practise like it's exam day." with "Walk in ready." in a navy-to-logo-blue gradient; navy pill CTA with a sky arrow disc and a play-disc secondary link; a three-item trust line (no ratings or client counts); the mobile launch illustration ported to web SVG in place of the reference portrait, floating in CSS; a glass "score growth" widget whose bars grow in; a five-card row (ribbon, pleat and bloom satin shapes in brand blues, a navy statement card, a sample result breakdown). Cards lift and arrows shift on hover; the art moves slightly.
+- About band: two-column intro with gradient-highlighted words, four stat cards stating decided product facts (100% reviewed, 3 exam categories, 5 CBT question states, 2 devices) with count-up, one of them a navy CBT-palette visual. The reference's partner logo strip is omitted (no partners).
+- Header: transparent state now uses dark text over the light hero; policy pages use the same light band. Old navy hero, preview and promise cards removed with their styles.
+- Responsive: tablet stacks the hero and lays the cards out 3 + 2; phones get a swipeable card row and single-column stats.
+
+Checks run: web typecheck, lint, `next build`; screenshots at 1440, 820 and 390 px and the privacy page; fixed the glass widget covering the clock, faint bars, an empty tablet card slot and an oversized tablet bloom; no horizontal overflow at 390, 820 or 1440; no page errors.
+
+## 22 November 2026: glass navigation pill
+
+- Owner nav reference (glassmorphism bars): the header is a floating frosted pill inset 16 px from the top and within the page container, 8 px padding on all sides; translucent white with a top sheen, white hairline and soft shadow, more opaque once scrolled. Log in and Start free share an inner glass segment; the phone menu is a matching glass panel under the pill (Escape and link choice close it). Hero and policy pages get more space above the content.
+- Build pitfall fixed: Lightning CSS dropped the standard `backdrop-filter` when `-webkit-backdrop-filter` was also declared, and minified `blur() saturate()` into an invalid value, so Chrome rendered no blur (this also affected the hero glass widget). Write only the standard property with a single `blur()`; the build adds the prefix.
+
+Checks run: web build; computed `backdrop-filter: blur(18px)` on the pill; screenshots at the top, after scrolling and with the phone menu open; no horizontal overflow at 390, 820 or 1440 px.
+
+## 22 November 2026: micro-interactions, section fades, slide in/out
+
+- Section fade: `SectionFade` (public layout) adds a 28 px fade-up to every section below the first screen as it scrolls into view. Classes are added only after hydration, so crawlers, no-JS visitors and reduced-motion users see every section immediately.
+- Slide in and out (Motion, `Reveal once={false}` with `left`/`right`/`up`/`scale` variants): How it works steps from the left, feature cards from alternating sides, exam cards scale, examiner points from the right, app benefits from the left, About stats and showcase highlights rise. They leave when scrolled past and return in either direction.
+- Micro-interactions (CSS): button lift and press, arrow nudges, growing underline on footer and text links, logo tilt, card lifts site-wide, icon pops, eyebrow rule that draws in with its section, step rule and number, FAQ row highlight and text shift, examiner point highlight, palette chips, store button lift, dashboard row and sidebar hovers, glass widget lift with bouncing bars, trust ticks and result dots, rotating spark, gently bobbing notification cards.
+- Hover lifts on Motion-animated elements use the CSS `translate` property (Motion leaves an inline `transform` that would otherwise override them); hero load animations use `backwards` fill so hover transforms apply afterwards. `main { overflow-x: clip }` restored for side slide-ins.
+
+Checks run: web typecheck, lint, `next build`; in Chromium: sections fade in when reached, steps slide out (opacity 0) after scrolling past and back in, exam card hover gives `translate: 0 -3px` after its reveal, no horizontal overflow while scrolling at 390 and 820 px, no `sf-init` under reduced motion or without JavaScript, no page errors.
