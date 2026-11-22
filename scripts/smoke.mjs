@@ -61,7 +61,7 @@ try {
     waitFor(`http://127.0.0.1:${workerPort}/health/ready`, worker),
     waitFor(`http://127.0.0.1:${webPort}/health`, web),
   ]);
-  assert.match(await (await fetch(`http://127.0.0.1:${webPort}`)).text(), /Exam Prep Marketplace/);
+  assert.match(await (await fetch(`http://127.0.0.1:${webPort}`)).text(), /MakeMePrepare/);
   const allowed = await fetch(`http://127.0.0.1:${apiPort}/health/live`, {
     headers: { Origin: 'http://localhost:3000' },
   });
