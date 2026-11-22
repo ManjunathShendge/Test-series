@@ -7,22 +7,21 @@ import {
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
-  type User,
 } from 'firebase/auth';
 import { firebaseAuth } from './firebase';
+import { signOutOfGoogle } from './google';
+import { toUser, type AuthUser } from './user';
+
+export { authErrorMessage } from './errors';
+export { googleStatus, signInWithGoogle } from './google';
+export type { GoogleSignInStatus } from './google-status';
+export type { AuthUser } from './user';
 
 /**
- * Sign-in adapter (DECISIONS D01): verified email now; Google and Apple arrive with the
- * native development build. Screens call these functions, never Firebase directly.
+ * Sign-in adapter (DECISIONS D01, A1): verified email everywhere; Google in development
+ * and store builds (not Expo Go). Sign in with Apple is deferred. Screens call these
+ * functions, never Firebase or the Google module directly.
  */
-
-export interface AuthUser {
-  uid: string;
-  email: string | null;
-  emailVerified: boolean;
-}
-
-const toUser = (user: User): AuthUser => ({ uid: user.uid, email: user.email, emailVerified: user.emailVerified });
 
 export function currentUser(): AuthUser | null {
   const user = firebaseAuth().currentUser;
@@ -72,31 +71,6 @@ export async function idToken(): Promise<string | null> {
 }
 
 export async function signOutOfFirebase(): Promise<void> {
+  await signOutOfGoogle();
   await signOut(firebaseAuth());
-}
-
-/** Plain-language messages for Firebase Auth error codes; unknown codes get a generic line. */
-export function authErrorMessage(error: unknown): string {
-  const code = (error as { code?: unknown } | null)?.code;
-  switch (code) {
-    case 'auth/invalid-credential':
-    case 'auth/wrong-password':
-    case 'auth/user-not-found':
-      return 'That email and password do not match. Check them or reset your password.';
-    case 'auth/email-already-in-use':
-      return 'An account already uses this email. Sign in instead, or reset your password.';
-    case 'auth/invalid-email':
-      return 'Enter a valid email address, like name@example.com.';
-    case 'auth/weak-password':
-    case 'auth/password-does-not-meet-requirements':
-      return 'Choose a stronger password: at least 8 characters.';
-    case 'auth/too-many-requests':
-      return 'Too many attempts. Wait a few minutes and try again.';
-    case 'auth/network-request-failed':
-      return 'No connection. Check your internet and try again.';
-    case 'auth/user-disabled':
-      return 'This account has been disabled. Contact support.';
-    default:
-      return 'Something went wrong. Please try again.';
-  }
 }

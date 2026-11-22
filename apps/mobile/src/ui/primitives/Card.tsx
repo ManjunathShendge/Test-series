@@ -12,8 +12,8 @@ export interface CardProps {
 }
 
 /**
- * Surface container: 12px radius per MASTER, border plus a faint shadow so it
- * reads on the off-white background without heavy elevation.
+ * White surface on the pale canvas: large radius, hairline border and a soft navy
+ * shadow, after the dashboard reference. Tinted tiles use FeatureTile instead.
  */
 export function Card({ children, onPress, accessibilityLabel, padded = true, style }: CardProps) {
   const inner = [styles.card, padded && styles.padded, style];
@@ -45,5 +45,5 @@ const styles = StyleSheet.create({
     ...elevation.card,
   },
   padded: { padding: space.lg },
-  pressed: { backgroundColor: colors.surfaceMuted },
+  pressed: { backgroundColor: colors.surfaceMuted, transform: [{ scale: 0.99 }] },
 });

@@ -25,6 +25,8 @@ type Preferences = Partial<Pick<Profile, 'targetExamIds' | 'language' | 'prepara
 
 interface AppState {
   session: { signedIn: boolean; onboarded: boolean };
+  /** First-launch introduction finished on this device; survives sign-out. */
+  introSeen: boolean;
   profile: Profile;
   ownedTestIds: string[];
   ownedSeriesIds: string[];
@@ -44,6 +46,7 @@ interface AppState {
   /** Profile > Edit: the same fields as onboarding, editable any time (PRD 6.7). */
   updatePreferences: (patch: Preferences) => void;
   signOut: () => void;
+  markIntroSeen: () => void;
   setLanguage: (language: Language) => void;
 
   toggleFollow: (examinerId: string) => void;
@@ -67,6 +70,7 @@ const toggle = (list: string[], id: string) => (list.includes(id) ? list.filter(
 
 const seed = () => ({
   session: { signedIn: false, onboarded: false },
+  introSeen: false,
   profile: demoProfile,
   ownedTestIds: [
     ...new Set([
@@ -107,7 +111,8 @@ export const useAppStore = create<AppState>()(
       updatePreferences: (patch) => set((s) => ({ profile: { ...s.profile, ...patch } })),
       // Sign-out resets to the demo seed so the next sign-in starts clean.
       // Results and any live attempt are cleared by signOutEverywhere().
-      signOut: () => set(seed()),
+      signOut: () => set((s) => ({ ...seed(), introSeen: s.introSeen })),
+      markIntroSeen: () => set({ introSeen: true }),
       setLanguage: (language) => set((s) => ({ profile: { ...s.profile, language } })),
 
       toggleFollow: (examinerId) => set((s) => ({ followedExaminerIds: toggle(s.followedExaminerIds, examinerId) })),
@@ -176,6 +181,7 @@ export const useAppStore = create<AppState>()(
     }),
     persistOptions<AppState, PersistedApp>('app', (s) => ({
       session: s.session,
+      introSeen: s.introSeen,
       profile: s.profile,
       ownedTestIds: s.ownedTestIds,
       ownedSeriesIds: s.ownedSeriesIds,

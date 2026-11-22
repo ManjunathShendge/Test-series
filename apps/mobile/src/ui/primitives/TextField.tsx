@@ -90,7 +90,8 @@ const styles = StyleSheet.create({
   },
   focused: { borderColor: colors.focus, borderWidth: 2, paddingHorizontal: space.md - 1 },
   errored: { borderColor: colors.error },
-  input: { flex: 1, ...typography.body, color: colors.text, paddingVertical: 0 },
+  // No lineHeight: on iOS it pushes single-line input text to the bottom of the box.
+  input: { flex: 1, fontFamily: typography.body.fontFamily, fontSize: typography.body.fontSize, color: colors.text, paddingVertical: 0 },
   clear: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   message: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
 });

@@ -1,20 +1,21 @@
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SectionHeader } from '@/features/catalogue/components/SectionHeader';
 import { cutoffOnTrendScale, getExam, getTest, recommendedTests, scoreTrend, topicStrengths } from '@/lib/demo';
 import { formatDate, formatOrdinal } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
 import { practiceEntries, useResultsList } from '@/lib/store/results';
-import { Card, Chip, Icon, ProgressBar, Screen, StateView, Text } from '@/ui/primitives';
-import { colors, radius, space } from '@/ui/tokens';
-
-const CHART_HEIGHT = 140;
+import { Card, Chip, FeatureTile, Icon, IconButton, ProgressBar, Screen, StateView, Text, type IconName } from '@/ui/primitives';
+import { LineChart } from '@/ui/patterns/LineChart';
+import { colors, radius, space, tiles, type TileTone } from '@/ui/tokens';
 
 /**
  * Progress (PRD 6.6): topic strength map, score trend with the admin cutoff
  * line, recent results, and practice lists (mistake notebook, bookmarks). Every
  * chart has a text equivalent; streaks and goals are a later phase and absent.
+ * Analytics layout after owner design reference 2: big selected value, date stepper,
+ * interactive line chart and a metric rail.
  */
 export default function ProgressScreen() {
   const router = useRouter();
@@ -27,6 +28,8 @@ export default function ProgressScreen() {
   const suggested = useMemo(() => recommendedTests(profile.targetExamIds, new Set(attempted)).slice(0, 2), [profile.targetExamIds, attempted]);
   const mistakes = useMemo(() => practiceEntries(results, 'mistakes').length, [results]);
   const bookmarks = useMemo(() => practiceEntries(results, 'bookmarks').length, [results]);
+  // Selected point on the trend chart; starts on the most recent test.
+  const [point, setPoint] = useState(scoreTrend.length - 1);
 
   if (results.length === 0) {
     return (
@@ -37,20 +40,34 @@ export default function ProgressScreen() {
     );
   }
 
-  const cutoffRatio = cutoffOnTrendScale.score / cutoffOnTrendScale.maxScore;
   const latest = scoreTrend[scoreTrend.length - 1];
-  const trendSummary = `Scores over ${scoreTrend.length} tests: ${scoreTrend.map((p) => p.score).join(', ')} out of ${latest?.maxScore ?? 80}. ${cutoffOnTrendScale.label} is ${cutoffOnTrendScale.score}.`;
+  const selected = scoreTrend[point];
+  const scores = scoreTrend.map((p) => p.score);
+  const best = Number(Math.max(...scores).toFixed(1));
+  const average = Number((scores.reduce((a, b) => a + b, 0) / Math.max(1, scores.length)).toFixed(1));
+  const aboveCutoff = scores.filter((s) => s >= cutoffOnTrendScale.score).length;
+  const trendSummary = `Scores over ${scoreTrend.length} tests: ${scores.join(', ')} out of ${latest?.maxScore ?? 80}. ${cutoffOnTrendScale.label} is ${cutoffOnTrendScale.score}.`;
 
   return (
     <Screen>
-      <Text variant="display">Progress</Text>
+      <View style={styles.header}>
+        <Text variant="display" accessibilityRole="header">
+          Progress
+        </Text>
+        <IconButton icon="search-outline" label="Find a test" onPress={() => router.push('/discover')} />
+      </View>
 
-      <Card>
-        <Chip label="Weakest topics" tone="warning" icon="trending-down-outline" />
-        <Text variant="heading" style={{ marginTop: space.sm }}>
+      <View style={styles.focus}>
+        <View style={styles.focusTag}>
+          <Icon name="trending-down-outline" size={14} color={colors.onAccent} />
+          <Text variant="caption" style={{ color: colors.onAccent }}>
+            Weakest topics
+          </Text>
+        </View>
+        <Text variant="title" tone="inverse">
           Focus next on {weakest.map((t) => t.topic).slice(0, 2).join(' and ')}
         </Text>
-        <Text variant="bodySmall" tone="secondary">
+        <Text variant="bodySmall" tone="inverseSecondary">
           Built from your last {results.length} attempts. Accuracy on these topics is below 50%.
         </Text>
         {suggested.length > 0 ? (
@@ -60,46 +77,53 @@ export default function ProgressScreen() {
             ))}
           </View>
         ) : null}
-      </Card>
+      </View>
 
       <View style={styles.block}>
         <SectionHeader title="Score trend" subtitle={getExam(profile.targetExamIds[0] ?? '')?.name ?? ''} />
         <Card>
-          <View style={styles.chart} accessible accessibilityRole="image" accessibilityLabel={trendSummary}>
-            <View style={[styles.cutoff, { bottom: CHART_HEIGHT * cutoffRatio }]}>
-              <View style={styles.cutoffLine} />
-            </View>
-            <Text variant="caption" tone="warning" style={[styles.cutoffLabel, { bottom: CHART_HEIGHT * cutoffRatio + 4 }]}>
-              {cutoffOnTrendScale.label} {cutoffOnTrendScale.score}/{cutoffOnTrendScale.maxScore}
-            </Text>
-            <View style={styles.bars}>
-              {scoreTrend.map((p) => {
-                const ratio = p.score / p.maxScore;
-                const above = p.score >= cutoffOnTrendScale.score;
-                return (
-                  <View key={p.date} style={styles.barCol}>
-                    <View style={[styles.bar, { height: Math.max(28, CHART_HEIGHT * ratio), backgroundColor: above ? colors.success : colors.primary }]}>
-                      <Text variant="caption" tabular style={styles.barValue}>
-                        {p.score}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-          <View style={styles.axis}>
-            {scoreTrend.map((p) => (
-              <Text key={p.date} variant="caption" tone="secondary" style={styles.axisLabel} numberOfLines={1}>
-                {formatDate(p.date).slice(0, 6)}
+          <View style={styles.trendHead}>
+            <View style={{ flex: 1 }}>
+              <Text variant="metric" tabular accessibilityLiveRegion="polite">
+                {selected ? Number(selected.score.toFixed(1)) : '-'}
+                <Text variant="heading" tone="secondary">
+                  /{selected?.maxScore ?? latest?.maxScore ?? 80}
+                </Text>
               </Text>
-            ))}
+              <Text variant="caption" tone="secondary" numberOfLines={1}>
+                {selected ? `${selected.testTitle} · ${selected.score >= cutoffOnTrendScale.score ? 'at or above' : 'below'} cutoff` : ''}
+              </Text>
+            </View>
           </View>
-          <View style={styles.legend}>
-            <LegendDot color={colors.primary} label="Below cutoff" />
-            <LegendDot color={colors.success} label="At or above cutoff" />
+          <View style={styles.dateNav}>
+            <Pressable onPress={() => setPoint((i) => Math.max(0, i - 1))} disabled={point === 0} accessibilityRole="button" accessibilityLabel="Previous test" hitSlop={8} style={[styles.navBtn, point === 0 && styles.navOff]}>
+              <Icon name="chevron-back" size={18} color={colors.text} />
+            </Pressable>
+            <Text variant="bodySmallStrong">{selected ? formatDate(selected.date) : ''}</Text>
+            <Pressable onPress={() => setPoint((i) => Math.min(scoreTrend.length - 1, i + 1))} disabled={point === scoreTrend.length - 1} accessibilityRole="button" accessibilityLabel="Next test" hitSlop={8} style={[styles.navBtn, point === scoreTrend.length - 1 && styles.navOff]}>
+              <Icon name="chevron-forward" size={18} color={colors.text} />
+            </Pressable>
+          </View>
+          <View accessibilityLabel={trendSummary}>
+            <LineChart
+              points={scoreTrend.map((p) => ({
+                label: formatDate(p.date).slice(0, 6),
+                value: p.score,
+                description: `${formatDate(p.date)}: ${p.score} out of ${p.maxScore}, ${p.score >= cutoffOnTrendScale.score ? 'at or above' : 'below'} the cutoff`,
+              }))}
+              max={latest?.maxScore ?? 80}
+              threshold={{ value: cutoffOnTrendScale.score, label: `${cutoffOnTrendScale.label} ${cutoffOnTrendScale.score}` }}
+              selectedIndex={point}
+              onSelect={setPoint}
+            />
           </View>
         </Card>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.metrics}>
+          <Metric tone="ice" icon="trophy-outline" label="Best score" value={`${best}/${latest?.maxScore ?? 80}`} />
+          <Metric tone="sky" icon="pulse-outline" label="Average" value={`${average}/${latest?.maxScore ?? 80}`} />
+          <Metric tone="cyan" icon="flag-outline" label="Above cutoff" value={`${aboveCutoff} of ${scoreTrend.length}`} />
+          <Metric tone="navy" icon="document-text-outline" label="Tests taken" value={String(results.length)} />
+        </ScrollView>
       </View>
 
       <View style={styles.block}>
@@ -130,28 +154,26 @@ export default function ProgressScreen() {
       <View style={styles.block}>
         <SectionHeader title="Practice lists" />
         <View style={styles.practice}>
-          <Card onPress={() => router.push({ pathname: '/practice/[list]', params: { list: 'mistakes' } })} accessibilityLabel={`Mistake notebook, ${mistakes} questions`} style={styles.practiceCard}>
-            <View style={[styles.practiceIcon, { backgroundColor: colors.errorSoft }]}>
-              <Icon name="close-circle-outline" size={22} color={colors.error} />
-            </View>
-            <Text variant="title" tabular style={{ marginTop: space.sm }}>
-              {mistakes}
-            </Text>
-            <Text variant="bodySmall" tone="secondary">
-              Mistake notebook
-            </Text>
-          </Card>
-          <Card onPress={() => router.push({ pathname: '/practice/[list]', params: { list: 'bookmarks' } })} accessibilityLabel={`Bookmarks, ${bookmarks} questions`} style={styles.practiceCard}>
-            <View style={[styles.practiceIcon, { backgroundColor: colors.primarySoft }]}>
-              <Icon name="bookmark-outline" size={22} color={colors.primary} />
-            </View>
-            <Text variant="title" tabular style={{ marginTop: space.sm }}>
-              {bookmarks}
-            </Text>
-            <Text variant="bodySmall" tone="secondary">
-              Bookmarks
-            </Text>
-          </Card>
+          <FeatureTile
+            tone="ice"
+            icon="close-circle-outline"
+            title="Mistake notebook"
+            value={String(mistakes)}
+            description="Questions you got wrong"
+            action="Practise"
+            onPress={() => router.push({ pathname: '/practice/[list]', params: { list: 'mistakes' } })}
+            style={styles.practiceCard}
+          />
+          <FeatureTile
+            tone="sky"
+            icon="bookmark-outline"
+            title="Bookmarks"
+            value={String(bookmarks)}
+            description="Saved to revise later"
+            action="Open"
+            onPress={() => router.push({ pathname: '/practice/[list]', params: { list: 'bookmarks' } })}
+            style={styles.practiceCard}
+          />
         </View>
       </View>
 
@@ -185,39 +207,42 @@ export default function ProgressScreen() {
   );
 }
 
-function LegendDot({ color, label }: { color: string; label: string }) {
+/** Small tinted stat card for the horizontal metric rail. */
+function Metric({ tone, icon, label, value }: { tone: TileTone; icon: IconName; label: string; value: string }) {
+  const t = tiles[tone];
   return (
-    <View style={styles.legendItem}>
-      <View style={[styles.dot, { backgroundColor: color }]} />
-      <Text variant="caption" tone="secondary">
+    <View style={[styles.metric, { backgroundColor: t.bg }]} accessible accessibilityLabel={`${label}: ${value}`}>
+      <View style={[styles.metricIcon, { backgroundColor: t.iconBg }]}>
+        <Icon name={icon} size={16} color={t.fg} />
+      </View>
+      <Text variant="bodySmall" style={{ color: t.fgSecondary }}>
         {label}
+      </Text>
+      <Text variant="title" tabular style={{ color: t.fg }}>
+        {value}
       </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
+  focus: { backgroundColor: colors.inverse, borderRadius: radius.xl, padding: space.xl, gap: space.sm },
+  focusTag: { flexDirection: 'row', alignItems: 'center', gap: space.xs, alignSelf: 'flex-start', backgroundColor: colors.accent, borderRadius: radius.full, paddingHorizontal: space.sm, paddingVertical: 2 },
   block: { gap: space.md },
-  suggest: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
-  chart: { height: CHART_HEIGHT + 28, justifyContent: 'flex-end', position: 'relative' },
-  bars: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: space.sm },
-  barCol: { flex: 1, alignItems: 'center', gap: space.xs },
-  bar: { width: '100%', maxWidth: 40, borderTopLeftRadius: radius.sm, borderTopRightRadius: radius.sm, alignItems: 'center', paddingTop: space.xs },
-  barValue: { color: colors.onPrimary },
-  cutoff: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center', zIndex: 1 },
-  cutoffLine: { flex: 1, height: 0, borderTopWidth: 1, borderStyle: 'dashed', borderColor: colors.warning },
-  cutoffLabel: { position: 'absolute', left: 0, zIndex: 2 },
-  axis: { flexDirection: 'row', justifyContent: 'space-between', gap: space.sm, marginTop: space.xs },
-  axisLabel: { flex: 1, textAlign: 'center' },
-  legend: { flexDirection: 'row', gap: space.lg, marginTop: space.md },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  dot: { width: 10, height: 10, borderRadius: 5 },
+  suggest: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.sm },
+  trendHead: { flexDirection: 'row', alignItems: 'flex-end' },
+  dateNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: space.md },
+  navBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surfaceMuted, alignItems: 'center', justifyContent: 'center' },
+  navOff: { opacity: 0.35 },
+  metrics: { flexDirection: 'row', gap: space.md, paddingRight: space.lg },
+  metric: { width: 140, borderRadius: radius.lg, padding: space.lg, gap: space.xs },
+  metricIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: space.xs },
   topics: { gap: space.md },
   topicRow: { gap: space.xs },
   topicHead: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   practice: { flexDirection: 'row', gap: space.md },
   practiceCard: { flex: 1 },
-  practiceIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg },
   divider: { borderTopWidth: 1, borderTopColor: colors.surfaceMuted },
   resultScore: { alignItems: 'flex-end', gap: space.xs },

@@ -16,6 +16,7 @@ Unchecked means unverified; documentation completion does not satisfy implementa
 - [ ] Performance/app-size evidence recorded; founder live concurrency target/load test completed before first live feature release.
 - [ ] Closed beta: 500 students for two weeks; bugs/failed payments/answer-loss reports triaged and resolved.
 - [ ] Google Play listing, Data Safety, rating/audience/ads disclosures, privacy/deletion URLs; internal -> closed -> staged release prepared.
+- [ ] Sign in with Apple added, or Guideline 4.8 re-checked and documented (DECISIONS A1); blocks App Store submission.
 - [ ] Apple listing, App Privacy/age rating, support/privacy URLs and in-app deletion; TestFlight -> review -> release prepared.
 - [ ] Web domain/TLS/CDN, sitemap/canonical metadata/Search Console and shared login/access verified.
 - [ ] Phase 2 features disabled; production rollout and rollback owner approval recorded.

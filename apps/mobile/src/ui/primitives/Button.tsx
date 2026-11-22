@@ -3,7 +3,12 @@ import { colors, radius, space, touch } from '@/ui/tokens';
 import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
+/**
+ * primary/secondary/ghost/danger sit on light screens. light and accent are for navy
+ * surfaces (launch screens, hero cards): white or sky pill with navy text.
+ * inverseGhost is a text button on navy.
+ */
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'light' | 'accent' | 'inverseGhost';
 type Size = 'md' | 'lg';
 
 export interface ButtonProps extends Omit<PressableProps, 'children' | 'style'> {
@@ -21,10 +26,13 @@ const palette: Record<Variant, { bg: string; bgPressed: string; fg: string; bord
   secondary: { bg: colors.surface, bgPressed: colors.surfaceMuted, fg: colors.primary, border: colors.border },
   ghost: { bg: 'transparent', bgPressed: colors.surfaceMuted, fg: colors.primary },
   danger: { bg: colors.surface, bgPressed: colors.errorSoft, fg: colors.error, border: colors.error },
+  light: { bg: colors.surface, bgPressed: colors.primarySoft, fg: colors.inverse },
+  accent: { bg: colors.accent, bgPressed: colors.primarySoft, fg: colors.onAccent },
+  inverseGhost: { bg: 'transparent', bgPressed: 'rgba(255,255,255,0.12)', fg: colors.onInverse },
 };
 
 /**
- * Pressable with ripple feedback, a 48dp minimum hit area, a busy state that
+ * Pill-shaped pressable with press feedback, a 48dp minimum hit area, a busy state that
  * blocks double submission, and an accessible name that defaults to the label.
  */
 export function Button({
@@ -55,11 +63,13 @@ export function Button({
         styles.base,
         {
           height,
+          paddingHorizontal: size === 'lg' ? space.xl : space.lg,
           backgroundColor: pressed ? theme.bgPressed : theme.bg,
           borderColor: theme.border ?? 'transparent',
           borderWidth: theme.border ? 1 : 0,
           opacity: inactive ? 0.5 : 1,
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
+          transform: [{ scale: pressed && !inactive ? 0.98 : 1 }],
         },
       ]}
     >
@@ -80,8 +90,7 @@ export function Button({
 const styles = StyleSheet.create({
   base: {
     minWidth: touch.minSize,
-    paddingHorizontal: space.lg,
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',

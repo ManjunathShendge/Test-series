@@ -4,7 +4,7 @@ The foundation runs API, worker and web against PostgreSQL 17 in Docker. Staging
 
 ## Prerequisites
 
-Node **22.23.5** (`.node-version`), pnpm **11.13.1**, Git and a running Docker engine (Docker Desktop on Windows). On Windows use `pnpm.cmd` if PowerShell blocks `pnpm.ps1`; no execution-policy change is needed. Native Android needs Java/Android SDK; iOS compilation needs macOS/Xcode or EAS. See DECISIONS X1 about the existing path containing spaces before native Android builds.
+Node **22.23.5** (`.node-version`), pnpm **11.13.1**, Git and a running Docker engine (Docker Desktop on Windows). On Windows use `pnpm.cmd` if PowerShell blocks `pnpm.ps1`; no execution-policy change is needed. Native Android needs Java/Android SDK; iOS compilation needs macOS/Xcode or EAS. Keep the repository on a path without spaces: the React Native Android CMake step fails otherwise (DECISIONS X1).
 
 ## First run
 
@@ -29,7 +29,7 @@ pnpm dev
 
 `db:migrate` applies `packages/db/migrations/postgres` in one transaction under an advisory lock; a changed, already-applied migration is rejected. `db:seed` is idempotent and restricted to local/test. Domain accounts and papers will be seeded once their services exist.
 
-`dev` builds server dependencies before starting API, worker and web. The API TypeScript watcher recompiles the server graph; Node watchers restart API and worker independently. Mobile starts separately with `pnpm --filter @exam-prep/mobile start` (development client), or `pnpm --filter @exam-prep/mobile exec expo start --go` for the existing Expo Go demo.
+`dev` builds server dependencies before starting API, worker and web. The API TypeScript watcher recompiles the server graph; Node watchers restart API and worker independently. Mobile starts separately with `pnpm --filter @exam-prep/mobile start` (development client), or `pnpm --filter @exam-prep/mobile exec expo start --go` for the existing Expo Go demo. Current device testing is Expo Go on a physical iPhone on the same Wi-Fi: set `EXPO_PUBLIC_API_BASE_URL` in `apps/mobile/.env` to the computer's LAN address and allow port 3001 through the Windows firewall.
 
 ## Local endpoints
 
@@ -109,3 +109,27 @@ API and worker share an image; worker command is `node dist/worker.js`. The Comp
 - The earlier PostgreSQL 18 volume `exam-prep-local_postgres-data` and the SQLite file under `data/` are no longer used; they were left in place, not converted or deleted.
 - Invalid database URLs, ports/origins or production emulator flags fail application startup. Errors identify variable names without printing credentials.
 - Upgrade local Node with your Node manager if it is below the engine range; installing dependencies does not upgrade it. On Windows: `winget install --id OpenJS.NodeJS.22 --version 22.23.5 --exact`.
+
+## Development build and Google sign-in
+
+Expo Go cannot load Google Sign-In, so Google needs a development build (`expo-dev-client`), built in the cloud with EAS from Windows. Email sign-in keeps working in Expo Go. The consent screen in **Testing** mode needs no product domain; add yourself as a test user. Publishing it for all students needs the domain with privacy and terms pages.
+
+1. **Firebase** (project in `EXPO_PUBLIC_FIREBASE_PROJECT_ID`): Authentication > Sign-in method > Add provider > Google > Enable, set the support email, Save. Copy **Web client ID** from Web SDK configuration.
+2. **Google Cloud** (same project): Google Auth Platform > Branding (app name, support and developer email); Audience > Test users > add the Gmail you will test with.
+3. **Bundle ID**: choose it, because the OAuth clients are tied to it. Put it in `apps/mobile/.env` as `APP_BUNDLE_ID`.
+4. **Firebase iOS app**: Project settings > Add app > iOS with that bundle ID; download `GoogleService-Info.plist` (keep it out of git). `CLIENT_ID` goes in `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, `REVERSED_CLIENT_ID` in `GOOGLE_IOS_URL_SCHEME`.
+5. **`apps/mobile/.env`**: set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, `APP_BUNDLE_ID`, `GOOGLE_IOS_URL_SCHEME`.
+6. **EAS** (needs a paid Apple Developer account for a physical iPhone), from `apps/mobile`:
+
+```powershell
+pnpm dlx eas-cli@latest login
+pnpm dlx eas-cli@latest init --id 3036cec0-1fd4-4295-b0ed-765e950af6d8   # projectId is already in app.config.ts
+pnpm dlx eas-cli@latest env:create --environment development --name APP_BUNDLE_ID --value <bundle id> --visibility plaintext
+pnpm dlx eas-cli@latest env:create --environment development --name GOOGLE_IOS_URL_SCHEME --value <REVERSED_CLIENT_ID> --visibility plaintext
+pnpm dlx eas-cli@latest device:create          # open the link on the iPhone, install the profile
+pnpm dlx eas-cli@latest build --profile development --platform ios
+```
+
+The cloud build cannot read the gitignored `.env`, so the two build-time values must be EAS environment variables; a build without `GOOGLE_IOS_URL_SCHEME` stops with an error. The `EXPO_PUBLIC_` values reach the app from your local `.env` through Metro. Install the finished build from its link, enable Developer Mode on the iPhone (Settings > Privacy & Security), then run `pnpm --filter @exam-prep/mobile start` and open the installed app instead of Expo Go. Rebuild only when native packages or these build-time values change.
+
+Android later: add the Android app in Firebase with the same package and the SHA-1 from `eas credentials`; the web client ID is enough in code.

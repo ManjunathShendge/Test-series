@@ -1,7 +1,18 @@
 import { Text as RNText, type TextProps as RNTextProps, type TextStyle } from 'react-native';
 import { colors, typography, type TypographyVariant } from '@/ui/tokens';
 
-type TextTone = 'default' | 'secondary' | 'disabled' | 'onPrimary' | 'primary' | 'success' | 'warning' | 'error';
+type TextTone =
+  | 'default'
+  | 'secondary'
+  | 'disabled'
+  | 'onPrimary'
+  | 'primary'
+  | 'success'
+  | 'warning'
+  | 'error'
+  | 'inverse'
+  | 'inverseSecondary'
+  | 'accent';
 
 const toneColor: Record<TextTone, string> = {
   default: colors.text,
@@ -12,6 +23,10 @@ const toneColor: Record<TextTone, string> = {
   success: colors.success,
   warning: colors.warning,
   error: colors.error,
+  /** On navy launch screens, hero cards and the tab bar. */
+  inverse: colors.onInverse,
+  inverseSecondary: colors.onInverseSecondary,
+  accent: colors.accent,
 };
 
 export interface TextProps extends RNTextProps {

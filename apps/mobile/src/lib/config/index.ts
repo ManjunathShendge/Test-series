@@ -11,6 +11,11 @@ export const config = {
     projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ?? '',
     appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID ?? '',
   },
+  /** OAuth client IDs (public). Optional: without them the Google button stays disabled. */
+  google: {
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '',
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '',
+  },
 };
 
 /** Names of required variables that are empty, for the setup screen. */

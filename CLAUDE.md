@@ -15,7 +15,7 @@ Use `docs/ROADMAP.md` and `docs/PROJECT_STATUS.md` to choose the next authorized
 - `packages/contracts`: Zod request/response contracts.
 - `packages/engine`: pure TypeScript attempt reducer, timing, scoring functions.
 - `packages/db`: `pg` with parameterized SQL, checksummed SQL migrations, PostgreSQL job table, seeds. PostgreSQL 17 with pg_trgm and btree_gin: Docker locally and in CI, Supabase (Mumbai) for staging/production, database only. See "PostgreSQL on Supabase" in DECISIONS.
-- Object storage chosen when uploads are built; Firebase Google/email plus Apple on iOS.
+- Object storage chosen when uploads are built; Firebase Google/email; Sign in with Apple deferred (DECISIONS A1, blocks App Store submission).
 - Web payments: Razorpay. Mobile payments: Apple IAP and Google Play Billing.
 - No Redis, Firestore, external search, embeddings, vector DB, fine-tuning, or OCR at launch.
 

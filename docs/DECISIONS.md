@@ -48,7 +48,7 @@ Latest explicit decisions in requirement.text > original PRD for the affected su
 | O07 | 20 or 50 tests per exam; 20+ examiners; reviewer staffing | Founder/ops before content acquisition commitments |
 | O08 | 2,000-5,000 concurrent live attempts | Founder picks exact target before live-test load certification |
 | O09 | GST/TDS rates, retention, invoice issuer for store purchases | CA/legal before live commerce; receipt-only store handling is provisional |
-| O10 | Product name/brand | Founder before store listings and public assets |
+| O10 | **Resolved 22 November 2026 (owner):** product name MakeMePrepare, domain makemeprepare.com, logo MMP-logo.png (see V7-V9) | Store listing copy and trademark search remain founder tasks |
 | O11 | India-hosted core data; external provider transfers reviewed | Engineering/legal before provider selection |
 | O12 | Strict receive-before-deadline acceptance, 30s finalizer delay only | Product before M7; delay grants no extra answering time |
 
@@ -109,7 +109,7 @@ These record how the client demo was built. None changes a launch invariant. Ite
 
 | ID | Decision | Rationale and limit |
 |---|---|---|
-| X1 | The demo runs in Expo Go, not a native development build | The React Native Android CMake step fails when the repository path contains a space, as "Client projects" does. Junction and subst workarounds fail because Expo and Gradle canonicalise the real path. The fix is to move the repository to a path without spaces; that is an owner call. Expo Go shows Expo branding and cannot load expo-iap, so store billing stays simulated until the move |
+| X1 | The demo runs in Expo Go, not a native development build | The React Native Android CMake step fails when the repository path contains a space, as "Client projects" does. Junction and subst workarounds fail because Expo and Gradle canonicalise the real path. The fix is to move the repository to a path without spaces; that is an owner call. Expo Go shows Expo branding and cannot load expo-iap, so store billing stays simulated until the move. Update 19 November 2026: the owner moved the repository to `Client-projects\Test-series` (no spaces), which removes the path blocker; a native Android build has not been retried. The owner tests on a physical iPhone in Expo Go and no longer uses an Android emulator. The Expo Go limits above still apply until development builds (milestone D) |
 | X2 | Demo state persists in SQLite (expo-sqlite key-value store) through zustand persist; owner chose SQLite on 15 November 2026 | Gives PRD 6.4 resume behaviour on device for the demo. Data moves to the server database once the API exists. Production keeps E14: the attempt event log commits to SQLite before the UI acknowledges a save, and the server stays authoritative for time, score and entitlement |
 | X3 | Navigation hooks come from expo-router only | expo-router 58 vendors React Navigation core. A separately installed @react-navigation package has no navigation context and crashed the attempt screen. Do not add @react-navigation packages directly |
 | X4 | Proposal: prices display as GST-inclusive at 18% | Display only, pending O09 with the CA. Integer paise throughout; fractional amounts render with paise |
@@ -166,3 +166,26 @@ Technical corrections:
 Row-level security: the schema's policies apply to the API role. Tables without schema policies keep the blanket service policy. The worker role keeps blanket access for system jobs (rescoring, payouts, fulfilment). Where the API must write rows the schema only lets users read, a policy scoped to `current_user_id()` is added and noted in DATA_MODEL. M0 primitives `users`, `roles`, `user_roles`, `sessions`, `billing_orders` and `audit_events` are replaced by `profiles`, `profiles.roles`, Firebase, `purchases` and `admin_audit_logs`.
 
 The schema's revenue split, Pass pool, payout minimum and SLAs match the PRD. Its fixed 10% TDS and 18% GST defaults remain parameters pending the CA (O09), and net revenue after store fees remains O03.
+
+## Mobile visual identity (19 November 2026, owner instruction)
+
+The owner supplied three references: a three-slide 3D onboarding (launch experience), a set of dashboard and analytics screens (in-app layout), and a seven-colour palette (identity). The references set structure and look only; finance, events and health content in them is not product scope.
+
+| ID | Decision | Rationale and limit |
+|---|---|---|
+| V1 | Brand palette is exactly #001D39, #0A4174, #49769F, #4E8EA2, #6EA2B3, #7BBDE8, #BDD8E9, plus white and two pale tints of #BDD8E9 for the canvas and muted surfaces | Owner palette. Navy carries launch screens, hero cards and the tab bar; ice/sky/cyan tint the dashboard tiles. Text pairs were checked: navy on white/ice/sky/cyan/teal and white on navy/navy-blue/steel all pass 4.5:1; #4E8EA2 and #6EA2B3 never carry white text |
+| V2 | Exam-state colours stay outside the palette: green answered/correct, red not answered/wrong, purple marked for review, amber warning | They mirror the official CBT interface students train for, and correct/wrong must read instantly. Used for state only, always with an icon or shape cue |
+| V3 | In-app screens are light (pale ice canvas, white and tinted cards); only launch, sign-in header, hero cards and the tab bar are navy | Reference 2 is light, and long question reading is easier on a light surface. The pasted spec's "navy app background" was not applied to content screens |
+| V4 | Fonts: Outfit (headings, large figures) and Inter (body, labels, tabular numbers), bundled via @expo-google-fonts 0.4.x; type scale one step smaller than the first scale at the owner's request, captions held at the 12px floor | ui-ux-pro-max typography search ("Geometric Modern", "Inter System"). Neither family has Devanagari; Hindi falls back to the system face per glyph. Verify Hindi questions on device |
+| V5 | Launch: three swipeable intro slides before sign-in, shown once per device; no "Later" action | No guest mode exists, so "Later" would lead nowhere. Illustrations are pseudo-3D SVG (react-native-svg 15.16.0, included in Expo Go) in the palette, not rendered 3D art; commissioned 3D art can replace them later |
+| V6 | Navigation: floating navy pill tab bar, four tabs, active tab shows a sky pill with its label | Reference 2 pattern within MASTER's five-destination limit; laid out below content so nothing is hidden behind it. No centre "create" button: students do not create content |
+| V7 | Logo blue #0569D6 (sampled from MMP-logo.png) joins the palette as `brand`: links, emphasis words, active and progress indicators and motion highlights on light surfaces. Primary buttons stay navy blue | Owner chose "add to palette" (22 November 2026). 5.25:1 with white either way and 4.87:1 on the canvas; 3.24:1 on navy, so never text on navy. Logo navy #051D40 is treated as palette #001D39 |
+| V8 | Logo assets are derived from MMP-logo.png, never redrawn: transparent full logo, mark and wordmark, plus reversed versions (navy ink to white, blue kept) for navy surfaces; app icon is the mark on white | The original has a white background and navy ink that disappears on navy surfaces |
+| V9 | Phase 1 UI track adds motion to the existing identity on web and mobile, without redesign: mobile uses react-native-reanimated (the web libraries do not run in React Native); web uses CSS, Motion and Lenis. No Three.js, GSAP or Lottie (owner, 22 November 2026). Rive and Anime.js only if a specific need appears. Every public web page meets the SEO rules in WEB.md | Owner Phase 1 brief. Reduced-motion preference is respected on both platforms |
+
+## Sign in with Apple deferred (20 November 2026, owner instruction)
+
+| ID | Decision | Rationale and limit |
+|---|---|---|
+| A1 | Mobile sign-in is Google plus verified email only; Sign in with Apple is deferred. Supersedes the Apple part of D01, D06 and C1 until revisited | Owner call. App Store Review Guideline 4.8 expects an equivalent privacy-focused login (in practice Sign in with Apple) in an iOS app that offers Google sign-in; email/password is unlikely to qualify because it cannot hide the email. Development builds and TestFlight are unaffected; **App Store submission is blocked until Apple sign-in is added or 4.8 is re-checked against its current text**. Android and web unaffected. Account-linking rules (E05, invariant 10) still apply when Apple is added |
+

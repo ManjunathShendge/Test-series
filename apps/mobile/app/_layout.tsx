@@ -1,3 +1,6 @@
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold } from '@expo-google-fonts/outfit';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -29,7 +32,19 @@ void SplashScreen.preventAutoHideAsync();
  * exit path (docs/TEST_ENGINE.md).
  */
 export default function RootLayout() {
-  const hydrated = useHydrated([useAppStore, useAttemptStore, useResultsStore]);
+  const storesHydrated = useHydrated([useAppStore, useAttemptStore, useResultsStore]);
+  // Bundled with the JS, so this resolves offline. On a load error the app still starts
+  // and React Native falls back to the system face.
+  const [fontsLoaded, fontError] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Outfit_500Medium,
+    Outfit_600SemiBold,
+    Outfit_700Bold,
+  });
+  const hydrated = storesHydrated && (fontsLoaded || !!fontError);
 
   useEffect(() => {
     if (!hydrated) return;

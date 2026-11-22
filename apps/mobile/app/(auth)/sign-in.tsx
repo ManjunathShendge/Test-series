@@ -1,23 +1,27 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Device } from '@exam-prep/contracts';
 import { ApiRequestError } from '@/lib/api/http';
 import { createSession, deviceLimitDevices, revokeDevice } from '@/lib/api/identity';
 import {
   authErrorMessage,
   currentUser,
+  googleStatus,
   refreshVerification,
   resendVerificationEmail,
   sendPasswordReset,
   signInWithEmail,
+  signInWithGoogle,
   signOutOfFirebase,
   signUpWithEmail,
 } from '@/lib/auth';
 import { formatRelative } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
-import { Button, Card, Chip, Icon, ListRow, Screen, Text, TextField } from '@/ui/primitives';
-import { colors, radius, space, touch } from '@/ui/tokens';
+import { Button, Card, Chip, Icon, IconButton, ListRow, Text, TextField } from '@/ui/primitives';
+import { colors, layout, radius, space, touch } from '@/ui/tokens';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD = 8;
@@ -26,16 +30,18 @@ type Mode = 'providers' | 'email' | 'verify' | 'devices';
 
 /**
  * Sign-in (PRD 6.1 as amended, DECISIONS D01/C1/C4): verified email and password through
- * Firebase, then the API registers this device. Google, and Apple on iOS, arrive with the
- * native development build. No phone OTP. The 18+ gate is the proposed O05 policy and is
+ * Firebase, then the API registers this device. Google arrives with the native development
+ * build; Sign in with Apple is deferred (DECISIONS A1). No phone OTP. The 18+ gate is the proposed O05 policy and is
  * labelled as a confirmation, not a legal claim.
  */
 export default function SignInScreen() {
   const router = useRouter();
+  // Arriving from the welcome slides: both show Google and email; Sign up preselects account creation.
+  const { mode: entry } = useLocalSearchParams<{ mode?: 'signup' | 'login' }>();
   const applyServerProfile = useAppStore((s) => s.applyServerProfile);
   const [adult, setAdult] = useState(false);
   const [mode, setMode] = useState<Mode>('providers');
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(entry === 'signup');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -75,6 +81,22 @@ export default function SignInScreen() {
       }
     } finally {
       setBusy(null);
+    }
+  };
+
+  const google = googleStatus();
+
+  const submitGoogle = async () => {
+    if (!requireAdult()) return;
+    setError(null);
+    setBusy('google');
+    try {
+      // Null means the student closed the Google picker: nothing to report.
+      if (await signInWithGoogle()) await finishSignIn();
+    } catch (e) {
+      fail(authErrorMessage(e));
+    } finally {
+      setBusy((b) => (b === 'google' ? null : b));
     }
   };
 
@@ -181,20 +203,28 @@ export default function SignInScreen() {
   );
 
   return (
-    <Screen edges={['top', 'left', 'right', 'bottom']} contentStyle={styles.content}>
-      <View style={styles.hero}>
-        <View style={styles.logo}>
-          <Icon name="school" size={32} color={colors.onPrimary} />
+    <View style={styles.root}>
+      <StatusBar style="light" />
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.hero}>
+        <View style={styles.heroTop}>
+          <IconButton icon="chevron-back" label="Back to introduction" tone="inverse" onPress={() => router.replace('/(auth)/welcome')} />
+          <Image source={require('../../assets/brand/mark-inverse.png')} style={styles.logo} resizeMode="contain" accessibilityRole="image" accessibilityLabel="MakeMePrepare" />
         </View>
-        <Text variant="display">Practice like it's exam day</Text>
-        <Text tone="secondary">Timed mocks for SSC, Banking and Railways, written by examiners who have cleared them. One free test is waiting.</Text>
+        <Text variant="hero" tone="inverse" accessibilityRole="header">
+          {mode === 'email' ? (creating ? 'Create your account' : 'Welcome back') : "Practise like it's exam day"}
+        </Text>
+        <Text tone="inverseSecondary">
+          {mode === 'email' && !creating ? 'Log in to pick up where you left off.' : 'Timed mocks for SSC, Banking and Railways, written by examiners who have cleared them.'}
+        </Text>
         <View style={styles.badges}>
           <Chip label="SSC CGL" tone="primary" />
           <Chip label="IBPS PO" tone="primary" />
           <Chip label="RRB NTPC" tone="primary" />
         </View>
-      </View>
+      </SafeAreaView>
 
+      <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.sheet}>
+      <ScrollView contentContainerStyle={styles.sheetContent} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <View style={styles.form}>
         {mode === 'verify' ? (
           <View style={styles.centered}>
@@ -278,14 +308,23 @@ export default function SignInScreen() {
               </View>
             ) : (
               <View style={styles.providers}>
-                <Button label="Continue with Google" icon="logo-google" variant="secondary" fullWidth size="lg" disabled accessibilityHint="Available in the next app build" />
-                {Platform.OS === 'ios' ? (
-                  <Button label="Continue with Apple" icon="logo-apple" variant="secondary" fullWidth size="lg" disabled accessibilityHint="Available in the next app build" />
-                ) : null}
+                <Button
+                  label="Continue with Google"
+                  icon="logo-google"
+                  variant="secondary"
+                  fullWidth
+                  size="lg"
+                  disabled={google !== 'ready' || (busy !== null && busy !== 'google')}
+                  loading={busy === 'google' || (busy === 'session' && mode === 'providers')}
+                  {...(google !== 'ready' ? { accessibilityHint: 'Not available in this version of the app' } : {})}
+                  onPress={() => void submitGoogle()}
+                />
                 <Button label="Continue with email" icon="mail-outline" fullWidth size="lg" onPress={() => { if (requireAdult()) setMode('email'); }} />
-                <Text variant="caption" tone="secondary" align="center">
-                  Google{Platform.OS === 'ios' ? ' and Apple' : ''} sign-in arrive with the next app build.
-                </Text>
+                {google !== 'ready' ? (
+                  <Text variant="caption" tone="secondary" align="center">
+                    {google === 'needs-dev-build' ? 'Google sign-in works in the installed app, not in Expo Go.' : 'Google sign-in is not set up in this build yet.'}
+                  </Text>
+                ) : null}
               </View>
             )}
 
@@ -298,14 +337,19 @@ export default function SignInScreen() {
           By continuing you agree to the Terms and Privacy Policy. Your phone number is optional and never used for sign-in.
         </Text>
       </View>
-    </Screen>
+      </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { flexGrow: 1, justifyContent: 'space-between', paddingVertical: space['2xl'] },
-  hero: { gap: space.md },
-  logo: { width: 64, height: 64, borderRadius: radius.lg, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginBottom: space.sm },
+  root: { flex: 1, backgroundColor: colors.inverse },
+  hero: { paddingHorizontal: layout.gutter, paddingBottom: space['2xl'], gap: space.md },
+  heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: space.sm, marginBottom: space.sm },
+  logo: { width: 81, height: 44 },
+  sheet: { flex: 1, backgroundColor: colors.background, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, marginTop: -space.lg },
+  sheetContent: { flexGrow: 1, paddingHorizontal: layout.gutter, paddingTop: space.xl, paddingBottom: space.xl, width: '100%', maxWidth: layout.maxContentWidth, alignSelf: 'center' },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.xs },
   form: { gap: space.lg },
   providers: { gap: space.md },

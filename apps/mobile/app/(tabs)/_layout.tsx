@@ -1,60 +1,24 @@
 import { Redirect, Tabs } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '@/lib/store/app';
-import { Icon, type IconName } from '@/ui/primitives';
-import { colors, typography } from '@/ui/tokens';
+import { FloatingTabBar, type TabMeta } from '@/ui/patterns/FloatingTabBar';
 
-interface TabDef {
-  name: string;
-  title: string;
-  icon: IconName;
-  iconActive: IconName;
-}
-
-/** Four destinations, each with icon and label (MASTER: bottom navigation <=5). */
-const TABS: TabDef[] = [
-  { name: 'index', title: 'Home', icon: 'home-outline', iconActive: 'home' },
-  { name: 'discover', title: 'Discover', icon: 'compass-outline', iconActive: 'compass' },
-  { name: 'progress', title: 'Progress', icon: 'stats-chart-outline', iconActive: 'stats-chart' },
-  { name: 'profile', title: 'Profile', icon: 'person-outline', iconActive: 'person' },
-];
+/** Four destinations (MASTER: bottom navigation <=5), shown in the floating pill bar. */
+const TABS: Record<string, TabMeta> = {
+  index: { title: 'Home', icon: 'home-outline', iconActive: 'home' },
+  discover: { title: 'Discover', icon: 'compass-outline', iconActive: 'compass' },
+  progress: { title: 'Progress', icon: 'stats-chart-outline', iconActive: 'stats-chart' },
+  profile: { title: 'Profile', icon: 'person-outline', iconActive: 'person' },
+};
 
 export default function TabsLayout() {
   const session = useAppStore((s) => s.session);
-  const insets = useSafeAreaInsets();
-  if (!session.signedIn) return <Redirect href="/(auth)/sign-in" />;
+  const introSeen = useAppStore((s) => s.introSeen);
+  if (!session.signedIn) return <Redirect href={introSeen ? '/(auth)/sign-in' : '/(auth)/welcome'} />;
   if (!session.onboarded) return <Redirect href="/(auth)/onboarding" />;
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarLabelStyle: { fontSize: typography.caption.fontSize, fontWeight: '600' },
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-          // 56dp bar plus the gesture/navigation bar inset so labels never sit under it.
-          height: 56 + insets.bottom,
-          paddingTop: 6,
-          paddingBottom: Math.max(insets.bottom, 6),
-        },
-        tabBarItemStyle: { paddingVertical: 4 },
-      }}
-    >
-      {TABS.map((tab) => (
-        <Tabs.Screen
-          key={tab.name}
-          name={tab.name}
-          options={{
-            title: tab.title,
-            tabBarAccessibilityLabel: `${tab.title} tab`,
-            tabBarIcon: ({ color, focused }) => (
-              <Icon name={focused ? tab.iconActive : tab.icon} size={24} color={color} />
-            ),
-          }}
-        />
+    <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => <FloatingTabBar {...props} tabs={TABS} />}>
+      {Object.entries(TABS).map(([name, tab]) => (
+        <Tabs.Screen key={name} name={name} options={{ title: tab.title, tabBarAccessibilityLabel: `${tab.title} tab` }} />
       ))}
     </Tabs>
   );

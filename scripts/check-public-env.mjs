@@ -9,6 +9,9 @@ const allowed = new Set([
   'EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN',
   'EXPO_PUBLIC_FIREBASE_PROJECT_ID',
   'EXPO_PUBLIC_FIREBASE_APP_ID',
+  // Google OAuth client IDs are public identifiers, like the Firebase web config.
+  'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
+  'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID',
 ]);
 async function inspect(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {

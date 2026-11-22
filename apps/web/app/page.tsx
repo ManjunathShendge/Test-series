@@ -1,8 +1,8 @@
 export default function HomePage() {
   return (
     <main>
-      <h1>Exam Prep Marketplace</h1>
-      <p>Bootstrap placeholder. Student discovery arrives in M6.</p>
+      <h1>MakeMePrepare</h1>
+      <p>Coming soon at makemeprepare.com.</p>
     </main>
   );
 }

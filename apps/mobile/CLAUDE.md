@@ -7,7 +7,7 @@ Read docs/MOBILE.md; before attempt changes read docs/TEST_ENGINE.md. UI follows
 - Persist answer event + state before confirming save; never keep only copy in memory/network.
 - Engine receives anchored monotonic time; after process restart re-anchor from server. No wall-clock-derived extra time.
 - Server confirms entitlement; Apple/Play native billing only, localized prices, pending/recovery/restore flows.
-- Google/email plus Apple on iOS; authenticated linking, never email-only account merge.
+- Google/email; Apple deferred (DECISIONS A1). Authenticated linking, never email-only account merge.
 - No privileged credentials or question keys in client bundle/cache before authorized review.
 - Native SDK/module changes require new development build. Verify current Expo compatibility.
 - Real-device evidence needed for screen capture, process-kill recovery, size/performance and store billing.

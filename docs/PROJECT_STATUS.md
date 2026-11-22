@@ -299,3 +299,45 @@ Verification on 19 November 2026:
 - Not yet verified: the full flow on a phone with a verified inbox (owner test in Expo Go).
 
 Open: target exams are not saved to the server yet (needs the catalogue, milestone B); target-exam editing and account deletion remain local demo screens.
+
+### 19 November 2026: device testing and repository path
+
+- Owner moved the repository to `Client-projects\Test-series`; the path has no spaces, so the DECISIONS X1 blocker is removed. A native Android build has not been retried.
+- Device testing is Expo Go on the owner's physical iPhone; the Android emulator is no longer used. `apps/mobile/.env` points the API at the computer's LAN address.
+- Docs only (DECISIONS X1, SETUP); no code changed and no checks run.
+
+### 19 November 2026: mobile visual redesign (owner references)
+
+- New identity per DECISIONS V1-V6: exact seven-colour palette in `src/ui/tokens`, Outfit + Inter fonts loaded before the splash hides, type scale one step smaller, pill buttons, larger card radii.
+- Launch: `(auth)/welcome` three-slide intro (swipe, Continue, Skip, progress pill, Sign up / Log in) with pseudo-3D SVG illustrations that drift unless Reduce Motion is on; shown once per device (`introSeen` survives sign-out). Sign-in has a navy header and white form sheet and opens in sign-up or log-in mode from the slides. Splash background is navy.
+- In-app: floating navy pill tab bar; Home with greeting header, navy hero card (attempt in progress, last score with percentile ring, or first free test) and a tinted 2x2 tile grid; Progress with an interactive line chart (tap or screen-reader select, cutoff line, date stepper) and a metric rail; Discover with an editorial heading and exams as rotated shapes. Other screens pick up the new tokens unchanged.
+- Dependencies: react-native-svg 15.16.0 (via `expo install`), @expo-google-fonts/inter 0.4.2, @expo-google-fonts/outfit 0.4.3; lockfile updated.
+
+Checks run: mobile typecheck, lint (exit 0) and unit tests (25 passed); `expo export --platform ios` bundled. Not yet verified: appearance and interaction on the owner's iPhone in Expo Go, Hindi rendering with the new fonts, VoiceOver pass over the new chart and tab bar. No screenshots taken.
+
+### 20 November 2026: sign-in scope
+
+- Sign in with Apple deferred by the owner (DECISIONS A1); the disabled Apple button is removed. App Store submission is blocked until it is added or Guideline 4.8 is re-checked.
+- Google sign-in is on hold until the product domain exists (owner, 20 November 2026): the Google consent screen needs the authorized domain plus privacy-policy and terms URLs on it. The Google button stays visible but disabled. When resumed: Firebase Google provider, consent screen, iOS/Android apps with the final bundle ID, then the development build (setup steps given to the owner in session).
+- Email/password sign-in remains the working method in Expo Go. TextField no longer sets lineHeight on the input (iOS pushed the text to the bottom of the field).
+
+### 20 November 2026: Google sign-in code for development builds
+
+- Correction to the entry above: the domain is needed only to publish the Google consent screen; Testing mode works without it. The owner asked to set up what development needs now.
+- Added `expo-dev-client` 58.0.21 and `@react-native-google-signin/google-signin` 17.0.0 (via `expo install`, pinned; the library's Expo guide confirms no Expo Go support and a required `iosUrlScheme` without native Firebase). `eas.json` with a `development` profile; EAS project ID in `app.config.ts`; bundle ID and Google URL scheme are build-time values (`APP_BUNDLE_ID`, `GOOGLE_IOS_URL_SCHEME`), and an EAS build without the scheme fails fast.
+- Auth adapter: `signInWithGoogle` (native picker, Google ID token, Firebase `signInWithCredential`), lazy-loaded so Expo Go keeps working; Google sign-out on sign-out; messages for Google errors and for an existing password account (never merged on email; linking not built). The Google button is live when configured in a development build; in Expo Go it says it needs the installed app. No API change: the API already accepts any verified Firebase identity.
+- Checks: mobile typecheck, lint, unit tests (32, 7 new), public-env allowlist, `expo export --platform ios`; `expo config` shows the Google URL scheme in Info.plist when set.
+- Not done (needs the owner): Firebase Google provider, consent screen test user, bundle ID, Firebase iOS app and client IDs, Apple Developer account, EAS login and the first development build. Not verified on a device.
+
+## 22 November 2026: Phase 1 UI track, milestone U0 brand foundation
+
+Owner decisions: product name MakeMePrepare, domain makemeprepare.com, logo MMP-logo.png, logo blue added to the palette, motion on web and mobile without Three.js (DECISIONS O10, V7-V9). Owner also asked that all web work follow SEO practice.
+
+Track milestones (an update to the owner after each): U0 brand foundation; U1 mobile motion system; U2 mobile screens; W0 web foundation (tokens, fonts, Motion/Lenis, header/footer, SEO base: canonical, sitemap, robots, Open Graph); W1 public landing page and legal page shells; later web pages follow the Phase 1 backend milestones.
+
+U0 implemented:
+- Brand assets derived from MMP-logo.png by script (unblended from the white background, not redrawn): logo, mark and wordmark with reversed navy-surface versions in `apps/mobile/assets/brand` and `apps/web/public/brand`; app icon, Android adaptive icon and splash image in `apps/mobile/assets`; `apps/web/app/icon.png` and `apple-icon.png`.
+- Mobile: app name MakeMePrepare, icon, adaptive icon and splash image in `app.config.ts`; the sign-in header shows the logo mark in place of the placeholder tile; the welcome header shows the mark beside the slide dots. Token `palette.brand500` / `colors.brand` = #0569D6. Bundle ID, URL scheme and storage keys unchanged (changing them would break Google OAuth clients and sign the student out).
+- Web: metadata base https://makemeprepare.com, title template, description, Open Graph defaults, theme colour; `robots: noindex` until the W1 public site ships.
+
+Checks run: mobile and web typecheck and lint; mobile unit tests (32 passed); `expo config` shows name, icon, adaptive icon and splash; `expo export --platform ios` bundled with the logo asset; `next build` passed and serves `/icon.png` and `/apple-icon.png`. Not verified: icon and splash on a device (the native icon and splash need a new development build; Expo Go shows its own), welcome header spacing on a 320pt-wide screen.

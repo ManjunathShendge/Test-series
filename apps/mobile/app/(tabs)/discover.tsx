@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { ExaminerCard } from '@/features/catalogue/components/ExaminerCard';
+import { ExamShapes } from '@/features/catalogue/components/ExamShapes';
 import { SectionHeader } from '@/features/catalogue/components/SectionHeader';
 import { TestCard } from '@/features/catalogue/components/TestCard';
 import { TestListSkeleton } from '@/features/catalogue/components/TestCardSkeleton';
@@ -11,7 +12,7 @@ import { examiners, exams, type SearchFilters, type TestSummary } from '@/lib/de
 import { formatCount } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
 import { Card, Chip, Icon, Screen, StateView, Text, TextField, type IconName } from '@/ui/primitives';
-import { colors, layout, space } from '@/ui/tokens';
+import { colors, fonts, layout, space } from '@/ui/tokens';
 
 const KINDS: { key: TestSummary['kind']; label: string }[] = [
   { key: 'full-mock', label: 'Mini mock' },
@@ -67,7 +68,15 @@ export default function DiscoverScreen() {
 
   const header = (
     <View style={styles.header}>
-      <Text variant="display">Discover</Text>
+      <View accessible accessibilityRole="header" accessibilityLabel="Discover tests picked for your exam">
+        <Text variant="caption" tone="secondary" style={styles.kicker}>
+          DISCOVER
+        </Text>
+        <Text style={styles.editorial}>
+          Tests{'\n'}
+          <Text style={[styles.editorial, styles.editorialSoft]}>picked for{'\n'}your exam</Text>
+        </Text>
+      </View>
       <TextField
         label="Search tests, exams and examiners"
         labelHidden
@@ -108,8 +117,9 @@ export default function DiscoverScreen() {
       ) : (
         <>
           <SectionHeader title="Browse by exam" />
+          <ExamShapes exams={exams} onOpen={(id) => router.push({ pathname: '/exam/[id]', params: { id } })} />
           <View style={styles.examGrid}>
-            {exams.map((e) => (
+            {exams.slice(3).map((e) => (
               <Card key={e.id} onPress={() => router.push({ pathname: '/exam/[id]', params: { id: e.id } })} accessibilityLabel={`${e.name}, ${e.testCount} tests, ${formatCount(e.followerCount)} following`} style={styles.examCard}>
                 <View style={styles.examIcon}>
                   <Icon name="school-outline" size={22} color={colors.primary} />
@@ -184,6 +194,11 @@ const styles = StyleSheet.create({
   content: { maxWidth: undefined, gap: 0 },
   list: { paddingBottom: space.xl },
   header: { paddingHorizontal: layout.gutter, paddingTop: space.lg, gap: space.lg },
+  kicker: { letterSpacing: 1.2, marginBottom: space.xs },
+  // Editorial headline after the reference; weight and tint contrast instead of an italic
+  // (Outfit has no italic face).
+  editorial: { fontFamily: fonts.displayBold, fontSize: 36, lineHeight: 40, letterSpacing: -0.8, color: colors.text },
+  editorialSoft: { fontFamily: fonts.displayMedium, color: colors.textSecondary },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   resultsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   examGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
