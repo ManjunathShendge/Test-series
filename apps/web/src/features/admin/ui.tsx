@@ -25,15 +25,18 @@ type Load<T> = { status: 'loading' } | { status: 'error'; error: unknown } | { s
 export function useLoad<T>(load: () => Promise<T>, deps: unknown[]) {
   const [state, setState] = useState<Load<T>>({ status: 'loading' });
   const live = useRef(true);
+  // Only the newest request may update state, so a slow earlier response never wins.
+  const latest = useRef(0);
   const loader = useCallback(load, deps); // eslint-disable-line react-hooks/exhaustive-deps
   const reload = useCallback(
     async (quiet = false) => {
+      const request = ++latest.current;
       if (!quiet) setState({ status: 'loading' });
       try {
         const data = await loader();
-        if (live.current) setState({ status: 'ready', data });
+        if (live.current && request === latest.current) setState({ status: 'ready', data });
       } catch (error) {
-        if (live.current) setState({ status: 'error', error });
+        if (live.current && request === latest.current) setState({ status: 'error', error });
       }
     },
     [loader],

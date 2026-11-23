@@ -16,6 +16,34 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+  minio:
+    image: exam-prep-local-minio:latest
+    command: ['server', '/data', '--console-address', ':9001']
+    environment:
+      MINIO_ROOT_USER: exam_minio
+      MINIO_ROOT_PASSWORD: local_minio_only
+    ports:
+      - '127.0.0.1:19000:9000'
+      - '127.0.0.1:19001:9001'
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:9000/minio/health/live']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  clamav:
+    image: clamav/clamav:1.4.3@sha256:75fb5fd95fcbe1d7e6d240c369c1572b686ee2c95949d1042b5148de8eddebb4
+    ports:
+      - '127.0.0.1:13310:3310'
+    volumes:
+      - clamav-data:/var/lib/clamav
+    healthcheck:
+      test: ['CMD-SHELL', 'nc -z -w 2 127.0.0.1 3310']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 5m
   api:
     profiles: [app]
     build:
@@ -29,9 +57,22 @@ services:
       MIGRATION_DATABASE_URL: postgresql://exam_migrator:local_migration_only@postgres:5432/exam_prep
       PUBLIC_WEB_ORIGIN: http://localhost:3000
       CORS_ORIGINS: http://localhost:3000
+      STORAGE_ENDPOINT: minio
+      STORAGE_PORT: 9000
+      STORAGE_USE_SSL: false
+      STORAGE_PUBLIC_ENDPOINT: 127.0.0.1
+      STORAGE_PUBLIC_PORT: 19000
+      STORAGE_PUBLIC_USE_SSL: false
+      STORAGE_ACCESS_KEY: exam_minio
+      STORAGE_SECRET_KEY: local_minio_only
+      ANTIVIRUS_HOST: clamav
+      ANTIVIRUS_PORT: 3310
     ports: ['127.0.0.1:3001:3001']
-    depends_on: { postgres: { condition: service_healthy } }
-    command: ['sh', '-c', 'node node_modules/@exam-prep/db/scripts/migrate.mjs && node dist/main.js']
+    depends_on:
+      postgres: { condition: service_healthy }
+      clamav: { condition: service_healthy }
+    command:
+      ['sh', '-c', 'node node_modules/@exam-prep/db/scripts/migrate.mjs && node dist/main.js']
   worker:
     profiles: [app]
     build:
@@ -39,7 +80,11 @@ services:
       dockerfile: apps/api/Dockerfile
     environment: *app-env
     ports: ['127.0.0.1:3002:3002']
-    depends_on: { postgres: { condition: service_healthy } }
+    depends_on:
+      postgres: { condition: service_healthy }
+      clamav: { condition: service_healthy }
     command: ['node', 'dist/worker.js']
 volumes:
   postgres17-data:
+  minio-data:
+  clamav-data:

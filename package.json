@@ -21,7 +21,7 @@
     "setup": "node scripts/setup.mjs",
     "build:server": "turbo run build --filter=@exam-prep/api...",
     "db:migrate:dev": "pnpm --filter @exam-prep/db run migrate",
-    "services:up": "docker compose up -d --wait postgres",
+    "services:up": "docker compose up -d --wait postgres minio clamav",
     "services:stop": "docker compose stop",
     "check:public-env": "node scripts/check-public-env.mjs"
   },

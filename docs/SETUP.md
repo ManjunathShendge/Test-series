@@ -19,7 +19,7 @@ pnpm dev
 
 `setup` copies safe examples only when destinations are absent. Root `.env` supplies shared server/CLI configuration; web/mobile have separate public-only examples. Existing files are preserved.
 
-`services:up` starts `postgres:17.12-alpine` (the Supabase version) on `127.0.0.1:15432` and waits until healthy. The named volume `postgres17-data` preserves data. A new volume runs `docker/postgres/init`, which creates three roles:
+`services:up` starts `postgres:17.12-alpine` (the Supabase version), local object storage, and the digest-pinned ClamAV scanner; it waits until all are healthy. The named volumes preserve database and malware definitions. A new PostgreSQL volume runs `docker/postgres/init`, which creates three roles:
 
 | Role | Used by | Rights |
 |---|---|---|

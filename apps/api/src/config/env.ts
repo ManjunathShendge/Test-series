@@ -38,6 +38,19 @@ const schema = z
       .string()
       .regex(/^[\w.-]+:\d+$/)
       .optional(),
+    STORAGE_ENDPOINT: z.string().trim().min(1).optional(),
+    STORAGE_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+    STORAGE_USE_SSL: z.enum(['true', 'false']).optional(),
+    STORAGE_PUBLIC_ENDPOINT: z.string().trim().min(1).optional(),
+    STORAGE_PUBLIC_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+    STORAGE_PUBLIC_USE_SSL: z.enum(['true', 'false']).optional(),
+    STORAGE_ACCESS_KEY: z.string().trim().min(1).optional(),
+    STORAGE_SECRET_KEY: z.string().trim().min(1).optional(),
+    STORAGE_REGION: z.string().trim().min(1).optional(),
+    ANTIVIRUS_HOST: z.string().trim().min(1).optional(),
+    ANTIVIRUS_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+    EXAMINER_AGREEMENT_VERSION: z.string().trim().min(1).max(100).optional(),
+    EXAMINER_AGREEMENT_TEXT: z.string().trim().min(1).max(20_000).optional(),
   })
   .superRefine((env, ctx) => {
     const deployed =
@@ -73,6 +86,39 @@ const schema = z
         path: ['DATABASE_CA_CERT_PATH'],
         message: 'Deployed environments require verified database TLS',
       });
+    }
+    if (['staging', 'production'].includes(env.APP_ENV)) {
+      for (const path of ['STORAGE_ENDPOINT', 'STORAGE_ACCESS_KEY', 'STORAGE_SECRET_KEY']) {
+        if (!env[path as keyof typeof env]) {
+          ctx.addIssue({
+            code: 'custom',
+            path: [path],
+            message: 'Deployed environments require object-storage credentials',
+          });
+        }
+      }
+      if (!env.STORAGE_PUBLIC_ENDPOINT) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['STORAGE_PUBLIC_ENDPOINT'],
+          message: 'Deployed examiner uploads require a browser-reachable object-storage endpoint',
+        });
+      }
+      if (!env.EXAMINER_AGREEMENT_VERSION || !env.EXAMINER_AGREEMENT_TEXT) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['EXAMINER_AGREEMENT_VERSION'],
+          message:
+            'Deployed environments require owner-approved examiner agreement text and version',
+        });
+      }
+      if (!env.ANTIVIRUS_HOST || !env.ANTIVIRUS_PORT) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['ANTIVIRUS_HOST'],
+          message: 'Deployed environments require a malware scanner host and port',
+        });
+      }
     }
     if (env.API_PORT === env.WORKER_PORT)
       ctx.addIssue({

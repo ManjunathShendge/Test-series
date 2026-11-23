@@ -70,6 +70,7 @@ requirement.text it is held as a conflict (C1-C4) until the owner rules.
 | E18 | Server-rendered KaTeX as the default renderer | Kept as an S2-gated choice, not a commitment. The note's own decision 7 agrees that the single-WebView renderer needs a low-end Android benchmark first |
 | E19 | Server-issued device ID in secure storage; ANDROID_ID secondary only | Adopted; consistent with API_CONTRACTS, where a device ID is an identifier and not authentication |
 | E20 | PostHog Cloud residency conflicts with India-hosted data | Recorded against O11. Analytics residency is decided with hosting, not separately; self-host or disclose, and never send question content or KYC to analytics |
+| E21 | Malware scan before examiner assets are accepted | Use the digest-pinned ClamAV 1.4.3 daemon over a private TCP connection. The API fails closed when scanning is unavailable, copies clean bytes to a server-only object key, and never equates a clean scan with manual KYC verification. Deployments must provision a private scanner endpoint and keep signature updates healthy |
 
 Also adopted as refinements, consistent with existing docs: no `expo-updates` reload during an
 active attempt; signed asset URLs reissued on attempt resume (already `GET /attempts/:id` paper
@@ -189,3 +190,11 @@ The owner supplied three references: a three-slide 3D onboarding (launch experie
 |---|---|---|
 | A1 | Mobile sign-in is Google plus verified email only; Sign in with Apple is deferred. Supersedes the Apple part of D01, D06 and C1 until revisited | Owner call. App Store Review Guideline 4.8 expects an equivalent privacy-focused login (in practice Sign in with Apple) in an iOS app that offers Google sign-in; email/password is unlikely to qualify because it cannot hide the email. Development builds and TestFlight are unaffected; **App Store submission is blocked until Apple sign-in is added or 4.8 is re-checked against its current text**. Android and web unaffected. Account-linking rules (E05, invariant 10) still apply when Apple is added |
 
+
+## Question content format (24 November 2026, M3)
+
+| ID | Decision | Rationale and limit |
+|---|---|---|
+| Q1 | Question, option, solution and passage text is plain text, never HTML. Math is `\( … \)` inline and `\[ … \]` display, rendered with KaTeX 0.19.1. Tables are pipe tables: a `\| a \| b \|` header line, a `\| --- \| --- \|` separator, then row lines (at most 10 columns and 50 rows). Everything else is literal text | Satisfies SECURITY "structured sanitization" without an HTML sanitizer: there is no markup to sanitize, and React escapes text. `\(` avoids the currency clash of `$`. `packages/contracts` holds the one parser (`parseRichText`) used by the API, web and later mobile, so the preview is what students see |
+| Q2 | The API rejects malformed content on sample, draft and import save: unbalanced delimiters, ragged tables, and math KaTeX cannot parse. `\href`, `\url`, `\includegraphics` and `\html*` are rejected through KaTeX's trust hook; `maxExpand` 200 and `maxSize` 20 stop macro loops and oversized output | KaTeX renders untrusted commands as red text rather than throwing, so they are detected explicitly. Students never receive content that failed validation |
+| Q3 | Rendering on mobile stays S2-gated (E18). This decision fixes the stored format only | The stored text needs no migration whichever renderer S2 selects |

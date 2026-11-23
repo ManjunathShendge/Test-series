@@ -22,6 +22,16 @@ export const ErrorCode = z.enum([
   /** The draft template is incomplete or inconsistent. details.issues lists why. */
   'TEMPLATE_NOT_PUBLISHABLE',
   'VALIDATION_FAILED',
+  'QC_LOCKED',
+  'AGREEMENT_UNAVAILABLE',
+  'SCANNER_UNAVAILABLE',
+  'STORAGE_UNAVAILABLE',
+  'APPLICATION_ALREADY_EXISTS',
+  'INVALID_ASSET',
+  'IMPORT_REJECTED',
+  'IMPORT_CONFLICT',
+  'INVALID_IMPORT',
+  'IMPORT_TOO_LARGE',
   'NOT_FOUND',
   'INTERNAL',
 ]);

@@ -50,7 +50,42 @@ describe('environment boundary', () => {
       PUBLIC_WEB_ORIGIN: 'https://staging.example.test',
     };
     expect(() => parseEnvironment(staging)).toThrow('DATABASE_CA_CERT_PATH');
-    expect(parseEnvironment({ ...staging, DATABASE_CA_CERT_PATH: 'ca.pem' }).APP_ENV).toBe('staging');
+    expect(
+      parseEnvironment({
+        ...staging,
+        DATABASE_CA_CERT_PATH: 'ca.pem',
+        STORAGE_ENDPOINT: 'objects.example.test',
+        STORAGE_ACCESS_KEY: 'key',
+        STORAGE_SECRET_KEY: 'secret',
+        STORAGE_PUBLIC_ENDPOINT: 'uploads.example.test',
+        EXAMINER_AGREEMENT_VERSION: 'owner-approved-v1',
+        EXAMINER_AGREEMENT_TEXT: 'Owner-approved agreement text',
+        ANTIVIRUS_HOST: 'scanner.example.test',
+        ANTIVIRUS_PORT: 3310,
+      }).APP_ENV,
+    ).toBe('staging');
+  });
+  it('requires a malware scanner in deployed environments', () => {
+    const staging = {
+      ...local,
+      APP_ENV: 'staging',
+      FIREBASE_PROJECT_ID: 'exam-prep-staging',
+      FIREBASE_AUTH_EMULATOR_HOST: undefined,
+      CORS_ORIGINS: 'https://staging.example.test',
+      PUBLIC_WEB_ORIGIN: 'https://staging.example.test',
+      DATABASE_CA_CERT_PATH: 'ca.pem',
+      STORAGE_ENDPOINT: 'objects.example.test',
+      STORAGE_ACCESS_KEY: 'key',
+      STORAGE_SECRET_KEY: 'secret',
+      STORAGE_PUBLIC_ENDPOINT: 'uploads.example.test',
+      EXAMINER_AGREEMENT_VERSION: 'owner-approved-v1',
+      EXAMINER_AGREEMENT_TEXT: 'Owner-approved agreement text',
+    };
+    expect(() => parseEnvironment(staging)).toThrow('ANTIVIRUS_HOST');
+  });
+  it('rejects invalid malware scanner ports', () => {
+    expect(() => parseEnvironment({ ...local, ANTIVIRUS_HOST: 'localhost', ANTIVIRUS_PORT: 0 }))
+      .toThrow('ANTIVIRUS_PORT');
   });
   it('does not expose secrets in validation errors', () => {
     expect(() => parseEnvironment({ ...local, DATABASE_URL: 'private-token' })).not.toThrow(
@@ -61,14 +96,25 @@ describe('environment boundary', () => {
     );
   });
   it('requires a valid Firebase project id', () => {
-    expect(() => parseEnvironment({ ...local, FIREBASE_PROJECT_ID: undefined })).toThrow('FIREBASE_PROJECT_ID');
-    expect(() => parseEnvironment({ ...local, FIREBASE_PROJECT_ID: 'Bad Project!' })).toThrow('FIREBASE_PROJECT_ID');
+    expect(() => parseEnvironment({ ...local, FIREBASE_PROJECT_ID: undefined })).toThrow(
+      'FIREBASE_PROJECT_ID',
+    );
+    expect(() => parseEnvironment({ ...local, FIREBASE_PROJECT_ID: 'Bad Project!' })).toThrow(
+      'FIREBASE_PROJECT_ID',
+    );
   });
   it('accepts test signing keys only when NODE_ENV and APP_ENV are both test', () => {
     const jwks = '{"keys":[]}';
-    expect(parseEnvironment({ ...local, NODE_ENV: 'test', APP_ENV: 'test', FIREBASE_TEST_JWKS: jwks }).FIREBASE_TEST_JWKS).toBe(jwks);
-    expect(() => parseEnvironment({ ...local, FIREBASE_TEST_JWKS: jwks })).toThrow('FIREBASE_TEST_JWKS');
-    expect(() => parseEnvironment({ ...local, NODE_ENV: 'test', FIREBASE_TEST_JWKS: jwks })).toThrow('FIREBASE_TEST_JWKS');
+    expect(
+      parseEnvironment({ ...local, NODE_ENV: 'test', APP_ENV: 'test', FIREBASE_TEST_JWKS: jwks })
+        .FIREBASE_TEST_JWKS,
+    ).toBe(jwks);
+    expect(() => parseEnvironment({ ...local, FIREBASE_TEST_JWKS: jwks })).toThrow(
+      'FIREBASE_TEST_JWKS',
+    );
+    expect(() =>
+      parseEnvironment({ ...local, NODE_ENV: 'test', FIREBASE_TEST_JWKS: jwks }),
+    ).toThrow('FIREBASE_TEST_JWKS');
   });
   it('rejects colliding listener ports', () => {
     expect(() => parseEnvironment({ ...local, WORKER_PORT: 3001 })).toThrow('WORKER_PORT');

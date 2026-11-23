@@ -10,7 +10,10 @@ import { Waiting } from '@/features/auth/ui';
 import { State } from './ui';
 import styles from './admin.module.css';
 
-const NAV = [{ href: '/admin/exams', label: 'Exams and templates' }];
+const NAV = [
+  { href: '/admin/exams', label: 'Exams and templates' },
+  { href: '/admin/examiners', label: 'Examiner applications' },
+];
 
 /**
  * Staff console frame. Shows the console only to signed-in accounts with the admin role; the

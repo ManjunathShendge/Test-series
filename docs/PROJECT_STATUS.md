@@ -1,6 +1,6 @@
 # Project status
 
-Date: 19 November 2026.
+Date: 23 November 2026.
 
 ## Completed
 
@@ -11,7 +11,7 @@ Date: 19 November 2026.
 
 ## Implementation state
 
-The development foundation is implemented on PostgreSQL 17 (Docker locally and in CI; Supabase Mumbai for staging, owner decision 18 November 2026): workspace scripts, environment validation, API and worker health, a checksummed migration with storage primitives and a leased job table, idempotent fixture seed, CI and container definitions. Supabase staging is migrated, with restricted roles and verified TLS. The owner-supplied schema v1.1 is implemented in full (migrations 002-005) with the PRD overrides and deviations in DATA_MODEL; no API endpoints use it yet. Mobile signs in with Firebase email/password against the API (profile, onboarding, devices); catalogue, attempts, results and billing on mobile are still synthetic demo data. Domain contracts, the shared attempt engine and business database schemas remain future milestones. See the latest log for checks and remaining limits.
+The development foundation runs on PostgreSQL 17 (Docker locally and in CI; Supabase Mumbai for staging, owner decision 18 November 2026). Identity, catalogue, and examiner-authoring API slices now use the database; staging has the baseline schema and restricted roles. Mobile signs in with Firebase email/password against the API (profile, onboarding, devices), while its catalogue, attempts, results, and billing remain synthetic demo data. M3 authoring, malware scanning, and staff KYC downloads are implemented; full browser acceptance and owner/legal KYC policy remain open. Later domain contracts, attempt, results, billing, and launch milestones remain incomplete.
 
 ## Log
 
@@ -173,7 +173,34 @@ Next concrete action: owner decides on relocating the repository; then resume M0
 
 ## Next action
 
-Begin M1 identity: Firebase project setup (owner), token verification and the sign-in flow on `ensure_profile_for_firebase_user`, `withUser` request context, devices and consent. API hosting (spike S3), native Android path relocation (X1), native iOS/store evidence and S4 remain separate work.
+M3 remains in progress: validate browser-based upload and grouped-import preview/commit, make local object storage reproducible from a clean checkout, and obtain owner/legal-approved examiner agreement and KYC policies. Scanner failure is fail-closed and staff downloads require a clean scan; neither means KYC is verified. M4 onward, commerce, store and launch gates remain separate.
+
+## 23 November 2026: M3 examiner application foundation
+
+- Added shared examiner-application and ten-sample contracts, migration 009, owner-only decision authority and audited application/sample records.
+- Added API routes for examiner submission and operations review/approve/reject.
+- Added the private `/admin/examiners` staff page.
+- Applied migration 009 to local PostgreSQL and bumped runtime schema readiness to version 9.
+- Checks passed: workspace typecheck, lint, unit tests, production build and `test:int` integration suite.
+- Remaining M3 scope at this point: object/KYC upload verification, the question editor, XLSX/ZIP import, and browser/API coverage; these items were implemented in the follow-up below.
+
+## 23 November 2026: M3 authoring implementation (acceptance incomplete)
+
+- Added examiner application/status and taxonomy APIs, the `/examiner/apply` and `/examiner` workflows, and staff application/sample review.
+- Added draft question revisions, upload intents/completion checks, and template-bound import preview/commit with idempotency and archive validation (migrations 009-012).
+- Verified: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:int` (41 database and 25 API tests), `pnpm build`, and `pnpm test:e2e` all passed. The e2e script is an HTTP/readiness/CORS smoke test, not a browser journey.
+- The import path does not support grouped passages or image references, so the 100-question M3 import acceptance test is not met. Uploads remain scan-pending; there is no malware scanner or safe KYC viewer. Browser upload/CORS behavior and clean-clone MinIO image portability are unverified. No browser journey or real MinIO upload was performed.
+- Deployed use still requires owner/legal-approved examiner agreement text and policy; local/test uses a clearly marked non-legal placeholder. Do not claim M3 completion or launch readiness.
+- The API integration suite still emits a non-failing `pg` overlapping-query deprecation warning in the pre-existing admin catalogue `topics` query.
+
+## 23 November 2026: M3 import and malware hardening (acceptance incomplete)
+
+- Added optional `Groups` sheet parsing for shared English/Hindi passages and ZIP image references. Referenced question and passage images are malware-scanned, copied to server-only object keys, and committed as clean assets; commit revalidates ownership and scan state. Rejected parses are persisted with sheet/row/cell errors, and uncommitted objects are cleaned up best-effort.
+- Added the ops-only, audited, short-lived KYC attachment-download path. A clean malware scan is not a KYC verification decision.
+- Removed the PostgreSQL overlapping-query warning in admin catalogue reads by running those queries sequentially on one client.
+- Checks passed: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, and `pnpm test:int` (41 database and 25 API integration tests). API unit tests include scanner protocol coverage, invalid/missing image paths, and a synthetic 100-question bilingual grouped/image archive; API integration verifies passage/image persistence during commit.
+- Not verified: a complete browser upload-to-preview-to-commit journey, browser PUT/CORS against MinIO, or clean-checkout MinIO startup. Parser and commit are tested separately, not as one real archive upload journey.
+- Blocking dependencies: owner/legal-approved examiner agreement and KYC document/verification/retention/sales policy; a private production ClamAV endpoint with maintained signatures; an accessible, pinned, clean-checkout-compatible local S3 image; and browser upload validation. M3 and launch readiness remain incomplete.
 
 ## Update template
 
@@ -189,6 +216,7 @@ Next concrete action:
 ## 16 November 2026: development foundation / M0 / R26
 
 Implemented:
+
 - Idempotent environment setup; pinned Node 22.23.5 and patched pnpm 11.13.1.
 - Compose services with loopback ports and persistent volumes; PostgreSQL role separation, Firebase demo project, MinIO private bucket initialization and Mailpit.
 - Prisma baseline migration with required extensions; local/test-only repeatable infrastructure seed. Domain accounts and a complete paper await domain schemas.
@@ -198,6 +226,7 @@ Implemented:
 - Updated README/setup/instructions and schema/decision documentation.
 
 Verification on 16 November 2026:
+
 - Frozen-lockfile install with pnpm 11.13.1 passed.
 - Workspace lint and typecheck passed; 29 unit tests passed (19 mobile, 10 API environment tests).
 - Four integration tests passed: PostgreSQL extensions/schema, application role restrictions, incompatible schema rejection, HTTP liveness/readiness during database failure.
@@ -218,12 +247,14 @@ Superseded the same day: the owner's SQLite storage decision replaced PostgreSQL
 ## 18 November 2026: M0 close-out on SQLite / R26
 
 Implemented:
+
 - Host Node upgraded from 22.18.0 to the pinned 22.23.5 (winget OpenJS.NodeJS.22); the engine warning is gone.
 - SETUP, DATA_MODEL, TESTING and CLAUDE.md updated to describe the SQLite foundation; ARCHITECTURE and INFRA carry a superseded-storage note pending a production design pass.
 - Orphaned PostgreSQL role init and MinIO build files moved to `docs/archive/compose-services/`. Firebase Auth emulator configuration kept for M1.
 - M0 work committed and pushed to GitHub so CI runs remotely.
 
 Verification on 18 November 2026 (Node 22.23.5, pnpm 11.13.1):
+
 - `pnpm install --frozen-lockfile`, `pnpm lint`, `pnpm typecheck` passed.
 - `pnpm test`: 29 unit tests passed (19 mobile, 10 API). The first run after install failed once in the web task under parallel turbo; serial and two forced parallel reruns passed. Not reproduced.
 - `pnpm check:public-env` passed; `pnpm db:migrate`, then `pnpm db:seed` twice, passed.
@@ -237,6 +268,7 @@ Not run locally: Docker image builds (verified in CI only). No iOS device or sim
 ## 19 November 2026: PostgreSQL on Supabase / M0 rework / R26
 
 Implemented (commits 8811a7a to the M5 docs commit):
+
 - DECISIONS "PostgreSQL on Supabase" supersedes the SQLite server storage decision; Supabase is database only, Firebase and Expo Push unchanged.
 - Local PostgreSQL 17.12 in Compose on loopback 15432 with migrator, API and worker roles; three database URLs in env examples.
 - `packages/db` on `pg` 8.23.1: transactional checksummed migrator with advisory lock; migration 001 with pg_trgm/btree_gin, append-only ledger and audit including TRUNCATE, SKIP LOCKED leased jobs. No password column and no file BLOBs.
@@ -244,6 +276,7 @@ Implemented (commits 8811a7a to the M5 docs commit):
 - CI starts PostgreSQL via Compose before migrating; API image no longer creates a SQLite data directory. SETUP, DATA_MODEL, TESTING updated.
 
 Verification on 19 November 2026 (Node 22.23.5, pnpm 11.13.1, Docker 29.9.3):
+
 - Frozen install, public-env check, lint and typecheck passed.
 - Unit: 31 passed (19 mobile, 12 API including SQLite-URL rejection and deployed-TLS requirement).
 - Integration: 10 passed (8 database on an isolated database per test, 2 API readiness); temporary databases were all dropped.
@@ -266,11 +299,13 @@ Open: Supabase CA certificate and restricted roles before staging migration; con
 ## 19 November 2026: owner schema v1.1 / data model
 
 Implemented (commits 1153853 to 5190c93):
+
 - Owner-supplied `Supabase_Database_Schema_Documentation.md` registered as a confidential source (gitignored) and made the data model. PRD prevails on sign-in (Firebase), versioning, QC-gated publishing, locked approved questions and the admin audit log; technical corrections for store billing, unverified phone and function search paths.
 - Migrations 002 identity, 003 catalogue, 004 QC and attempts, 005 commerce, functions and buckets: 39 tables, all twelve schema sections. Each deviation and its reason is in DATA_MODEL.
 - `withUser` sets the verified profile per transaction; schema policies use `current_user_id()`. Worker has full row access; the API follows schema policies where they exist.
 
 Verification on 19 November 2026:
+
 - Database integration: 34 tests passed on two consecutive runs, each in an isolated database. They cover the sign-in function and no email merge, own-profile visibility and blocked self-promotion, the two-device limit under concurrency, append-only audit, corrections and ledger, question immutability and versioning, examiner publishing limits, frozen published tests, QC locks, five-report auto-hide, server-only timing and scoring with a strict answer deadline, order and entitlement rules, automatic audit rows, all five functions, and a hand-calculated payout fixture (holds, refunds, minimum, paid rows untouched, finalised month).
 - Whole suite: lint, typecheck, 31 unit tests, 36 integration tests and the HTTP smoke test passed. Local database migrated to schema version 5 and seeded.
 - Two defects found by tests and fixed before commit: the device-limit lock saw no rows under RLS (now an advisory lock), and privileged functions left no audit trace when they suspend the user context (now one audit row per run).
@@ -283,15 +318,16 @@ Open: Firebase project (owner); whether examiners may create their own coupon co
 - `keep-supabase-awake.yml` runs `SELECT now()` every three days as `exam_keepalive` (login-only, no table access, verified TLS). Owner added the `SUPABASE_KEEPALIVE_DATABASE_URL` secret; the first manual run (Actions run 44388767265) succeeded. Before that, a local psql run of the same command succeeded and the role was refused on `profiles` and `bootstrap_state`.
 - GitHub disables scheduled workflows after 60 days without repository activity; remove the workflow once staging is on a paid Supabase plan.
 
-
 ## 19 November 2026: M1 milestone A, email sign-in end to end
 
 Implemented (API in 6c11491, mobile in the following commit):
+
 - API: Firebase ID tokens verified against Google's securetoken keys (project issuer/audience, RS256). `POST /v1/identity/session` requires a verified email and 18+ confirmation, creates the profile without merging on email, and registers a server-issued device under the two-device limit (409 with the active devices). `GET/PATCH /v1/me`, `GET /v1/me/devices`, `DELETE /v1/me/devices/:id` (allowed from an unregistered device so a blocked student can free a slot). Errors use the contract shape.
 - Mobile: Firebase JS SDK email/password (create account, verification email and re-check, password reset), session persisted in expo-sqlite; sign-in calls the API, stores the device id in SecureStore and handles the device limit by removing a device and retrying. Onboarding saves language and preparation stage to the server; Profile and Devices read and revoke real devices; the language switch saves to the server and reverts on failure; sign-out releases this device's slot. Google and Apple buttons are disabled until the development build (milestone D).
 - `apps/mobile/.env.example` lists the four public Firebase web config values; the public-env allowlist includes them.
 
 Verification on 19 November 2026:
+
 - Lint (0 warnings), typecheck and unit tests across the workspace passed: mobile 25 (6 new for API error mapping, network failure, contract-invalid replies and 204), API 14.
 - API identity integration: 8 tests (verified-email gate, age confirmation, profile bootstrap, device registration and limit, revoke, profile update, token rejection) passed with test-only signing keys.
 - Against the real Firebase project `testapp-6be1e`: an unverified account was refused with 403 and a tampered token with 401; the throwaway account was deleted.
@@ -336,6 +372,7 @@ Owner decisions: product name MakeMePrepare, domain makemeprepare.com, logo MMP-
 Track milestones (an update to the owner after each): U0 brand foundation; U1 mobile motion system; U2 mobile screens; W0 web foundation (tokens, fonts, Motion/Lenis, header/footer, SEO base: canonical, sitemap, robots, Open Graph); W1 public landing page and legal page shells; later web pages follow the Phase 1 backend milestones.
 
 U0 implemented:
+
 - Brand assets derived from MMP-logo.png by script (unblended from the white background, not redrawn): logo, mark and wordmark with reversed navy-surface versions in `apps/mobile/assets/brand` and `apps/web/public/brand`; app icon, Android adaptive icon and splash image in `apps/mobile/assets`; `apps/web/app/icon.png` and `apple-icon.png`.
 - Mobile: app name MakeMePrepare, icon, adaptive icon and splash image in `app.config.ts`; the sign-in header shows the logo mark in place of the placeholder tile; the welcome header shows the mark beside the slide dots. Token `palette.brand500` / `colors.brand` = #0569D6. Bundle ID, URL scheme and storage keys unchanged (changing them would break Google OAuth clients and sign the student out).
 - Web: metadata base https://makemeprepare.com, title template, description, Open Graph defaults, theme colour; `robots: noindex` until the W1 public site ships.
@@ -347,6 +384,7 @@ Checks run: mobile and web typecheck and lint; mobile unit tests (32 passed); `e
 Owner re-prioritised: web app first (needed today), mobile motion (U1/U2) after. Order: W0 foundation, W1 public site, W2 student web app on the mobile demo data.
 
 Implemented:
+
 - `app/globals.css`: the mobile tokens as CSS variables (palette, logo blue, semantic colours, spacing, radii, shadows, motion durations), type scale, pill buttons with press scale, cards, chips, focus ring, skip link and a global reduced-motion override.
 - Fonts: Outfit and Inter through `next/font/google` (self-hosted at build time).
 - Motion 14.14.0 and Lenis 1.3.27 (pinned). `SmoothScroll` (Lenis, off under reduced motion), `Reveal`/`RevealItem` (fade-up on entering view, server-rendered content stays readable without JavaScript).
@@ -358,6 +396,7 @@ Checks run: web typecheck, lint and `next build` (static `/`, `/robots.txt`, `/s
 ## 22 November 2026: milestone W1 public site
 
 Implemented (`apps/web/src/features/marketing`, `app/(public)`):
+
 - Landing page in the mobile visual language: navy launch-gradient hero with CSS line reveal and an animated sample of the app dashboard (count-up figures, ring drawn in, gentle float, labelled "Sample dashboard"); promise cards; how it works; feature bento in the dashboard tile colours with the CBT palette states and a score-versus-cutoff line that draws in; exams (SSC, Banking, Railways); examiner band ("portal opens soon", no revenue figures); FAQ accordion; final call to action.
 - Copy stays inside decided scope: no prices, revenue shares, test counts, ratings or testimonials. The exams section names the proposed launch exams (O01 is still a proposed default; update the copy if the founder changes them).
 - SEO: one h1, ordered headings, canonical, FAQPage JSON-LD matching the visible FAQ, FAQ answers kept in the HTML when collapsed, hero animated in CSS so it paints before hydration.
@@ -369,6 +408,7 @@ Not done: Lighthouse/Core Web Vitals run, real policy text (legal), examiner por
 ## 22 November 2026: W1b product showcase and app download
 
 Owner brief with six SaaS landing references (layout and composition only; brand colours, fonts and components stay ours). Implemented in `apps/web/src/features/marketing/showcase`:
+
 - "One account, every screen" (`#app`, after How it works): tinted ice-to-sky stage with a dotted texture; browser-window student dashboard (sidebar, greeting, four stat cards, score-versus-cutoff chart that draws in, continue-attempt card, recent results, section accuracy, quick action) with sample data; the mobile home screen in a phone frame overlapping the window; two floating notification cards; three highlights. Scroll moves the window from a 14 degree tilt to flat and drifts the cards and phone at different rates (Motion `useScroll`); none of it runs with reduced motion.
 - App download band (after Exams): navy panel, three benefits, two phones (CBT attempt screen with the five-state palette, and home), a notification card, store buttons marked "Coming soon" that link nowhere. Before launch, swap in the official Google Play and App Store badge artwork and listing URLs.
 - "App" link added to header and footer. Phone: dashboard drops sidebar and recent results; floating cards hide below 860 px; the download band shows one phone at its designed size.
@@ -380,6 +420,7 @@ Checks run: web typecheck, lint, `next build`; screenshots at 1280, 820 and 390 
 The W1c round (wider layout, 90% hero, scroll choreography) was reverted at the owner's request. The owner then supplied the NOVACORE landing reference for design only, brand guidelines unchanged.
 
 Implemented in `apps/web/src/features/marketing/hero`:
+
 - Hero: rounded light panel (canvas tint to ice to sky, 12 px frame) with the navigation integrated; headline "Practise like it's exam day." with "Walk in ready." in a navy-to-logo-blue gradient; navy pill CTA with a sky arrow disc and a play-disc secondary link; a three-item trust line (no ratings or client counts); the mobile launch illustration ported to web SVG in place of the reference portrait, floating in CSS; a glass "score growth" widget whose bars grow in; a five-card row (ribbon, pleat and bloom satin shapes in brand blues, a navy statement card, a sample result breakdown). Cards lift and arrows shift on hover; the art moves slightly.
 - About band: two-column intro with gradient-highlighted words, four stat cards stating decided product facts (100% reviewed, 3 exam categories, 5 CBT question states, 2 devices) with count-up, one of them a navy CBT-palette visual. The reference's partner logo strip is omitted (no partners).
 - Header: transparent state now uses dark text over the light hero; policy pages use the same light band. Old navy hero, preview and promise cards removed with their styles.
@@ -423,6 +464,7 @@ Not done: authenticated per-student fields (owned, attempted, followed), OpenAPI
 ## 22 November 2026: web catalogue pages (W2b)
 
 UI/UX Pro guidance applied (local search: server-component data fetching, metadata API, error.tsx, no-results with a next step, wrapping filter chips, URL deep links); design MASTER tokens and card rules.
+
 - Pages in `apps/web/app/(public)/(catalogue)`: `/exams` (exam cards with live/free counts, next exam date, last cutoff), `/exams/[slug]` (pattern facts, filter chips as URL links, test grid with cursor "More tests", official pattern table, syllabus, free-test, key-date and subject side cards), `/tests/[slug]` (facts, price card, sections and marking table, rules derived from the test's own sections, examiner and series links, more tests), `/series/[slug]` (tests in release order, price and validity), `/examiners/[id]` (tier, followers, exams, series, latest tests).
 - Data: `src/lib/api/catalogue.ts` reads the public API server-side, validates every response against the shared contracts, caches for 60 s; `API_BASE_URL` (server) points at the API. Pages render per request, so builds do not need the API.
 - States: error page with retry; real 404 status for unknown or malformed ids (no streaming loading screen, which would have turned 404s into 200s); empty states with a next action.
@@ -435,10 +477,12 @@ Open: `/sign-in` (W2a) is linked from Start/Buy buttons and still 404s; buying n
 ## 23 November 2026: authentication and authorization end to end (AU1, AU2)
 
 AU1 API authorization:
+
 - `RolesGuard` with `@Roles(...)` and `@RequireAdminPermission(...)` (`apps/api/src/modules/identity/http/roles.guard.ts`), used after `FirebaseAuthGuard`; `IdentityService.resolveAccess` requires a verified email, an unblocked account and an active registered device, and reads roles and admin flags from the database on every request. `IdentityModule` exports the guards for domain modules. New contract error code `FORBIDDEN` (additive).
 - No production route needs a role yet (all current routes are public or self-service); examiner, QC and admin endpoints adopt the guard from M3.
 
 AU2 website log in and sign up (`apps/web`, Firebase JS SDK 13.4.0 pinned, same as mobile):
+
 - `/sign-in` (Log in / Sign up switch, 18+ confirmation before any method, Google popup, email and password with show/hide, inline field errors and a focused error summary), email verification step (check, resend with 60 s cooldown, use another account), two-device limit step (remove a device and continue), blocked and existing-account errors (no merge on email, invariant 10).
 - `/forgot-password` (same confirmation whether or not an account exists), `/onboarding` (name, target exams from the catalogue API, stage, language; PATCH /me), `/account` (profile, preferences, devices with remove, log out).
 - `AuthProvider` registers the browser as a `web` device through POST /identity/session and keeps the device id in local storage; `RequireSession` sends signed-out visitors to `/sign-in?next=` and first-time students through onboarding; `next` accepts same-site paths only. Header shows "My account" once signed in (UI hint only).
@@ -450,6 +494,7 @@ Not run: a full sign-up with a real inbox and a Google popup (needs a real accou
 ### 23 November 2026: smoother website sign-in (owner feedback)
 
 Owner could not sign in or up. Causes found: only the website dev server was running (the API on 3001 was down, so every sign-in stopped after Firebase), and closing or losing the Google popup showed a red "closed before it finished" error.
+
 - 18+ confirmation is now a statement beside the buttons ("By continuing, you confirm you are 18 or older…") instead of a tick box that blocked Google and email. The app still uses the tick box; align when the owner confirms.
 - Google: closing the window is silent; blocked popups fall back to a full-page redirect; the button frees itself about a second after the person returns to the page (Firebase otherwise needs ~9 s because Google's COOP hides the closed window).
 - Email verification continues on its own (checks every 4 s and on tab focus) after the link is clicked; the manual button stays as a backup.
@@ -471,6 +516,7 @@ Staging: migration 007 applied 23 November 2026 with the owner's go-ahead; schem
 ## 23 November 2026: M2 catalogue (admin)
 
 An ops (or super) admin sets up a complete exam through the website: category, exam, stages, syllabus tree (subjects and topics), exam page details (syllabus, dates, cutoffs) and the pattern template (sections, counts, timing, marking, topic targets), then publishes it and shows the exam on the website.
+
 - Migration 008 (DATA_MODEL): template drafts, publish freeze (template and sections), versions that retire the version they replace, hierarchy consistency, tests only on published active templates, admin-only hierarchy writes. Demo seed and fixtures publish after creating sections.
 - API `/v1/admin/catalogue/*` (API_CONTRACTS) behind `RolesGuard` + ops permission, checked again in the service; every change runs under the admin's database identity and is audited with a named `catalogue.*` action and before/after state. Stale saves 409 `STALE_EDIT`; in-use deletes 409 `IN_USE`; publish 422 `TEMPLATE_NOT_PUBLISHABLE` with the reasons; published 409 `TEMPLATE_LOCKED`. New error codes are additive.
 - Shared `templateIssues` (contracts) gives the editor the same publish checks as the API. Public exam pages use the first stage's published, active template.
@@ -479,4 +525,3 @@ An ops (or super) admin sets up a complete exam through the website: category, e
 Checks run: workspace lint, typecheck, unit tests (6 new template-rule tests) and build; integration 41 database (4 new: freeze, consistency, published-template-only tests, admin-only writes with audit) + 23 API (2 new: permission matrix, full lifecycle with conflicts, locking, versions, public page and audit). Browser at 1440 and 390 px on the local website against the API in test mode on an isolated database (Firebase mocked with locally signed tokens; first admin made with the bootstrap script): every step above passed with no page errors or overflow. Fixed during testing: topic de-duplication kept the wrong spelling, staff were sent to student onboarding, a subject panel collapsed after adding topics, the template editor showed "Unsaved changes" on load, the exam details form lost its "Saved." confirmation, and the admin shell lacked a Suspense boundary for the production build.
 Staging: migration 008 applied 23 November 2026 with the owner's go-ahead; schema version 8, the 3 demo templates count as published, 7 admin-only triggers present, API role still reads 3 exams and 11 live tests.
 Not run: the admin console against staging or with real Firebase accounts. Not in M2: price tiers (O04), PYQ Excel upload (M4), per-exam AI toggles (M12), staff role grants (with M3/M11). Real exam patterns need founder and subject-lead confirmation (O01).
-

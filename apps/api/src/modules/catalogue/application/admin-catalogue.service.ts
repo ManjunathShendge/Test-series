@@ -455,12 +455,10 @@ export class AdminCatalogueService {
   private async loadExam(c: Queryable, id: string): Promise<AdminExam> {
     const exam = await repo.exam(c, id);
     if (!exam) throw notFound('Exam');
-    const [stages, subjects, topics, templates] = await Promise.all([
-      repo.stages(c, id),
-      repo.subjects(c, id),
-      repo.topics(c, id),
-      repo.templates(c, id),
-    ]);
+    const stages = await repo.stages(c, id);
+    const subjects = await repo.subjects(c, id);
+    const topics = await repo.topics(c, id);
+    const templates = await repo.templates(c, id);
     return {
       id: exam.id,
       name: exam.name,
