@@ -217,3 +217,8 @@ Row-level security: every public table has RLS. `exam_worker` has full row acces
 - `enqueue_job(kind, key, payload, at)` SECURITY DEFINER, deduplicated on `kind:key`, called only by the outbox triggers `student_attempts_outbox`, `tests_outbox`, `exams_outbox`, `question_reports_outbox`, `examiner_payouts_outbox`, `purchases_outbox`.
 - 023: `exam_worker` may execute `finalize_account_deletions`.
 
+## Admin operations (C4, 24 November 2026; migration 024)
+
+- `cms_banners`: `placement` (web, app, both), optional `starts_at`/`ends_at` window, `updated_at`; checks for an https image and a safe link (an in-app path or https). Policies: visitors read banners on show; admins manage all (replaces the allow-all app policy).
+- `admin_audit_logs`: admins read; staff may append entries only in their own name (the audit trigger writes as its definer); append-only triggers unchanged. Index on (created_at DESC, id DESC) for the viewer's keyset paging.
+

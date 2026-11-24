@@ -52,6 +52,13 @@ Authenticated requests carry Firebase bearer token, registered device/session pr
 | GET /me/export | Student | JSON of profile, devices, follows, attempts, saved questions, reports and purchases |
 | GET, PUT /me/notification-preferences | Student | {newTestsFromFollowed, unfinishedAttempt, examDateChanges}; PUT takes any subset |
 | PUT /me/devices/:id/push-token | The device itself | {token: ExponentPushToken[...] or null}; 204 |
+| GET /admin/ops/catalogue | Ops admin | ?kind=tests|series&q&status; titles, exam, examiner, status, featured, attempts, sales |
+| PATCH /admin/ops/tests/:id, /admin/ops/series/:id | Ops admin | {action: feature, featured} or {action: unpublish|republish, reason}; tests archive on unpublish and cannot be republished; reasons go to the audit log |
+| GET, POST /admin/ops/banners; PATCH, DELETE /admin/ops/banners/:id | Ops admin | Banner CRUD: https image, in-app path or https link, placement, order, active, schedule |
+| GET /banners | Public | ?placement=web|app; banners on show now, cached 60 s |
+| GET /admin/ops/reports | Ops admin | ?from&to (India days, at most a year): sales, refunds, channels, students, attempts, QC, top tests, daily series |
+| GET /admin/ops/reports/export | Ops admin | ?from&to&kind=sales|attempts|daily; CSV with formula cells neutralised; each download audited |
+| GET /admin/ops/audit | Ops admin | ?table&action&actor&before&limit; changed fields with before/after values; opaque keyset cursor |
 | GET /me/purchases/:id/invoice | Owner, captured or refunded purchase | PDF; tax invoice with seller GSTIN configured, otherwise receipt |
 | POST /orders | Student | One item per mobile order; server price and provider selection |
 | POST /orders/:id/verify | Owner | Razorpay callback evidence; verify capture before fulfilment |

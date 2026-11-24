@@ -15,6 +15,7 @@ import {
 } from '../../src/modules/commerce/http/commerce.controller.js';
 import type { AccessContext, IdentityService } from '../../src/modules/identity/application/identity.service.js';
 import { RolesGuard } from '../../src/modules/identity/http/roles.guard.js';
+import { OpsController } from '../../src/modules/ops/http/ops.controller.js';
 import { ExaminerQualityController, QcReviewController } from '../../src/modules/qc/http/qc.controller.js';
 
 /*
@@ -57,6 +58,7 @@ async function allowed(person: keyof typeof who, controller: Ctor, method: strin
 const cases: [string, Ctor, string, (keyof typeof who)[]][] = [
   ['admin catalogue (ops)', AdminCatalogueController, 'listCategories', ['ops', 'super']],
   ['admin students (ops)', AdminCommerceController, 'students', ['ops', 'super']],
+  ['admin ops: catalogue, banners, reports, audit (ops)', OpsController, 'audit', ['ops', 'super']],
   ['admin payouts (finance)', AdminPayoutsController, 'list', ['finance', 'super']],
   ['QC review queue', QcReviewController, 'queue', ['reviewer', 'ops', 'finance', 'super', 'bareAdmin']],
   ['examiner tests', ExaminerTestsController, 'listTests', ['examiner']],

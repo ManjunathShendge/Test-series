@@ -1,0 +1,54 @@
+/* Admin banners under the hero (CMS). A fixed 3:1 box per banner, so images never shift the page. */
+.strip {
+  padding-block: var(--space-xl) 0;
+}
+.rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(280px, 560px);
+  gap: var(--space-lg);
+  margin: 0;
+  padding: 0 0 var(--space-sm);
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+}
+.single {
+  grid-auto-columns: minmax(0, 760px);
+}
+.item {
+  scroll-snap-align: start;
+}
+.link {
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 3 / 1;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-muted);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--dur-base, 160ms) ease, box-shadow var(--dur-base, 160ms) ease;
+}
+.link:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-raised);
+}
+.link:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+.link img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+@media (prefers-reduced-motion: reduce) {
+  .link {
+    transition: none;
+  }
+  .link:hover {
+    transform: none;
+  }
+}

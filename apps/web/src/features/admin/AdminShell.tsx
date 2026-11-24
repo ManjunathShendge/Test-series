@@ -22,7 +22,7 @@ const MENU: ConsoleMenuGroup[] = [
       { href: '/admin/exams', label: 'Exams and templates', icon: 'grid', lead: 'Categories, exams, stages, syllabus and templates' },
       { href: '/admin/examiners', label: 'Examiners', icon: 'users', lead: 'Applications, samples, KYC, tier and status' },
       { href: '/admin/qc', label: 'QC operations', icon: 'shield', lead: 'Reviewers, queue by SLA and spot checks' },
-      { href: '/admin/catalogue', label: 'Catalogue', icon: 'layers', lead: 'Feature or unpublish series and price bands' },
+      { href: '/admin/catalogue', label: 'Catalogue', icon: 'layers', lead: 'Feature or unpublish tests and series' },
     ],
   },
   {
@@ -38,7 +38,8 @@ const MENU: ConsoleMenuGroup[] = [
     items: [
       { href: '/admin/reports', label: 'Reports', icon: 'chart', lead: 'Sales, revenue, attempts and QC turnaround' },
       { href: '/admin/support', label: 'Support', icon: 'help', lead: 'Question report queue' },
-      { href: '/admin/cms', label: 'CMS', icon: 'image', lead: 'Website banners' },
+      { href: '/admin/cms', label: 'CMS', icon: 'image', lead: 'Website and app banners' },
+      { href: '/admin/audit', label: 'Audit log', icon: 'clock', lead: 'Who changed what, with before and after' },
     ],
   },
 ];

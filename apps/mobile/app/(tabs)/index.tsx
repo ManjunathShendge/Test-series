@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { BannerRail } from '@/features/catalogue/components/BannerRail';
 import { ExaminerCard } from '@/features/catalogue/components/ExaminerCard';
 import { SectionHeader } from '@/features/catalogue/components/SectionHeader';
 import { TestCard } from '@/features/catalogue/components/TestCard';
@@ -175,6 +176,8 @@ export default function HomeScreen() {
           </View>
         ) : null}
       </View>
+
+      <BannerRail />
 
       <View style={[styles.gutter, styles.grid]}>
         <FeatureTile

@@ -8,6 +8,7 @@ export * from './common/errors.js';
 export * from './identity/index.js';
 export * from './catalogue/index.js';
 export * from './admin/index.js';
+export * from './admin/ops.js';
 export * from './authoring/index.js';
 export * from './authoring/rich-text.js';
 export * from './authoring/examiner-tests.js';

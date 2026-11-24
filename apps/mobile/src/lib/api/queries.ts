@@ -4,6 +4,7 @@ import {
   ExamList,
   ExaminerDetail,
   ExaminerList,
+  PublicBannerList,
   SeriesDetail,
   TestDetail,
   TestList,
@@ -20,6 +21,7 @@ export const queryKeys = {
   test: (id: string) => ['test', id] as const,
   exams: ['catalogue', 'exams'] as const,
   examiners: ['catalogue', 'examiners'] as const,
+  banners: ['banners', 'app'] as const,
 };
 
 const kindFor = (type: ApiTestSummary['type']): TestSummary['kind'] =>
@@ -82,6 +84,16 @@ export function toExaminer(examiner: ExaminerCard): Examiner {
     publishedTests: 0,
     examIds: [],
   };
+}
+
+/** Admin banners for the app Home (CMS). Public; a failure just hides the rail. */
+export function useBanners() {
+  return useQuery({
+    queryKey: queryKeys.banners,
+    queryFn: async () => (await apiRequest('GET', '/banners?placement=app', { schema: PublicBannerList })).items,
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
 }
 
 export function useExams() {

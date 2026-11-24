@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Reveal, RevealItem } from '@/ui/motion/Reveal';
+import { BannerStrip } from './BannerStrip';
 import { examinerPoints, exams, faqs, steps } from './content';
 import { Faq } from './Faq';
 import { About } from './hero/About';
@@ -17,6 +18,7 @@ export function Landing() {
   return (
     <>
       <Hero />
+      <BannerStrip />
       <About />
       <HowItWorks />
       <Ecosystem />

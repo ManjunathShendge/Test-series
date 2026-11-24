@@ -15,6 +15,12 @@ The development foundation runs on PostgreSQL 17 (Docker locally and in CI; Supa
 
 ## Log
 
+## 24 November 2026: C4 admin operations (M11)
+- Database (024): banner placement, schedule window, https image and safe-link checks, visitor/admin policies; audit log readable by admins only and appendable only in the actor's own name.
+- API (`/admin/ops`, ops or super admins): catalogue list with feature/unfeature (free published tests; published series) and unpublish (tests archive for good; series can be republished), reasons kept in the audit log; banner CRUD and public GET /banners for web and app; reports (sales, refunds, channels, students, attempts, QC turnaround, open reports, top tests, daily series) with sales/attempts/daily CSV exports (formula cells neutralised, each download audited); audit log with filters, changed fields and before/after values, keyset paging. New error code INVALID_STATE.
+- Web: real Catalogue, CMS, Reports pages and a new Audit log page in the admin console; banner strip on the public home. App: banner rail on Home (in-app screens and https links only). Support (question report queue) and exam date editing already existed; date edits now notify students through the C3 outbox.
+- Checks: rolled-back service script against the real database as the app role (24 passed: permission refusal for finance-only admins, feature rules, unpublish and audit reason, students lose the unpublished test, series flow, database refusal of http images and unsafe links, banner placement and schedule, students cannot write banners, report and CSV exports, audit paging without overlap, only changed fields shown, students cannot read or forge audit entries); route-authorization test for the ops routes; workspace typecheck, lint, tests (API 44, mobile 38, web 17); web build; Android bundle; ops endpoints return 401 signed out; home and admin pages load.
+
 ## 24 November 2026: C3 notifications, invoices and analytics (M10)
 - Database (022-023): outbox triggers for all eight MVP notices, `notification_deliveries`, `profiles.notification_prefs`, worker permission for the deletion finalizer.
 - Worker: leased PostgreSQL job runner with retries and failed-job retention; push (Expo), email (SMTP/SES), server PostHog `purchase_confirmed`, hourly account-deletion finalizer and Firebase identity removal. Every provider is optional and switched on by its env key (`.env.example`); details in NOTIFICATIONS "Implementation".

@@ -50,6 +50,8 @@ export const ErrorCode = z.enum([
   'SESSION_REPLACED',
   'SYNC_GAP',
   'SYNC_CONFLICT',
+  /** The item is not in a state that allows this action (e.g. featuring an unpublished test). */
+  'INVALID_STATE',
   'INTERNAL',
 ]);
 export type ErrorCode = z.infer<typeof ErrorCode>;

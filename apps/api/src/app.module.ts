@@ -8,6 +8,7 @@ import { AuthoringModule } from './modules/authoring/authoring.module.js';
 import { QcModule } from './modules/qc/qc.module.js';
 import { CommerceModule } from './modules/commerce/commerce.module.js';
 import { AttemptsModule } from './modules/attempts/attempts.module.js';
+import { OpsModule } from './modules/ops/ops.module.js';
 import { ApiErrorFilter } from './common/filters/api-error.filter.js';
 
 /**
@@ -15,7 +16,7 @@ import { ApiErrorFilter } from './common/filters/api-error.filter.js';
  * HTTP and worker entry points share this module graph.
  */
 @Module({
-  imports: [DatabaseModule, HealthModule, IdentityModule, CatalogueModule, AuthoringModule, QcModule, CommerceModule, AttemptsModule],
+  imports: [DatabaseModule, HealthModule, IdentityModule, CatalogueModule, AuthoringModule, QcModule, CommerceModule, AttemptsModule, OpsModule],
   providers: [{ provide: APP_FILTER, useClass: ApiErrorFilter }],
 })
 export class AppModule {}
