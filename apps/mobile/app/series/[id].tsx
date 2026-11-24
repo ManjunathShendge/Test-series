@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PurchaseSheet } from '@/features/commerce/PurchaseSheet';
-import { getExam, getExaminer, getSeries, testsInSeries } from '@/lib/demo';
+import { useSeriesDetail } from '@/lib/api/queries';
 import { formatDuration, formatPaise } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
 import { Avatar, Button, Card, Chip, Icon, ProgressBar, Screen, StateView, Text } from '@/ui/primitives';
@@ -14,22 +14,30 @@ export default function SeriesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const series = getSeries(id);
+  const detail = useSeriesDetail(id);
+  const series = detail.data?.series;
   const owned = useAppStore((s) => s.ownedSeriesIds.includes(id));
   const attempted = useAppStore((s) => s.attemptedTestIds);
   const [buying, setBuying] = useState(false);
 
+  if (detail.isError) {
+    return (
+      <Screen edges={['left', 'right']}>
+        <StateView kind="error" title="Series not found" message="This series is unavailable or could not be loaded." actionLabel="Go back" onAction={() => router.back()} />
+      </Screen>
+    );
+  }
   if (!series) {
     return (
       <Screen edges={['left', 'right']}>
-        <StateView kind="error" title="Series not found" message="This series is unavailable." actionLabel="Go back" onAction={() => router.back()} />
+        <StateView kind="empty" title="Loading series" message="Fetching the latest catalogue." />
       </Screen>
     );
   }
 
-  const exam = getExam(series.examId);
-  const examiner = getExaminer(series.examinerId);
-  const tests = testsInSeries(series);
+  const exam = detail.data?.exam;
+  const examiner = detail.data?.examiner;
+  const tests = detail.data?.tests ?? [];
   const coveragePct = Math.round(series.syllabusCoverage * 100);
 
   return (
@@ -51,7 +59,7 @@ export default function SeriesScreen() {
               <View style={{ flex: 1 }}>
                 <Text variant="bodyStrong">{examiner.name}</Text>
                 <Text variant="bodySmall" tone="secondary" numberOfLines={1}>
-                  {examiner.credentials}
+                  {examiner.tier === 'top' ? 'Top examiner' : examiner.tier === 'verified' ? 'Verified examiner' : 'New examiner'}
                 </Text>
               </View>
               <Icon name="chevron-forward" color={colors.textSecondary} />

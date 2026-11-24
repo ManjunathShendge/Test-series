@@ -17,7 +17,9 @@ services:
       timeout: 3s
       retries: 20
   minio:
-    image: exam-prep-local-minio:latest
+    # Built from docker/minio on first `services:up` (several minutes once, then cached).
+    build: docker/minio
+    image: exam-prep-local-minio:RELEASE.2025-09-07T16-13-09Z
     command: ['server', '/data', '--console-address', ':9001']
     environment:
       MINIO_ROOT_USER: exam_minio

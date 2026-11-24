@@ -6,8 +6,8 @@ import { ExaminerCard } from '@/features/catalogue/components/ExaminerCard';
 import { SectionHeader } from '@/features/catalogue/components/SectionHeader';
 import { TestCard } from '@/features/catalogue/components/TestCard';
 import { TestListSkeleton } from '@/features/catalogue/components/TestCardSkeleton';
-import { useHomeFeed } from '@/lib/api/queries';
-import { getExam, getTest, topicStrengths, type TestSummary } from '@/lib/demo';
+import { useExams, useHomeFeed } from '@/lib/api/queries';
+import { getTest, topicStrengths, type TestSummary } from '@/lib/demo';
 import { formatClock, formatDate } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
 import { paletteCounts, useAttemptStore } from '@/lib/store/attempt';
@@ -42,6 +42,8 @@ export default function HomeScreen() {
     t.pricePaise === 0 || owned.includes(t.id) || (t.seriesId !== undefined && ownedSeries.includes(t.seriesId));
 
   const feed = useHomeFeed(profile.targetExamIds, attempted, followed);
+  const examsQuery = useExams();
+  const realExams = examsQuery.data ?? [];
   const recommended = feed.data?.recommended ?? [];
   const fromFollowed = feed.data?.fromFollowed ?? [];
   const featured = feed.data?.featured ?? [];
@@ -56,7 +58,7 @@ export default function HomeScreen() {
   const continueTest = attempt.status === 'in_progress' ? attempt.test : null;
   const answeredCount = attempt.paper ? (() => { const c = paletteCounts(attempt.paper, attempt.answers); return c.answered + c.markedAnswered; })() : 0;
   const secondsLeft = Math.max(0, Math.floor((attempt.deadlineAt - Date.now()) / 1000));
-  const targetExams = profile.targetExamIds.map(getExam).filter((e): e is NonNullable<typeof e> => !!e);
+  const targetExams = profile.targetExamIds.map((id) => realExams.find((exam) => exam.id === id)).filter((e): e is NonNullable<typeof e> => !!e);
 
   const results = useResultsList();
   const latest = results[0];

@@ -15,6 +15,7 @@ import { adminApi } from '@/lib/api/admin';
 import { Alert } from '@/features/auth/ui';
 import { isCode, LoadGate, State, messageOf, useLoad } from '@/features/admin/ui';
 import { RichText } from '@/ui/patterns/RichText';
+import { ImageList } from './ImageList';
 import { uploadExaminerFile } from './upload';
 import styles from '@/features/admin/admin.module.css';
 
@@ -796,6 +797,7 @@ function ImportPanel({
   const stage = exam?.stages.find((item) => item.id === stageId);
   const [templateId, setTemplateId] = useState(stage?.templates[0]?.id ?? '');
   const [preview, setPreview] = useState<ImportPreview | null>(null);
+  const [committed, setCommitted] = useState<number | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
 
@@ -803,6 +805,7 @@ function ImportPanel({
     setBusy(true);
     setError(null);
     setPreview(null);
+    setCommitted(null);
     try {
       if (file.size > 20 * 1024 * 1024)
         throw new Error('Import archives must be 20 MB or smaller.');
@@ -830,11 +833,12 @@ function ImportPanel({
     setBusy(true);
     setError(null);
     try {
-      await adminApi.commitExaminerImport(preview.id, {
+      const result = await adminApi.commitExaminerImport(preview.id, {
         manifestHash: preview.manifestHash,
         idempotencyKey: preview.idempotencyKey,
       });
       setPreview(null);
+      setCommitted(result.questionIds.length);
       onCommitted();
     } catch (caught) {
       setError(caught);
@@ -919,6 +923,12 @@ function ImportPanel({
         />
       </label>
       {busy ? <p role="status">Uploading or validating…</p> : null}
+      {committed !== null ? (
+        <p role="status">
+          Imported {committed} draft question{committed === 1 ? '' : 's'}. They are in your bank
+          below and still need QC approval.
+        </p>
+      ) : null}
       {preview ? (
         <div className={styles.tableWrap}>
           <p>
@@ -1011,43 +1021,5 @@ function QuestionPreview({
         <p className={styles.helper}>No solution entered yet.</p>
       )}
     </section>
-  );
-}
-
-/** Thumbnails of the caller's own scanned images, via short-lived signed links. */
-function ImageList({
-  ids,
-  onRemove,
-}: {
-  ids: string[];
-  onRemove?: ((id: string) => void) | undefined;
-}) {
-  if (!ids.length) return null;
-  return (
-    <ul className={styles.thumbs}>
-      {ids.map((id, index) => (
-        <li key={id}>
-          <Thumb id={id} label={`Image ${index + 1}`} />
-          {onRemove ? (
-            <button type="button" className="btn btn-ghost" onClick={() => onRemove(id)}>
-              Remove image {index + 1}
-            </button>
-          ) : null}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function Thumb({ id, label }: { id: string; label: string }) {
-  const { state } = useLoad(() => adminApi.questionImageUrl(id), [id]);
-  if (state.status === 'ready') {
-    // Signed, expiring object-storage URL: next/image optimisation would cache it server-side.
-    return <img src={state.data.url} alt={label} className={styles.thumb} />;
-  }
-  return (
-    <span className={`${styles.thumb} ${styles.helper}`} role="img" aria-label={label}>
-      {state.status === 'loading' ? 'Loading…' : 'Preview unavailable'}
-    </span>
   );
 }

@@ -1,7 +1,8 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { TestCard } from '@/features/catalogue/components/TestCard';
-import { getExam, getExaminer, series as allSeries, testsForExaminer, type ExaminerTier, type TestSummary } from '@/lib/demo';
+import type { ExaminerTier, TestSummary } from '@/lib/demo';
+import { useExaminerDetail } from '@/lib/api/queries';
 import { formatCount, formatPaise } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
 import { Avatar, Button, Card, Chip, Screen, StateView, Text, type ChipTone, type IconName } from '@/ui/primitives';
@@ -17,23 +18,32 @@ const tierMeta: Record<ExaminerTier, { label: string; tone: ChipTone; icon: Icon
 export default function ExaminerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const examiner = getExaminer(id);
+  const detail = useExaminerDetail(id);
+  const examiner = detail.data?.examiner;
   const followed = useAppStore((s) => s.followedExaminerIds.includes(id));
   const toggleFollow = useAppStore((s) => s.toggleFollow);
   const owned = useAppStore((s) => s.ownedTestIds);
   const ownedSeries = useAppStore((s) => s.ownedSeriesIds);
 
+  if (detail.isError) {
+    return (
+      <Screen edges={['left', 'right']}>
+        <StateView kind="error" title="Examiner not found" message="This profile is unavailable or could not be loaded." actionLabel="Go back" onAction={() => router.back()} />
+      </Screen>
+    );
+  }
   if (!examiner) {
     return (
       <Screen edges={['left', 'right']}>
-        <StateView kind="error" title="Examiner not found" message="This profile is unavailable." actionLabel="Go back" onAction={() => router.back()} />
+        <StateView kind="empty" title="Loading examiner" message="Fetching the latest profile." />
       </Screen>
     );
   }
 
   const tier = tierMeta[examiner.tier];
-  const tests = testsForExaminer(examiner.id);
-  const series = allSeries.filter((s) => s.examinerId === examiner.id);
+  const tests = detail.data?.tests ?? [];
+  const series = detail.data?.series ?? [];
+  const exams = detail.data?.exams ?? [];
   const hasAccess = (t: TestSummary) => t.pricePaise === 0 || owned.includes(t.id) || (t.seriesId !== undefined && ownedSeries.includes(t.seriesId));
 
   return (
@@ -67,7 +77,7 @@ export default function ExaminerScreen() {
               Published tests
             </Text>
           </View>
-          <View style={styles.stat} accessible accessibilityLabel={`Exams: ${examiner.examIds.map((e) => getExam(e)?.shortName).join(', ')}`}>
+          <View style={styles.stat} accessible accessibilityLabel={`Exams: ${exams.map((exam) => exam.name).join(', ')}`}>
             <Text variant="title" tabular>
               {examiner.examIds.length}
             </Text>
@@ -87,9 +97,8 @@ export default function ExaminerScreen() {
         />
 
         <View style={styles.chips}>
-          {examiner.examIds.map((e) => {
-            const exam = getExam(e);
-            return exam ? <Chip key={e} label={exam.name} tone="primary" icon="school-outline" onPress={() => router.push({ pathname: '/exam/[id]', params: { id: e } })} /> : null;
+          {exams.map((exam) => {
+            return <Chip key={exam.id} label={exam.name} tone="primary" icon="school-outline" onPress={() => router.push({ pathname: '/exam/[id]', params: { id: exam.id } })} />;
           })}
         </View>
 

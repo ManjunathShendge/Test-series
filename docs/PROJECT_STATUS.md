@@ -1,6 +1,6 @@
 # Project status
 
-Date: 23 November 2026.
+Date: 24 November 2026.
 
 ## Completed
 
@@ -11,9 +11,16 @@ Date: 23 November 2026.
 
 ## Implementation state
 
-The development foundation runs on PostgreSQL 17 (Docker locally and in CI; Supabase Mumbai for staging, owner decision 18 November 2026). Identity, catalogue, and examiner-authoring API slices now use the database; staging has the baseline schema and restricted roles. Mobile signs in with Firebase email/password against the API (profile, onboarding, devices), while its catalogue, attempts, results, and billing remain synthetic demo data. M3 authoring, malware scanning, and staff KYC downloads are implemented; full browser acceptance and owner/legal KYC policy remain open. Later domain contracts, attempt, results, billing, and launch milestones remain incomplete.
+The development foundation runs on PostgreSQL 17 (Docker locally and in CI; Supabase Mumbai for staging, owner decision 18 November 2026). Identity, catalogue, and examiner-authoring API slices now use the database; staging has the baseline schema and restricted roles. Mobile email sign-in/profile/device flows use the API, and the Home, Discover, exam, test, series, and examiner catalogue surfaces now use catalogue API hooks instead of demo catalogue reads. Demo attempt, result, purchase and profile-history data remain for milestones not yet implemented. M3 authoring, malware scanning, and staff KYC downloads are implemented; full browser acceptance, real archive checkout, owner/legal KYC policy and production scanner remain open. Later domain contracts, attempt, results, billing, and launch milestones remain incomplete.
 
 ## Log
+
+## 24 November 2026: M3/continuing catalogue milestone
+- Verified a clean local source build and startup for MinIO `RELEASE.2025-09-07T16-13-09Z`; PostgreSQL, MinIO and ClamAV all became healthy.
+- Removed the mislocated root `security.txt` audit prompt.
+- Added `/v1/examiners` public catalogue contract/API and migrated mobile Home, Discover, exam, test, instructions, series and examiner catalogue screens from demo catalogue reads to real API hooks.
+- Verified `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, migrations and local `/health/live` plus `/v1/exams` and `/v1/examiners` responses.
+- M3 remains blocked on a real browser upload/preview/commit journey, real 100-question archive checkout, approved agreement/KYC policy and production malware endpoint. Mobile catalogue remains blocked on staging/real-device evidence and has not replaced demo attempt/result/billing flows.
 
 ```text
 Date / milestone / requirement IDs: 11 November 2026 / M0 (started: folder skeleton only) / R26

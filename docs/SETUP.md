@@ -19,7 +19,7 @@ pnpm dev
 
 `setup` copies safe examples only when destinations are absent. Root `.env` supplies shared server/CLI configuration; web/mobile have separate public-only examples. Existing files are preserved.
 
-`services:up` starts `postgres:17.12-alpine` (the Supabase version), local object storage, and the digest-pinned ClamAV scanner; it waits until all are healthy. The named volumes preserve database and malware definitions. A new PostgreSQL volume runs `docker/postgres/init`, which creates three roles:
+`services:up` starts `postgres:17.12-alpine` (the Supabase version), local object storage, and the digest-pinned ClamAV scanner; it waits until all are healthy. The named volumes preserve database, object and malware definitions. Local object storage is MinIO `RELEASE.2025-09-07T16-13-09Z`, built from `docker/minio/Dockerfile` (digest-pinned Go and Alpine bases, source tag checked against its commit) because the official registry image is not pullable. The first `services:up` on a machine clones and compiles it, which needs network access and takes several minutes; later runs reuse the image. The API creates its private buckets on first use. ClamAV downloads signatures on first start (up to 5 minutes before it reports healthy). A new PostgreSQL volume runs `docker/postgres/init`, which creates three roles:
 
 | Role | Used by | Rights |
 |---|---|---|

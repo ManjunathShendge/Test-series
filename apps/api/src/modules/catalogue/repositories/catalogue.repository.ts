@@ -229,4 +229,22 @@ export const catalogueRepository = {
     const { rows } = await db.query<ExaminerCardRow>('SELECT * FROM public_examiner_cards($1::uuid[])', [[...new Set(ids)]]);
     return rows;
   },
+
+  async listExaminerCards(db: Queryable, limit = 50): Promise<ExaminerCardRow[]> {
+    const { rows } = await db.query<ExaminerCardRow>(
+      `SELECT c.*
+         FROM public_examiner_cards(
+           ARRAY(
+             SELECT examiner_id
+             FROM examiner_applications
+             WHERE status = 'approved'
+             ORDER BY reviewed_at DESC NULLS LAST
+             LIMIT $1
+           )::uuid[]
+         ) c
+         ORDER BY c.follower_count DESC, c.full_name ASC`,
+      [limit],
+    );
+    return rows;
+  },
 };

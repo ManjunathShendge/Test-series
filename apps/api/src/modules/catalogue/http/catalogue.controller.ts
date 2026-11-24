@@ -2,6 +2,7 @@ import { Controller, Get, Header, Param, Query } from '@nestjs/common';
 import { z } from 'zod';
 import {
   TestListQuery,
+  ExaminerList,
   type ExamDetail,
   type ExaminerDetail,
   type ExamList,
@@ -34,6 +35,12 @@ export class CatalogueController {
   @Header('Cache-Control', PUBLIC_CACHE)
   getExam(@Param('id') id: string): Promise<ExamDetail> {
     return this.catalogue.getExam(parseContract(Key, id));
+  }
+
+  @Get('examiners')
+  @Header('Cache-Control', PUBLIC_CACHE)
+  listExaminers(): Promise<z.infer<typeof ExaminerList>> {
+    return this.catalogue.listExaminerCards();
   }
 
   @Get('tests')

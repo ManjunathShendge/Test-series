@@ -151,13 +151,13 @@ export default function TestDetailScreen() {
         </View>
 
         {series && !hasAccess ? (
-          <Card onPress={() => router.push({ pathname: '/series/[id]', params: { id: series.id } })} accessibilityLabel={`Part of ${series.title}. ${formatPaise(series.pricePaise)} for ${series.testIds.length} tests. Open series`}>
+          <Card onPress={() => router.push({ pathname: '/series/[id]', params: { id: series.id } })} accessibilityLabel={`Part of ${series.title}. ${formatPaise(series.pricePaise)} for ${series.publishedTests} tests. Open series`}>
             <Chip label="Better value" tone="success" icon="pricetags-outline" />
             <Text variant="heading" style={{ marginTop: space.sm }}>
               Part of {series.title}
             </Text>
             <Text variant="bodySmall" tone="secondary">
-              {series.testIds.length} tests · {series.validityDays} days validity · {formatPaise(series.pricePaise)}
+              {series.publishedTests} tests · {series.validityDays} days validity · {formatPaise(series.pricePaise)}
             </Text>
           </Card>
         ) : null}

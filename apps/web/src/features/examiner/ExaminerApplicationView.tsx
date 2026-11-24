@@ -11,6 +11,7 @@ import { adminApi } from '@/lib/api/admin';
 import { Alert } from '@/features/auth/ui';
 import { messageOf, State, useLoad } from '@/features/admin/ui';
 import styles from '@/features/admin/admin.module.css';
+import { ImageList } from './ImageList';
 import { uploadExaminerFile } from './upload';
 
 const OPTION_IDS = ['A', 'B', 'C', 'D'] as const;
@@ -345,8 +346,8 @@ export function ExaminerApplicationView() {
               </label>
             </div>
             <p className="t-small t-secondary">
-              KYC files are optional in this local workflow. Uploads remain private and unscanned;
-              they are not verified evidence.
+              KYC files are optional until the KYC policy is approved. Uploads are private and
+              malware-scanned; a clean scan is not KYC verification.
             </p>
             <div className={styles.inline}>
               {(
@@ -529,16 +530,28 @@ export function ExaminerApplicationView() {
                             setUploading(`sample-${sample.position}`);
                             setError(null);
                             void uploadExaminerFile(file, 'question_asset')
-                              .then((id) => {
-                                changeSample(index, {
-                                  imageAssetIds: [...sample.imageAssetIds, id],
-                                });
-                              })
+                              .then((id) =>
+                                setSamples((current) =>
+                                  current.map((item, i) =>
+                                    i === index
+                                      ? { ...item, imageAssetIds: [...item.imageAssetIds, id] }
+                                      : item,
+                                  ),
+                                ),
+                              )
                               .catch(setError)
                               .finally(() => setUploading(null));
                           }}
                         />
                       </label>
+                      <ImageList
+                        ids={sample.imageAssetIds}
+                        onRemove={(id) =>
+                          changeSample(index, {
+                            imageAssetIds: sample.imageAssetIds.filter((item) => item !== id),
+                          })
+                        }
+                      />
                     </div>
                   </details>
                 );

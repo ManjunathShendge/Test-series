@@ -2,7 +2,8 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getExam, getTest, type Language } from '@/lib/demo';
+import type { Language } from '@/lib/demo';
+import { useTestDetail } from '@/lib/api/queries';
 import { formatDuration } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
 import { useAttemptStore } from '@/lib/store/attempt';
@@ -17,22 +18,30 @@ export default function InstructionsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const test = getTest(id);
+  const detail = useTestDetail(id);
+  const test = detail.data?.test;
   const profileLanguage = useAppStore((s) => s.profile.language);
   const start = useAttemptStore((s) => s.start);
   const [accepted, setAccepted] = useState(false);
   const [language, setLanguage] = useState<Language>(profileLanguage);
   const [error, setError] = useState<string | null>(null);
 
+  if (detail.isError) {
+    return (
+      <Screen edges={['left', 'right']}>
+        <StateView kind="error" title="Test not found" message="This test may have been unpublished or could not be loaded." actionLabel="Go back" onAction={() => router.back()} />
+      </Screen>
+    );
+  }
   if (!test) {
     return (
       <Screen edges={['left', 'right']}>
-        <StateView kind="error" title="Test not found" message="This test may have been unpublished." actionLabel="Go back" onAction={() => router.back()} />
+        <StateView kind="empty" title="Loading test" message="Fetching the latest test details." />
       </Screen>
     );
   }
 
-  const exam = getExam(test.examId);
+  const exam = detail.data?.exam;
   const bilingual = test.languages.includes('hi');
   const sectional = test.sections.every((s) => s.durationMinutes !== undefined);
 

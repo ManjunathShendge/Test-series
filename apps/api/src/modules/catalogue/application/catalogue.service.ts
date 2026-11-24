@@ -128,6 +128,10 @@ export class CatalogueService {
     return { items: (await repo.listExams(this.db)).map(toExamSummary) };
   }
 
+  async listExaminerCards(): Promise<{ items: ExaminerCard[] }> {
+    return { items: (await repo.listExaminerCards(this.db)).map(toCard) };
+  }
+
   async getExam(key: string): Promise<ExamDetail> {
     const row = await repo.findExam(this.db, key);
     if (!row) throw notFound('Exam');

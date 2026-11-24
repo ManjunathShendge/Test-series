@@ -7,8 +7,8 @@ import { SectionHeader } from '@/features/catalogue/components/SectionHeader';
 import { TestCard } from '@/features/catalogue/components/TestCard';
 import { TestListSkeleton } from '@/features/catalogue/components/TestCardSkeleton';
 import { useIsOnline } from '@/lib/api/client';
-import { useSearch } from '@/lib/api/queries';
-import { examiners, exams, type SearchFilters, type TestSummary } from '@/lib/demo';
+import { useExaminers, useExams, useSearch } from '@/lib/api/queries';
+import type { SearchFilters, TestSummary } from '@/lib/demo';
 import { formatCount } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
 import { Card, Chip, Icon, Screen, StateView, Text, TextField, type IconName } from '@/ui/primitives';
@@ -41,6 +41,10 @@ export default function DiscoverScreen() {
   const ownedSeries = useAppStore((s) => s.ownedSeriesIds);
   const followed = useAppStore((s) => s.followedExaminerIds);
   const toggleFollow = useAppStore((s) => s.toggleFollow);
+  const examsQuery = useExams();
+  const examinersQuery = useExaminers();
+  const exams = examsQuery.data ?? [];
+  const examiners = examinersQuery.data ?? [];
 
   const active = query.trim().length > 0 || Object.values(filters).some(Boolean);
   // Debounce typing so each keystroke is not a request once this is a real API.

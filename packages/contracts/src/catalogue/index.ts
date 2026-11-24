@@ -73,6 +73,8 @@ export const ExaminerCard = z.object({
   followerCount: z.number().int().nonnegative(),
 });
 export type ExaminerCard = z.infer<typeof ExaminerCard>;
+export const ExaminerList = z.object({ items: z.array(ExaminerCard) });
+export type ExaminerList = z.infer<typeof ExaminerList>;
 
 export const TestSummary = z.object({
   id: z.uuid(),

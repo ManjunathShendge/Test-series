@@ -2,7 +2,8 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { TestCard } from '@/features/catalogue/components/TestCard';
-import { getExam, getExaminer, seriesForExam, testsForExam, type TestSummary } from '@/lib/demo';
+import type { TestSummary } from '@/lib/demo';
+import { useExamDetail } from '@/lib/api/queries';
 import { formatCount, formatDate, formatPaise } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
 import { Card, Chip, Icon, Screen, StateView, Text, type IconName } from '@/ui/primitives';
@@ -14,21 +15,29 @@ type Tab = 'tests' | 'series' | 'syllabus';
 export default function ExamScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const exam = getExam(id);
+  const detail = useExamDetail(id);
+  const exam = detail.data?.exam;
   const owned = useAppStore((s) => s.ownedTestIds);
   const ownedSeries = useAppStore((s) => s.ownedSeriesIds);
   const [tab, setTab] = useState<Tab>('tests');
 
+  if (detail.isError) {
+    return (
+      <Screen edges={['left', 'right']}>
+        <StateView kind="error" title="Exam not found" message="This exam is unavailable or could not be loaded." actionLabel="Go back" onAction={() => router.back()} />
+      </Screen>
+    );
+  }
   if (!exam) {
     return (
       <Screen edges={['left', 'right']}>
-        <StateView kind="error" title="Exam not found" message="This exam is not in the catalogue." actionLabel="Go back" onAction={() => router.back()} />
+        <StateView kind="empty" title="Loading exam" message="Fetching the latest catalogue." />
       </Screen>
     );
   }
 
-  const tests = testsForExam(exam.id);
-  const series = seriesForExam(exam.id);
+  const tests = detail.data?.tests ?? [];
+  const series = detail.data?.series ?? [];
   const hasAccess = (t: TestSummary) => t.pricePaise === 0 || owned.includes(t.id) || (t.seriesId !== undefined && ownedSeries.includes(t.seriesId));
 
   const tabs: { key: Tab; label: string; count: number }[] = [
@@ -78,7 +87,6 @@ export default function ExamScreen() {
           ) : (
             <View style={styles.stack}>
               {series.map((s) => {
-                const examiner = getExaminer(s.examinerId);
                 const isOwned = ownedSeries.includes(s.id);
                 return (
                   <Card key={s.id} onPress={() => router.push({ pathname: '/series/[id]', params: { id: s.id } })} accessibilityLabel={`${s.title}, ${s.testIds.length} tests, ${isOwned ? 'owned' : formatPaise(s.pricePaise)}`}>
@@ -90,7 +98,7 @@ export default function ExamScreen() {
                       {s.title}
                     </Text>
                     <Text variant="bodySmall" tone="secondary">
-                      {examiner?.name} · {s.validityDays} days validity
+                      {s.validityDays} days validity
                     </Text>
                   </Card>
                 );
