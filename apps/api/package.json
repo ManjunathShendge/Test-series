@@ -17,9 +17,7 @@
   "dependencies": {
     "@exam-prep/contracts": "workspace:*",
     "@exam-prep/db": "workspace:*",
-    "@exam-prep/engine": "workspace:*",
     "@nestjs/common": "12.5.0",
-    "@nestjs/config": "12.1.1",
     "@nestjs/core": "12.5.0",
     "@nestjs/platform-express": "12.5.0",
     "exceljs": "4.4.0",

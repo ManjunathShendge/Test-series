@@ -1,0 +1,9 @@
+# Reviewed gitleaks false positives (24 November 2026, owner approved): an empty .env.example value,
+# prose in CONTENT_AUTHORING.md, and the local-only MinIO container login in an archived dev script.
+aba9c3986a35853bd006e007fcd38cf9e6241ea2:.env.example:generic-api-key:62
+28f34e51dcc43bb68585eb2749dbbd1527ba9d03:docs/CONTENT_AUTHORING.md:generic-api-key:21
+28f34e51dcc43bb68585eb2749dbbd1527ba9d03:docs/archive/compose-services/minio-init-buckets.sh:curl-auth-user:4
+d329493a44155b9cdfde1bbf232d4023194f8213:docs/CONTENT_AUTHORING.md:generic-api-key:21
+831f2ea7d7c24c8682581dc14a7d71875cef0ddb:docs/CONTENT_AUTHORING.md:generic-api-key:19
+b4d74080f526ebe31908296b9ff437b85fed6e8d:docs/archive/compose-services/minio-init-buckets.sh:curl-auth-user:4
+67d5a590a9a6dc0aec956565cba72a9126008bf7:docs/archive/compose-services/minio-init-buckets.sh:curl-auth-user:4
