@@ -5,6 +5,7 @@ import { Reveal, RevealItem } from '@/ui/motion/Reveal';
 import { formatDuration, formatPrice, TEST_TYPE_LABEL } from '@/features/catalogue/format';
 import { EmptyState, ExaminerLink, Facts, PageHero, PriceTag, SectionHead } from '@/features/catalogue/parts';
 import { Glyph } from '@/features/marketing/showcase/Glyph';
+import { BuyPanel } from '@/features/commerce/BuyPanel';
 import styles from '@/features/catalogue/catalogue.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +28,6 @@ export default async function SeriesPage({ params }: Props) {
   const { slug } = await params;
   const series = await catalogue.series(slug);
   const sumSingles = series.tests.reduce((n, t) => n + t.pricePaise, 0);
-  const signIn = `/sign-in?next=${encodeURIComponent(`/series/${series.slug}`)}`;
 
   return (
     <>
@@ -61,9 +61,7 @@ export default async function SeriesPage({ params }: Props) {
                 <Glyph name="check" size={16} /> Works on the web and the app with one login
               </li>
             </ul>
-            <Link href={signIn} className="btn btn-primary btn-lg btn-full">
-              Sign in to buy <Glyph name="arrow" size={18} />
-            </Link>
+            <BuyPanel item={{ itemType: 'test_series', itemId: series.id, path: `/series/${series.slug}`, title: series.title }} />
           </div>
         }
       >

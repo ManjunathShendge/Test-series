@@ -169,4 +169,38 @@ First super admin: `pnpm --filter @exam-prep/db bootstrap-super-admin` (owner co
 | Storage buckets are created on Supabase only; `storage.objects` policies are not                                                                                                                                                                                                                                                  | Firebase sign-in: Supabase Storage sees no Supabase session, so the API authorises files and issues signed URLs                                                                                              |
 | Every function sets `search_path`; SECURITY DEFINER functions are owned by the migrator                                                                                                                                                                                                                                           | Prevents search-path hijacking                                                                                                                                                                               |
 
+## QC review (M4/M5, 24 November 2026; migrations 013-015)
+
+| Change | Reason |
+|---|---|
+| `start_test_qc(test)`: owning examiner or system; runs Stage 1 on the frozen submission (completeness, strongest corpus match outside the question's version family, image-file reuse, pattern-fit report), assigns the least-loaded active reviewer mapped to the exam (never the author) and moves the test `submitted -> in_qc` | PRD 4.2 step 8, 5.2 checks 1-5 and 8, 5.3.1. SECURITY DEFINER because examiners may not set `in_qc` |
+| `finish_test_qc(review, comments)`: assigned reviewer or admin, never the author; every item decided; all approved -> test `live` with `published_at`, else `changes_requested` with approved items `is_locked_by_qc`; approved questions join the corpus | PRD 4.3, 5.3.6 |
+| `qc_reviews.assigned_at`, `reassign_reason`; one open primary and one open second review per test (partial unique indexes) | PRD 5.3 reassign and 5.3.7 |
+| `qc_question_reviews.display_order`, `carried_over`; `test_question_id` is `ON DELETE SET NULL`; reason codes are a CHECK list and change/reject need a reason and comment; carried-over approvals cannot be changed (trigger) | Review history outlives a replaced item (invariant 6); approved questions stay approved in later rounds |
+| Exam thresholds CHECK (`0 < mid < high <= 1`, PYQ cap 0-100) | Admin-editable settings stay coherent |
+| Auto-hide counts distinct students with `open` or `examiner_responded` reports | An examiner reply must not keep a question under the 5-report threshold |
+
+Test items are written per changed position, so unchanged and QC-locked items keep their rows during revisions.
+
+## Commerce, payouts and publishing (24 November 2026; migrations 016-018)
+
+| Change | Reason |
+|---|---|
+| `create_web_order(item, coupon, gst)` prices a live paid test or a published series server-side; examiner codes apply only to that examiner's items, one use per student, capacity counts captured and fresh unpaid orders; at least ₹1 is charged; an identical open order under 30 minutes is reused | Invariant 4; double clicks never create two orders |
+| `attach_razorpay_order`, `fulfil_razorpay_payment` (owner or system; amount must match; invoice `MMP/<FY>/<000001>`; entitlement; ledger `capture` and `gateway_fee`; coupon use; `purchase_receipt` job; idempotent) | PAYMENTS.md lifecycle, invariants 5 and 7 |
+| `record_refund` (admin; full refund of a captured web payment; access revoked; ledger `refund`; audit) and `grant_access` (admin; zero-value `admin_grant` purchase) | PRD 8 Students. The 7-day/no-attempt policy is enforced by the API |
+| `purchases.captured_at`, `razorpay_refund_id`; amount and single-item CHECKs; coupon format and discount CHECKs; `invoice_counters` | Integrity of money rows |
+| `calculate_monthly_examiner_payouts` replaced; `examiner_payouts.carried_forward_paise`, `carried_into_payout_id`, `approved_by/at`, `tds_certificate_asset_id`, unique `bank_transfer_ref` | First-cycle hold and carry-forward no longer lose money |
+| Policy "Examiners view sales of their items" on `purchases`; `payout_document(payout)`; `examiner_attempt_stats(from)` (counts only) | PRD 4.4 without exposing student rows |
+| `finish_test_qc` publishes at `scheduled_publish_at` (status `scheduled`) or at once; `publish_due_tests()` system-only, run every minute by the API | PRD 4.3 |
+| `qc_question_reviews.original_question_id` | A reviewer edit binds the review to the exact replaced version |
+
 Row-level security: every public table has RLS. `exam_worker` has full row access (system jobs). `exam_app` is governed by the schema's policies where a table has them, and has full row access only where the schema defines none (for example `user_devices`, `examiner_profiles`). `exam_app` with no user context sees no profiles.
+
+## Attempt engine (M7, 24 November 2026; migration 019)
+
+- `student_attempts` gains `session_epoch` and `ack_seq`; a unique partial index allows one in-progress attempt per student. `active_session_token` stores a SHA-256 hash of the session token, never the token.
+- `student_attempt_sections` (attempt, section, order, duration, opens_at, closes_at, closed_at): the server's windows. Whole-test timing opens every section together until the deadline; sectional timing opens one at a time, and finishing early closes it without carrying time over. Students read their own rows only.
+- `student_attempt_events` (attempt, epoch, seq, payload, accepted, reason, received_at): append-only log of every received event, including rejected late ones with the reason (`time_up`, `section_closed`, `attempt_closed`, `unknown_question`).
+- `protect_answer_authority` trigger: answers change only through the API functions, inside an open window, with a valid option.
+- Scoring uses the latest corrected key; `sectional_scores` is keyed by section; ranks and test statistics count first attempts only.

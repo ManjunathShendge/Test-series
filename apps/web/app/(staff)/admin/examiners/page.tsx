@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { ExaminerApplicationsView } from '@/features/admin/ExaminerApplicationsView';
+import { AdminExaminersPage } from '@/features/admin/AdminExaminersView';
 
-export const metadata: Metadata = { title: 'Examiner applications' };
+export const metadata: Metadata = { title: 'Examiners' };
 
-export default function ExaminerApplicationsPage() {
-  return <ExaminerApplicationsView />;
+export default function ExaminersPage() {
+  return <AdminExaminersPage />;
 }

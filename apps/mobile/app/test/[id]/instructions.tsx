@@ -1,12 +1,16 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Language } from '@/lib/demo';
 import { useTestDetail } from '@/lib/api/queries';
 import { formatDuration } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
-import { useAttemptStore } from '@/lib/store/attempt';
+import { MY_ATTEMPTS_KEY } from '@/features/attempt/useAttempt';
+import { attemptsApi } from '@/lib/api/attempts';
+import { ApiRequestError } from '@/lib/api/http';
+import { newLocalAttempt, saveAttempt } from '@/lib/storage/attempt-outbox';
 import { Button, Card, Chip, Icon, Screen, StateView, Text } from '@/ui/primitives';
 import { colors, radius, space, touch } from '@/ui/tokens';
 
@@ -21,7 +25,8 @@ export default function InstructionsScreen() {
   const detail = useTestDetail(id);
   const test = detail.data?.test;
   const profileLanguage = useAppStore((s) => s.profile.language);
-  const start = useAttemptStore((s) => s.start);
+  const queryClient = useQueryClient();
+  const [busy, setBusy] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [language, setLanguage] = useState<Language>(profileLanguage);
   const [error, setError] = useState<string | null>(null);
@@ -45,13 +50,40 @@ export default function InstructionsScreen() {
   const bilingual = test.languages.includes('hi');
   const sectional = test.sections.every((s) => s.durationMinutes !== undefined);
 
-  const onStart = () => {
+  const open = (attemptId: string) =>
+    router.replace({ pathname: '/attempt/[id]', params: { id: attemptId, lang: bilingual ? language : 'en' } });
+
+  const onStart = async () => {
     if (!accepted) {
       setError('Tick the box to confirm you have read the instructions.');
       return;
     }
-    if (start(test.id, bilingual ? language : 'en')) {
-      router.replace({ pathname: '/test/[id]/attempt', params: { id: test.id } });
+    setBusy(true);
+    setError(null);
+    try {
+      const reply = await attemptsApi.start(test.id);
+      void queryClient.invalidateQueries({ queryKey: MY_ATTEMPTS_KEY });
+      if ('sessionToken' in reply) {
+        // The session goes to the phone before the player opens, so a restart keeps this phone the writer.
+        await saveAttempt(newLocalAttempt(reply.state.attemptId, reply.sessionToken, reply.state.epoch, reply.state.ackSeq)).catch(() => undefined);
+        open(reply.state.attemptId);
+      } else {
+        // Already running here or on another device: the player offers to continue.
+        open(reply.attemptId);
+      }
+    } catch (e) {
+      setBusy(false);
+      if (e instanceof ApiRequestError && e.code === 'NOT_ENTITLED') {
+        setError('You don’t have access to this test yet.');
+      } else if (e instanceof ApiRequestError && e.code === 'ATTEMPT_IN_PROGRESS') {
+        const other = (e.details as { attemptId?: unknown } | undefined)?.attemptId;
+        Alert.alert('Finish your current test first', 'Another test is still in progress and its timer is running.', [
+          { text: 'Not now', style: 'cancel' },
+          ...(typeof other === 'string' ? [{ text: 'Continue that test', onPress: () => router.replace({ pathname: '/attempt/[id]', params: { id: other } }) }] : []),
+        ]);
+      } else {
+        setError(e instanceof ApiRequestError ? e.message : 'We could not start the test. Check your connection and try again.');
+      }
     }
   };
 
@@ -160,7 +192,7 @@ export default function InstructionsScreen() {
             </Text>
           </View>
         ) : null}
-        <Button label="Start test" icon="play" size="lg" fullWidth onPress={onStart} />
+        <Button label="Start test" icon="play" size="lg" fullWidth loading={busy} disabled={busy} onPress={() => void onStart()} />
       </View>
     </>
   );

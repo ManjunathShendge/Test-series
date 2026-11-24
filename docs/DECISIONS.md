@@ -51,6 +51,10 @@ Latest explicit decisions in requirement.text > original PRD for the affected su
 | O10 | **Resolved 22 November 2026 (owner):** product name MakeMePrepare, domain makemeprepare.com, logo MMP-logo.png (see V7-V9) | Store listing copy and trademark search remain founder tasks |
 | O11 | India-hosted core data; external provider transfers reviewed | Engineering/legal before provider selection |
 | O12 | Strict receive-before-deadline acceptance, 30s finalizer delay only | Product before M7; delay grants no extra answering time |
+| P-QC1 | QC fast lane (PRD 5.5) = Top tier: the queue orders Top tier first, then flag count, then the 48h SLA deadline. Verified and New share the standard lane | Founder/ops before staffing reviewers; one ORDER BY in `qc.repository.ts` changes it |
+| P-QC2 | A failed second review (PRD 5.3.7) is recorded for the admin team and does not unpublish the test automatically. Reviewer "Minor edit" is built (24 November 2026): it creates a new question version, re-runs content, bilingual and copy checks, and is approved when the review finishes | Ops before launch |
+| P-PAY1 | Web refunds: full refund through Razorpay within 7 days of payment when no covered test has been started; admin-recorded with a reason; access ends at once. Partial refunds are not offered | Founder/finance before live money |
+| P-PAY2 | Payouts: GST-inclusive prices at `GST_RATE_PERCENT` (default 18); examiner share of net revenue (after GST and Razorpay fee) 65% or 75% with their own code (O03); TDS default 10% set per calculation; KYC verified, first payout held one cycle, ₹500 minimum, balances carry forward | CA/finance before live money (O03, O09) |
 
 Open items do not prevent M0, contracts, fake adapters, or synthetic fixtures. They gate only the dependent production behavior. Record each resolution with date, owner, evidence, and affected requirement IDs.
 
@@ -198,3 +202,14 @@ The owner supplied three references: a three-slide 3D onboarding (launch experie
 | Q1 | Question, option, solution and passage text is plain text, never HTML. Math is `\( … \)` inline and `\[ … \]` display, rendered with KaTeX 0.19.1. Tables are pipe tables: a `\| a \| b \|` header line, a `\| --- \| --- \|` separator, then row lines (at most 10 columns and 50 rows). Everything else is literal text | Satisfies SECURITY "structured sanitization" without an HTML sanitizer: there is no markup to sanitize, and React escapes text. `\(` avoids the currency clash of `$`. `packages/contracts` holds the one parser (`parseRichText`) used by the API, web and later mobile, so the preview is what students see |
 | Q2 | The API rejects malformed content on sample, draft and import save: unbalanced delimiters, ragged tables, and math KaTeX cannot parse. `\href`, `\url`, `\includegraphics` and `\html*` are rejected through KaTeX's trust hook; `maxExpand` 200 and `maxSize` 20 stop macro loops and oversized output | KaTeX renders untrusted commands as red text rather than throwing, so they are detected explicitly. Students never receive content that failed validation |
 | Q3 | Rendering on mobile stays S2-gated (E18). This decision fixes the stored format only | The stored text needs no migration whichever renderer S2 selects |
+
+
+## Web payments with Razorpay test mode (24 November 2026, owner instruction)
+
+| ID | Decision | Rationale and limit |
+|---|---|---|
+| R1 | Web checkout uses Razorpay Orders and Checkout in test mode (`rzp_test_` keys in `.env`); live keys are refused outside production by the environment check | Owner choice. No real money moves in development |
+| R2 | Access is granted only after the server verifies the Checkout signature and fetches the payment from Razorpay as captured for exactly the order amount; an authorized payment is captured by the server. The webhook (`payment.captured`, `order.paid`) runs the same idempotent fulfilment so a closed tab still delivers access | Invariant 7 |
+| R3 | Razorpay calls never run inside a database transaction; the order receipt is the purchase id. Refunds look for an existing Razorpay refund before creating one | Retries never double-charge or double-refund |
+| R5 | Test series are published by their examiner, with no admin or QC approval: the PRD has examiners own series and QC review tests only. A series can be published once one of its tests is live (so everything sold has passed review); admins keep "feature or unpublish" (PRD 8 Catalogue) | Owner instruction, 24 November 2026 |
+| R4 | The Razorpay key secret and webhook secret stay in the API; the browser receives only the key id | Invariant 9 |

@@ -24,6 +24,8 @@ interface RequestOptions<S extends z.ZodType> {
   /** Response schema; omit for 204 responses. */
   schema?: S;
   timeoutMs?: number;
+  /** Extra request headers (for example the attempt session). */
+  headers?: Record<string, string>;
 }
 
 /**
@@ -33,9 +35,9 @@ interface RequestOptions<S extends z.ZodType> {
 export async function apiRequest<S extends z.ZodType>(
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
-  { body, schema, timeoutMs = 15000 }: RequestOptions<S> = {},
+  { body, schema, timeoutMs = 15000, headers: extra }: RequestOptions<S> = {},
 ): Promise<z.infer<S>> {
-  const headers: Record<string, string> = { accept: 'application/json' };
+  const headers: Record<string, string> = { ...extra, accept: 'application/json' };
   if (body !== undefined) headers['content-type'] = 'application/json';
   const token = await idToken();
   if (token) headers.authorization = `Bearer ${token}`;

@@ -5,7 +5,7 @@ export const authoringAssetsRepository = {
     db: Queryable,
     id: string,
     ownerId: string,
-    classification: 'public_media' | 'question_asset' | 'examiner_kyc' | 'import_archive',
+    classification: 'public_media' | 'question_asset' | 'examiner_kyc' | 'import_archive' | 'payout_document',
     accessScope: 'public' | 'examiner' | 'staff' | 'student_attempt',
     bucket: string,
     objectKey: string,
@@ -70,7 +70,7 @@ export const authoringAssetsRepository = {
       object_key: string;
       mime_type: string;
       original_name: string;
-      classification: 'public_media' | 'question_asset' | 'examiner_kyc' | 'import_archive';
+      classification: 'public_media' | 'question_asset' | 'examiner_kyc' | 'import_archive' | 'payout_document';
       size_bytes: string | null;
       sha256: string | null;
       scan_status: 'pending' | 'scanning' | 'clean' | 'rejected';
@@ -146,7 +146,7 @@ export const authoringAssetsRepository = {
     db: Queryable,
     ownerId: string,
     ids: string[],
-    classifications: Array<'public_media' | 'question_asset' | 'examiner_kyc' | 'import_archive'>,
+    classifications: Array<'public_media' | 'question_asset' | 'examiner_kyc' | 'import_archive' | 'payout_document'>,
   ): Promise<boolean> {
     const uniqueIds = [...new Set(ids)];
     if (uniqueIds.length !== ids.length) return false;

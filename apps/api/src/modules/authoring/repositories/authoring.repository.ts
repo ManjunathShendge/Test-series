@@ -81,6 +81,15 @@ export const authoringRepository = {
     );
     return rows[0]!.exists;
   },
+  /** Unblocked admin with the finance (or super) flag; profiles RLS lets a user read their own row. */
+  async isFinanceAdmin(db: Queryable, profileId: string): Promise<boolean> {
+    const { rowCount } = await db.query(
+      `SELECT 1 FROM profiles WHERE id=$1 AND 'admin'::user_role_type=ANY(roles) AND NOT is_blocked
+          AND (is_finance_admin OR is_super_admin)`,
+      [profileId],
+    );
+    return rowCount === 1;
+  },
   async countExamsAndSubjects(
     db: Queryable,
     examIds: string[],

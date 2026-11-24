@@ -1,7 +1,7 @@
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { AnswerState, PaletteState, Paper, Section } from '@/lib/demo';
-import { paletteCounts, paletteState } from '@/lib/store/attempt';
+import type { AttemptSection } from '@exam-prep/contracts';
+import { counts as countPalette, paletteOf, type AttemptState, type Palette as PaletteState } from '@exam-prep/engine';
 import { Icon, Text, type IconName } from '@/ui/primitives';
 import { colors, radius, space, touch } from '@/ui/tokens';
 
@@ -11,27 +11,34 @@ import { colors, radius, space, touch } from '@/ui/tokens';
  * announced). Tapping a number navigates; locked sections are disabled.
  */
 export const PALETTE_META: Record<PaletteState, { label: string; border: string; fill: string; icon?: IconName; iconColor?: string; dashed?: boolean }> = {
-  unvisited: { label: 'Not visited', border: colors.border, fill: colors.surface, dashed: true },
-  visited: { label: 'Not answered', border: colors.error, fill: colors.errorSoft, icon: 'ellipse-outline', iconColor: colors.error },
+  not_visited: { label: 'Not visited', border: colors.border, fill: colors.surface, dashed: true },
+  not_answered: { label: 'Not answered', border: colors.error, fill: colors.errorSoft, icon: 'ellipse-outline', iconColor: colors.error },
   answered: { label: 'Answered', border: colors.success, fill: colors.successSoft, icon: 'checkmark', iconColor: colors.success },
-  marked: { label: 'Marked for review', border: colors.review, fill: colors.reviewSoft, icon: 'bookmark', iconColor: colors.review },
-  markedAnswered: { label: 'Answered and marked', border: colors.review, fill: colors.successSoft, icon: 'checkmark', iconColor: colors.review },
+  marked_for_review: { label: 'Marked for review', border: colors.review, fill: colors.reviewSoft, icon: 'bookmark', iconColor: colors.review },
+  answered_and_marked: { label: 'Answered and marked', border: colors.review, fill: colors.successSoft, icon: 'checkmark', iconColor: colors.review },
 };
 
 export interface PaletteProps {
   visible: boolean;
-  paper: Paper;
-  sections: Section[];
-  answers: Record<string, AnswerState>;
-  currentIndex: number;
-  isSectionLocked: (sectionId: string) => boolean;
+  engine: AttemptState;
+  /** Question numbers in paper order. */
+  numbers: number[];
+  sections: AttemptSection[];
   onJump: (index: number) => void;
   onClose: () => void;
 }
 
-export function Palette({ visible, paper, sections, answers, currentIndex, isSectionLocked, onJump, onClose }: PaletteProps) {
+export function Palette({ visible, engine, numbers, sections, onJump, onClose }: PaletteProps) {
   const insets = useSafeAreaInsets();
-  const counts = paletteCounts(paper, answers);
+  const all = countPalette(engine);
+  const counts: Record<PaletteState, number> = {
+    not_visited: all.notVisited,
+    not_answered: all.notAnswered,
+    answered: all.answered,
+    marked_for_review: all.marked,
+    answered_and_marked: all.answeredAndMarked,
+  };
+  const isSectionLocked = (sectionId: string) => !engine.openSections.includes(sectionId);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
@@ -65,27 +72,28 @@ export function Palette({ visible, paper, sections, answers, currentIndex, isSec
           <ScrollView style={styles.scroll} contentContainerStyle={styles.sections}>
             {sections.map((section) => {
               const locked = isSectionLocked(section.id);
-              const items = paper.questions.map((q, i) => ({ q, i })).filter(({ q }) => q.sectionId === section.id);
+              const items = engine.items.map((q, i) => ({ q, i })).filter(({ q }) => q.sectionId === section.id);
               return (
                 <View key={section.id} style={styles.section}>
                   <View style={styles.sectionHead}>
                     <Text variant="bodySmallStrong" tone={locked ? 'disabled' : 'secondary'}>
-                      {section.name.en}
+                      {section.name}
                     </Text>
                     {locked ? <Icon name="lock-closed-outline" size={14} color={colors.textDisabled} label="Locked" /> : null}
                   </View>
                   <View style={styles.grid}>
                     {items.map(({ q, i }) => {
-                      const state = paletteState(answers[q.id]);
+                      const state = paletteOf(engine.answers[q.id]);
                       const m = PALETTE_META[state];
-                      const current = i === currentIndex;
+                      const current = i === engine.current;
+                      const n = numbers[i] ?? i + 1;
                       return (
                         <Pressable
                           key={q.id}
                           disabled={locked}
                           onPress={() => onJump(i)}
                           accessibilityRole="button"
-                          accessibilityLabel={`Question ${i + 1}, ${m.label}${current ? ', current' : ''}${locked ? ', section locked' : ''}`}
+                          accessibilityLabel={`Question ${n}, ${m.label}${current ? ', current' : ''}${locked ? ', section locked' : ''}`}
                           accessibilityState={{ disabled: locked, selected: current }}
                           style={[
                             styles.cell,
@@ -95,7 +103,7 @@ export function Palette({ visible, paper, sections, answers, currentIndex, isSec
                           ]}
                         >
                           <Text variant="bodySmallStrong" tabular tone={locked ? 'disabled' : 'default'}>
-                            {i + 1}
+                            {n}
                           </Text>
                           {m.icon ? (
                             <View style={styles.cellIcon}>

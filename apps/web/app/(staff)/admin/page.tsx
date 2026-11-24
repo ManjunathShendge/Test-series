@@ -1,5 +1,8 @@
-import { redirect } from 'next/navigation';
+import type { Metadata } from 'next';
+import { AdminOverview } from '@/features/admin/AdminOverview';
+
+export const metadata: Metadata = { title: 'Dashboard' };
 
 export default function AdminHome() {
-  redirect('/admin/exams');
+  return <AdminOverview />;
 }

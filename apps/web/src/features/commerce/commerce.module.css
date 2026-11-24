@@ -1,0 +1,108 @@
+.buy,
+.owned {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.coupon {
+  display: grid;
+  gap: var(--space-xs);
+}
+.coupon label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.couponRow {
+  display: flex;
+  gap: var(--space-sm);
+}
+.input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.input[aria-invalid='true'] {
+  border-color: var(--error);
+}
+.couponError {
+  margin: 0;
+  color: var(--error);
+  font-size: 0.875rem;
+}
+.saving {
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--success-soft);
+  color: var(--text);
+  font-size: 0.875rem;
+}
+.fine {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+.ownedLine {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin: 0;
+  color: var(--success);
+  font-weight: 600;
+}
+.unavailable {
+  margin: 0;
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--warning-soft);
+  font-size: 0.875rem;
+}
+
+/* Account: purchases */
+.list {
+  display: grid;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.purchase {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-xs) var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.purchase a {
+  color: var(--primary);
+  font-weight: 600;
+}
+.purchase small {
+  grid-column: 1 / -1;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+.amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
+}
+.refunded {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+}

@@ -6,7 +6,7 @@ import { PurchaseSheet } from '@/features/commerce/PurchaseSheet';
 import { useTestDetail } from '@/lib/api/queries';
 import { formatCount, formatDuration, formatPaise } from '@/lib/format';
 import { useAppStore, useHasAccess } from '@/lib/store/app';
-import { useAttemptStore } from '@/lib/store/attempt';
+import { useMyAttempts, useRunningAttempt } from '@/features/attempt/queries';
 import { Avatar, Button, Card, Chip, Icon, Screen, Skeleton, StateView, Text, type IconName } from '@/ui/primitives';
 import { colors, radius, space } from '@/ui/tokens';
 
@@ -18,10 +18,10 @@ export default function TestDetailScreen() {
   const detail = useTestDetail(id);
   const test = detail.data?.test;
   const hasAccess = useHasAccess(id);
-  const attempted = useAppStore((s) => s.attemptedTestIds.includes(id));
+  const mine = useMyAttempts().data;
+  const attempted = useAppStore((s) => s.attemptedTestIds.includes(id)) || !!mine?.some((x) => x.testId === id && x.status !== 'in_progress');
   const [buying, setBuying] = useState(false);
-  const inProgressTestId = useAttemptStore((s) => (s.status === 'in_progress' ? s.test?.id ?? null : null));
-  const inProgressTitle = useAttemptStore((s) => (s.status === 'in_progress' ? s.test?.title ?? '' : ''));
+  const running = useRunningAttempt();
 
   if (!test) {
     if (detail.isError || detail.fetchStatus === 'paused') {
@@ -59,17 +59,17 @@ export default function TestDetailScreen() {
   const { exam, examiner, series } = detail.data ?? {};
   const negative = test.sections[0]?.negativeMarks ?? 0;
 
-  const resuming = inProgressTestId === test.id;
+  const resuming = running?.testId === test.id;
   const startAttempt = () => {
-    if (resuming) {
-      router.push({ pathname: '/test/[id]/attempt', params: { id: test.id } });
+    if (running && resuming) {
+      router.push({ pathname: '/attempt/[id]', params: { id: running.attemptId } });
       return;
     }
     // One live attempt at a time: its clock is still running (decision E17/C3).
-    if (inProgressTestId) {
-      Alert.alert('Finish your current test first', `${inProgressTitle} is still in progress and its timer is running.`, [
+    if (running) {
+      Alert.alert('Finish your current test first', `${running.testTitle} is still in progress and its timer is running.`, [
         { text: 'Not now', style: 'cancel' },
-        { text: 'Continue that test', onPress: () => router.push({ pathname: '/test/[id]/attempt', params: { id: inProgressTestId } }) },
+        { text: 'Continue that test', onPress: () => router.push({ pathname: '/attempt/[id]', params: { id: running.attemptId } }) },
       ]);
       return;
     }

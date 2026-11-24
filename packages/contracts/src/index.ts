@@ -10,3 +10,7 @@ export * from './catalogue/index.js';
 export * from './admin/index.js';
 export * from './authoring/index.js';
 export * from './authoring/rich-text.js';
+export * from './authoring/examiner-tests.js';
+export * from './qc/index.js';
+export * from './commerce/index.js';
+export * from './attempts/index.js';

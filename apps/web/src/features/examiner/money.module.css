@@ -1,0 +1,120 @@
+.stack {
+  display: grid;
+  gap: var(--space-xl);
+  min-width: 0;
+}
+
+.kind {
+  margin-left: var(--space-xs);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+.summary {
+  cursor: pointer;
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+}
+.payable {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary);
+}
+
+/* Daily share chart */
+.chart {
+  margin: 0;
+  display: grid;
+  gap: var(--space-xs);
+}
+.bars {
+  display: flex;
+  gap: 2px;
+  height: 180px;
+}
+.col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.pos,
+.neg {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.pos {
+  justify-content: flex-end;
+  border-bottom: 1px solid var(--border);
+}
+.neg {
+  justify-content: flex-start;
+}
+.bar,
+.barNeg {
+  display: block;
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+  background: var(--primary);
+  transition: height var(--dur-base) var(--ease-out);
+}
+.barNeg {
+  border-radius: 0 0 3px 3px;
+  background: var(--error);
+}
+.col:hover .bar {
+  background: var(--brand);
+}
+.axis {
+  display: flex;
+  gap: 2px;
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+}
+.axis span {
+  flex: 1;
+  min-width: 0;
+  overflow: visible;
+  white-space: nowrap;
+}
+.caption {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar,
+  .barNeg {
+    transition: none;
+  }
+}
+
+/* Coupon cards */
+.codes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: var(--space-lg);
+}
+.codes > div {
+  display: grid;
+  gap: var(--space-md);
+}
+.codeHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+.code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+}
+.codeLine {
+  margin: 0;
+  font-weight: 600;
+}

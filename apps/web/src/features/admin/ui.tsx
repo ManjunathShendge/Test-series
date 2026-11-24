@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { TemplateStatus } from '@exam-prep/contracts';
 import { ApiRequestError } from '@/lib/api/http';
 import { Waiting } from '@/features/auth/ui';
+import { ErrorScreen, errorKind, type ErrorKind } from '@/ui/errors/ErrorScreen';
 import styles from './admin.module.css';
 
 /** A readable message for any failed call; validation issues are joined. */
@@ -59,26 +60,36 @@ export function LoadGate<T>({ state, reload, what, children }: { state: Load<T>;
   const { error } = state;
   if (isCode(error, 'FORBIDDEN')) {
     return (
-      <State title="You do not have access to this">
+      <State kind="forbidden" title="You do not have access to this">
         Exams and templates need an admin account with the operations permission. Ask a super admin to grant it.
       </State>
     );
   }
   if (isCode(error, 'NOT_FOUND')) {
     return (
-      <State title={`This ${what} does not exist`} action={<Link className="btn btn-secondary" href="/admin/exams">Back to exams</Link>}>
+      <State kind="not-found" title={`This ${what} does not exist`} action={<Link className="btn btn-secondary" href="/admin/exams">Back to exams</Link>}>
         It may have been deleted, or the link is wrong.
       </State>
     );
   }
   return (
-    <State title={`Could not load ${what}`} action={<button className="btn btn-primary" onClick={reload}>Try again</button>}>
+    <State kind={errorKind(error)} title={`Could not load ${what}`} action={<button className="btn btn-primary" onClick={reload}>Try again</button>}>
       {messageOf(error)}
     </State>
   );
 }
 
-export function State({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
+/**
+ * A message in place of page content. With `kind` it is an error: the matching drawing, the
+ * message, the page's own action, and Go back / Home (ErrorScreen). Without it, an empty state.
+ */
+export function State({ title, children, action, kind }: { title: string; children: ReactNode; action?: ReactNode; kind?: ErrorKind }) {
+  if (kind)
+    return (
+      <ErrorScreen kind={kind} title={title} action={action}>
+        <p>{children}</p>
+      </ErrorScreen>
+    );
   return (
     <div className={styles.state} role="status">
       <h2>{title}</h2>

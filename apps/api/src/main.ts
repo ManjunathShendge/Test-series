@@ -6,7 +6,8 @@ import { parseEnvironment } from './config/env.js';
 
 async function bootstrap(): Promise<void> {
   const env = parseEnvironment(process.env);
-  const app = await NestFactory.create(AppModule);
+  // rawBody: provider webhook signatures are computed over the original bytes.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   app.enableShutdownHooks();
   app.enableCors({ origin: env.CORS_ORIGINS, credentials: true });
   app.setGlobalPrefix('v1', { exclude: ['health/live', 'health/ready'] });

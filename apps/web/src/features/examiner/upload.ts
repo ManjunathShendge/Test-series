@@ -1,6 +1,6 @@
 import { adminApi } from '@/lib/api/admin';
 
-type UploadClass = 'examiner_kyc' | 'question_asset' | 'import_archive';
+type UploadClass = 'examiner_kyc' | 'question_asset' | 'import_archive' | 'payout_document';
 type AllowedMime =
   | 'image/jpeg'
   | 'image/png'

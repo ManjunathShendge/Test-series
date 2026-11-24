@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useShallow } from 'zustand/react/shallow';
 import { ExaminerCard } from '@/features/catalogue/components/ExaminerCard';
 import { SectionHeader } from '@/features/catalogue/components/SectionHeader';
 import { TestCard } from '@/features/catalogue/components/TestCard';
@@ -10,7 +9,7 @@ import { useExams, useHomeFeed } from '@/lib/api/queries';
 import { getTest, topicStrengths, type TestSummary } from '@/lib/demo';
 import { formatClock, formatDate } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
-import { paletteCounts, useAttemptStore } from '@/lib/store/attempt';
+import { useRunningAttempt } from '@/features/attempt/queries';
 import { practiceEntries, useResultsList } from '@/lib/store/results';
 import { Avatar, Button, Card, Chip, FeatureTile, Icon, IconButton, Screen, StateView, Text } from '@/ui/primitives';
 import { ProgressRing } from '@/ui/patterns/ProgressRing';
@@ -51,13 +50,10 @@ export default function HomeScreen() {
   // No data yet: first load, or waiting for a connection with nothing cached.
   const feedState = feed.data ? 'ready' : feed.isError ? 'error' : feed.fetchStatus === 'paused' ? 'offline' : 'loading';
 
-  // Real in-progress attempt, if any: the timer keeps running while the student is away.
-  const attempt = useAttemptStore(
-    useShallow((s) => ({ status: s.status, test: s.test, paper: s.paper, answers: s.answers, deadlineAt: s.deadlineAt, sync: s.sync })),
-  );
-  const continueTest = attempt.status === 'in_progress' ? attempt.test : null;
-  const answeredCount = attempt.paper ? (() => { const c = paletteCounts(attempt.paper, attempt.answers); return c.answered + c.markedAnswered; })() : 0;
-  const secondsLeft = Math.max(0, Math.floor((attempt.deadlineAt - Date.now()) / 1000));
+  // Running attempt from the server, if any: its timer keeps running while the student is away.
+  const continueTest = useRunningAttempt();
+  const secondsLeft = continueTest ? Math.max(0, Math.floor((Date.parse(continueTest.expiresAt) - Date.now()) / 1000)) : 0;
+  const totalSeconds = continueTest ? Math.max(1, (Date.parse(continueTest.expiresAt) - Date.parse(continueTest.startedAt)) / 1000) : 1;
   const targetExams = profile.targetExamIds.map((id) => realExams.find((exam) => exam.id === id)).filter((e): e is NonNullable<typeof e> => !!e);
 
   const results = useResultsList();
@@ -68,7 +64,7 @@ export default function HomeScreen() {
   const firstFree = featured[0];
 
   const openTest = (id: string) => router.push({ pathname: '/test/[id]', params: { id } });
-  const openAttempt = (id: string) => router.push({ pathname: '/test/[id]/attempt', params: { id } });
+  const openAttempt = (id: string) => router.push({ pathname: '/attempt/[id]', params: { id } });
 
   return (
     <Screen padded={false} contentStyle={styles.content}>
@@ -93,9 +89,9 @@ export default function HomeScreen() {
       <View style={styles.gutter}>
         {continueTest ? (
           <Pressable
-            onPress={() => openAttempt(continueTest.id)}
+            onPress={() => openAttempt(continueTest.attemptId)}
             accessibilityRole="button"
-            accessibilityLabel={`Continue ${continueTest.title}, ${answeredCount} of ${continueTest.questionCount} answered, ${formatClock(secondsLeft)} left`}
+            accessibilityLabel={`Continue ${continueTest.testTitle}, ${formatClock(secondsLeft)} left`}
             style={({ pressed }) => [styles.hero, pressed && styles.heroPressed]}
           >
             <View style={styles.heroRow}>
@@ -107,19 +103,16 @@ export default function HomeScreen() {
                   </Text>
                 </View>
                 <Text variant="title" tone="inverse" numberOfLines={2}>
-                  {continueTest.title}
+                  {continueTest.testTitle}
                 </Text>
                 <View style={styles.saved}>
-                  <Icon name={attempt.sync === 'synced' ? 'cloud-done-outline' : 'phone-portrait-outline'} size={14} color={colors.onInverseSecondary} />
+                  <Icon name="cloud-done-outline" size={14} color={colors.onInverseSecondary} />
                   <Text variant="caption" tone="inverseSecondary">
-                    {attempt.sync === 'synced' ? 'Synced' : 'Saved on this device'}
+                    Answers saved · timer running
                   </Text>
                 </View>
               </View>
-              <ProgressRing
-                value={continueTest.questionCount ? answeredCount / continueTest.questionCount : 0}
-                label={`${answeredCount} of ${continueTest.questionCount} answered`}
-              >
+              <ProgressRing value={secondsLeft / totalSeconds} label={`${formatClock(secondsLeft)} left`}>
                 <Text variant="bodyStrong" tone="inverse" tabular>
                   {formatClock(secondsLeft)}
                 </Text>
@@ -129,9 +122,9 @@ export default function HomeScreen() {
               </ProgressRing>
             </View>
             <Text variant="bodySmall" tone="inverseSecondary" tabular>
-              {answeredCount} of {continueTest.questionCount} answered
+              {continueTest.totalQuestions} questions
             </Text>
-            <Button label="Continue attempt" variant="accent" icon="play" fullWidth onPress={() => openAttempt(continueTest.id)} />
+            <Button label="Continue attempt" variant="accent" icon="play" fullWidth onPress={() => openAttempt(continueTest.attemptId)} />
           </Pressable>
         ) : latest ? (
           <Pressable

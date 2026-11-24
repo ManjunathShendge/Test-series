@@ -14,6 +14,10 @@ const databaseUrl = z.string().refine((value) => {
     url.pathname.length > 1
   );
 }, 'Expected a postgresql:// URL with host and database name');
+/** An empty `KEY=` line in .env means "not set". */
+const blankAsUnset = <T extends z.ZodType>(inner: T) =>
+  z.preprocess((value) => (typeof value === 'string' && value.trim() === '' ? undefined : value), inner);
+
 const schema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -51,6 +55,12 @@ const schema = z
     ANTIVIRUS_PORT: z.coerce.number().int().min(1).max(65535).optional(),
     EXAMINER_AGREEMENT_VERSION: z.string().trim().min(1).max(100).optional(),
     EXAMINER_AGREEMENT_TEXT: z.string().trim().min(1).max(20_000).optional(),
+    // Razorpay web checkout (PAYMENTS.md). Test keys (rzp_test_) everywhere except production.
+    RAZORPAY_KEY_ID: blankAsUnset(z.string().trim().regex(/^rzp_(test|live)_[A-Za-z0-9]+$/).optional()),
+    RAZORPAY_KEY_SECRET: blankAsUnset(z.string().trim().min(8).optional()),
+    RAZORPAY_WEBHOOK_SECRET: blankAsUnset(z.string().trim().min(8).optional()),
+    // Prices include GST at this rate until the CA confirms it (DECISIONS O09).
+    GST_RATE_PERCENT: z.coerce.number().min(0).max(28).default(18),
   })
   .superRefine((env, ctx) => {
     const deployed =
@@ -120,6 +130,18 @@ const schema = z
         });
       }
     }
+    if (Boolean(env.RAZORPAY_KEY_ID) !== Boolean(env.RAZORPAY_KEY_SECRET))
+      ctx.addIssue({
+        code: 'custom',
+        path: ['RAZORPAY_KEY_SECRET'],
+        message: 'Set both RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET, or neither',
+      });
+    if (env.RAZORPAY_KEY_ID?.startsWith('rzp_live_') && env.APP_ENV !== 'production')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['RAZORPAY_KEY_ID'],
+        message: 'Live Razorpay keys are allowed only in production; use rzp_test_ keys',
+      });
     if (env.API_PORT === env.WORKER_PORT)
       ctx.addIssue({
         code: 'custom',

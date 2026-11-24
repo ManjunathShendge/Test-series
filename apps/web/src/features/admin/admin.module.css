@@ -1,91 +1,5 @@
-/* Staff console: compact, legible, token-based (design MASTER "staff need compact review tables"). */
+/* Staff console pages (the frame lives in ui/console): compact, legible, token-based (design MASTER "staff need compact review tables"). */
 
-.shell {
-  min-height: 100dvh;
-  background: var(--background);
-  color: var(--text);
-}
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: var(--space-lg);
-  min-height: 60px;
-  padding: 0 var(--gutter);
-  background: var(--inverse);
-  color: var(--on-inverse);
-}
-.brand {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  color: inherit;
-  font-family: var(--font-outfit), system-ui, sans-serif;
-  font-weight: 600;
-  text-decoration: none;
-}
-.brand span {
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  background: var(--inverse-raised);
-  color: var(--on-inverse-secondary);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-.nav {
-  display: flex;
-  gap: var(--space-xs);
-  margin-right: auto;
-}
-.nav a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0 var(--space-md);
-  border-radius: var(--radius-sm);
-  color: var(--on-inverse-secondary);
-  font-weight: 500;
-  text-decoration: none;
-}
-.nav a[aria-current='page'] {
-  color: var(--on-inverse);
-  background: var(--inverse-raised);
-}
-.nav a:hover {
-  color: var(--on-inverse);
-}
-.who {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  font-size: 0.875rem;
-  color: var(--on-inverse-secondary);
-}
-.who button {
-  min-height: 40px;
-  padding: 0 var(--space-md);
-  border: 1px solid rgb(255 255 255 / 0.25);
-  border-radius: var(--radius-full);
-  background: transparent;
-  color: var(--on-inverse);
-  font: inherit;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.who button:hover {
-  background: var(--inverse-raised);
-}
-.whoName {
-  max-width: 22ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.brandName {
-  font-weight: inherit;
-}
 .srOnly {
   position: absolute;
   width: 1px;
@@ -101,25 +15,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-xs);
-}
-.nav a {
-  white-space: nowrap;
-}
-@media (max-width: 640px) {
-  .whoName,
-  .brandName {
-    display: none;
-  }
-  .topbar {
-    gap: var(--space-sm);
-  }
-}
-
-.main {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: var(--space-xl) var(--gutter) var(--space-4xl);
 }
 .crumbs {
   display: flex;

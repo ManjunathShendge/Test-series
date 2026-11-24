@@ -1,10 +1,8 @@
+import type { Metadata } from 'next';
 import { ExaminerApplicationView } from '@/features/examiner/ExaminerApplicationView';
-import { ExaminerGate } from '@/features/examiner/ExaminerGate';
+
+export const metadata: Metadata = { title: 'Application' };
 
 export default function ExaminerApplicationPage() {
-  return (
-    <ExaminerGate>
-      <ExaminerApplicationView />
-    </ExaminerGate>
-  );
+  return <ExaminerApplicationView />;
 }

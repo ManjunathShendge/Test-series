@@ -33,6 +33,21 @@ export const ErrorCode = z.enum([
   'INVALID_IMPORT',
   'IMPORT_TOO_LARGE',
   'NOT_FOUND',
+  /** Razorpay keys are not configured on this server. */
+  'PAYMENTS_NOT_CONFIGURED',
+  'PAYMENT_PROVIDER_UNAVAILABLE',
+  'PAYMENT_REJECTED',
+  /** The payment could not be verified as captured for this order; nothing was unlocked. */
+  'PAYMENT_NOT_VERIFIED',
+  'ALREADY_OWNED',
+  'COUPON_INVALID',
+  'REFUND_NOT_ALLOWED',
+  'NOT_ENTITLED',
+  'ATTEMPT_IN_PROGRESS',
+  'ATTEMPT_CLOSED',
+  'SESSION_REPLACED',
+  'SYNC_GAP',
+  'SYNC_CONFLICT',
   'INTERNAL',
 ]);
 export type ErrorCode = z.infer<typeof ErrorCode>;

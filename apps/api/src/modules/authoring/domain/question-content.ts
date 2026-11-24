@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import katex from 'katex';
 import { parseRichText, richTextMath } from '@exam-prep/contracts';
 
@@ -60,4 +61,39 @@ export function questionContentIssues(question: QuestionText) {
   return fields.flatMap(([path, label, text]) =>
     contentIssues(text).map((message) => ({ path, message: `${label}: ${message}` })),
   );
+}
+
+/** Versioned text normalization for duplicate detection (QC_PIPELINE "Normalization and corpus"). */
+export function normalizeText(value: string): string {
+  return value
+    .normalize('NFKC')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+/** Normalized stems plus the exact hash (stem + sorted options) and the number-masked hash. */
+export function normalizeQuestion(
+  stemEn: string,
+  stemHi: string | undefined,
+  options: { id: 'A' | 'B' | 'C' | 'D'; textEn: string; textHi?: string | undefined }[],
+) {
+  const normStemEn = normalizeText(stemEn);
+  const normStemHi = stemHi ? normalizeText(stemHi) : null;
+  const sortedOptions = [...options].sort((a, b) => a.id.localeCompare(b.id)).map((option) => normalizeText(option.textEn));
+  const canonical = JSON.stringify({ stem: normStemEn, options: sortedOptions });
+  const textHash = createHash('sha256').update(canonical).digest('hex');
+  const maskedStem = normStemEn
+    .replace(/\b\d+(?:[,.]\d+)*(?:%|\/\d+)?\b/g, '<NUMBER>')
+    .replace(/₹|rs\.?/gi, '<CURRENCY>');
+  const maskedHash = createHash('sha256')
+    .update(
+      JSON.stringify({
+        stem: maskedStem,
+        options: sortedOptions.map((option) => option.replace(/\b\d+(?:[,.]\d+)*\b/g, '<NUMBER>')),
+      }),
+    )
+    .digest('hex');
+  return { stemEn: normStemEn, stemHi: normStemHi, textHash, maskedHash };
 }

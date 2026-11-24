@@ -24,10 +24,10 @@ Client bindings supply clock, persistence and network; reducer performs no I/O. 
 6. Delete only events at or below an acknowledged contiguous watermark for the same epoch. On lost response, resend unchanged batch. Bounded exponential backoff; refresh auth without changing event IDs.
 7. On relaunch, restore durable cursor/events, reconnect, reconcile server state, flush, then resume. Keep local data until terminal confirmation and retention cleanup.
 
-Protocol example (illustrative contract, not implemented):
+Protocol example (as implemented in `packages/contracts/src/attempts`):
 
 ```json
-{"epoch":2,"events":[{"seq":18,"kind":"select","questionVersionId":"opaque-id","optionId":"B","marked":false,"cumulativeTimeMs":18000}],"lastAckSeq":17}
+{"epoch":2,"lastAckSeq":17,"events":[{"seq":18,"kind":"answer","testQuestionId":"opaque-id","selected":"B","marked":false,"visited":true,"timeMs":18000}]}
 ```
 
 ## Time, sections and device takeover
@@ -49,3 +49,11 @@ Unsent offline events after the deadline remain locally recoverable for support 
 ## Required evidence
 
 Crash before/after local commit; response lost after server commit; event duplicates and gaps; forged seq/option IDs; app reboot; clock skew; section expiration; timeout/manual-submit race; finalizer retry; lease takeover; revoked entitlement; WebView rendering and 4G load. Measure local save p95 <300ms separately from network sync latency. Test packet loss and restart on physical Android/iOS plus browser storage failure.
+
+## Implementation (24 November 2026)
+
+- Database (migration 019): `start_attempt`, `attempt_tick_sections`, `finish_attempt`, `finalize_expired_attempts`, `attempt_paper`, `attempt_image`; per-attempt section windows; append-only event log; answers writable only through the API inside an open window. Finalizer runs every 30 s with a 30 s grace.
+- Engine (`packages/engine`): reducer (go, select, clear, mark, save-next, mark-next, tick, sections), palette and counts, server-offset countdown, scoring in hundredths.
+- Web player (`apps/web/src/features/attempt`): instructions with acceptance, then the player. Each change is written to IndexedDB (`mmp-attempts`) in one transaction before the status says saved; without IndexedDB it keeps answers in memory and warns. Events go out every 5 s with jitter when there are changes, a heartbeat every 30 s, backoff to 60 s offline, immediately on reconnect, on leaving the page and on submit. Gap or conflict reloads the server state and re-sends what differs. One tab writes (Web Locks; "use this tab" steals the lock); another device gets a takeover screen that says how many unsent changes will be discarded. Timers use the server offset on the monotonic clock; a section closes on the clock and the server opens the next. Time up submits automatically; an offline submit stays pending and retries. Language toggle, text size, watermark, focus-lost events, leave-page warning, score summary from the server only.
+- Mobile player (`apps/mobile/app/attempt/[id]`): same protocol; each change committed to SQLite (expo-sqlite key-value store) before "saved on this phone"; NetInfo reconnect and app foreground trigger a sync, backgrounding sends a focus-lost event; a restart re-anchors time from the server; takeover screen for another device; leave guard; server score summary. Math shows as readable text (fractions, roots, powers, symbols) until a typeset renderer is added.
+- Not yet: results and solutions review (M8); real-device process-kill and packet-loss evidence.

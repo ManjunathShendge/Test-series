@@ -40,7 +40,7 @@ import {
 import { authoringAssetsRepository as assetRepo } from '../repositories/authoring-assets.repository.js';
 import { ObjectStorage } from '../../../providers/storage/object-storage.js';
 import { ClamAvScanner } from '../../../providers/antivirus/clamav-scanner.js';
-import { contentIssues, questionContentIssues } from '../domain/question-content.js';
+import { contentIssues, normalizeQuestion, questionContentIssues } from '../domain/question-content.js';
 
 const iso = (value: Date | null) => (value ? value.toISOString() : null);
 
@@ -108,7 +108,14 @@ export class AuthoringService {
     @Inject(ENVIRONMENT) private readonly env: Environment,
   ) {
     this.storage = new ObjectStorage(this.env);
-    this.scanner = new ClamAvScanner(this.env.ANTIVIRUS_HOST, this.env.ANTIVIRUS_PORT);
+    // Local/test default to the Compose scanner (pnpm services:up), as storage does, so an
+    // older .env without these keys does not silently refuse every upload. Deployed
+    // environments must configure them (config/env.ts).
+    const localScanner = this.env.APP_ENV === 'local' || this.env.APP_ENV === 'test';
+    this.scanner = new ClamAvScanner(
+      this.env.ANTIVIRUS_HOST ?? (localScanner ? '127.0.0.1' : undefined),
+      this.env.ANTIVIRUS_PORT ?? (localScanner ? 13310 : undefined),
+    );
   }
 
   async authoringOptions(identity: VerifiedIdentity): Promise<ExaminerAuthoringOptions> {
@@ -343,8 +350,16 @@ export class AuthoringService {
       identity.email,
       identity.name,
     );
+    // TDS certificates and payout files are uploaded by finance only (PRD 4.4, PAYMENTS.md).
+    if (
+      req.classification === 'payout_document' &&
+      !(await withUser(this.db, ownerId, (client) => repo.isFinanceAdmin(client, ownerId)))
+    )
+      throw new ApiError(403, 'FORBIDDEN', 'Only finance admins upload payout documents.');
     const bucket =
-      req.classification === 'examiner_kyc'
+      req.classification === 'payout_document'
+        ? 'payout-documents'
+        : req.classification === 'examiner_kyc'
         ? 'examiner-kyc'
         : req.classification === 'question_asset' || req.classification === 'import_archive'
           ? 'question-assets'
@@ -354,6 +369,7 @@ export class AuthoringService {
       question_asset: 10 * 1024 * 1024,
       examiner_kyc: 10 * 1024 * 1024,
       import_archive: 20 * 1024 * 1024,
+      payout_document: 10 * 1024 * 1024,
     };
     if (req.sizeBytes > limits[req.classification]) {
       throw new ApiError(
@@ -366,6 +382,7 @@ export class AuthoringService {
       ['public_media', ['image/jpeg', 'image/png', 'image/webp']],
       ['question_asset', ['image/jpeg', 'image/png', 'image/webp']],
       ['examiner_kyc', ['image/jpeg', 'image/png', 'application/pdf']],
+      ['payout_document', ['application/pdf']],
       [
         'import_archive',
         ['application/zip', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
@@ -386,7 +403,7 @@ export class AuthoringService {
         assetId,
         ownerId,
         req.classification,
-        req.classification === 'examiner_kyc'
+        req.classification === 'examiner_kyc' || req.classification === 'payout_document'
           ? 'staff'
           : req.classification === 'public_media'
             ? 'public'
@@ -1388,41 +1405,13 @@ export class AuthoringService {
     };
   }
 
-  private normalizeText(value: string): string {
-    return value
-      .normalize('NFKC')
-      .replace(/[\u200B-\u200D\uFEFF]/g, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .toLowerCase();
-  }
-
+  /** Shared with reviewer edits; see domain/question-content.ts. */
   private normalizeQuestion(
     stemEn: string,
     stemHi: string | undefined,
     options: { id: 'A' | 'B' | 'C' | 'D'; textEn: string; textHi?: string | undefined }[],
   ) {
-    const normStemEn = this.normalizeText(stemEn);
-    const normStemHi = stemHi ? this.normalizeText(stemHi) : null;
-    const sortedOptions = [...options]
-      .sort((a, b) => a.id.localeCompare(b.id))
-      .map((option) => this.normalizeText(option.textEn));
-    const canonical = JSON.stringify({ stem: normStemEn, options: sortedOptions });
-    const textHash = createHash('sha256').update(canonical).digest('hex');
-    const maskedStem = normStemEn
-      .replace(/\b\d+(?:[,.]\d+)*(?:%|\/\d+)?\b/g, '<NUMBER>')
-      .replace(/₹|rs\.?/gi, '<CURRENCY>');
-    const maskedHash = createHash('sha256')
-      .update(
-        JSON.stringify({
-          stem: maskedStem,
-          options: sortedOptions.map((option) =>
-            option.replace(/\b\d+(?:[,.]\d+)*\b/g, '<NUMBER>'),
-          ),
-        }),
-      )
-      .digest('hex');
-    return { stemEn: normStemEn, stemHi: normStemHi, textHash, maskedHash };
+    return normalizeQuestion(stemEn, stemHi, options);
   }
 
   private matchesMimeType(bytes: Buffer, mimeType: string): boolean {

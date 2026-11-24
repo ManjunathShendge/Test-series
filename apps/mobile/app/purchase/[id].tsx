@@ -4,7 +4,7 @@ import { Linking, Share, StyleSheet, View } from 'react-native';
 import { refundEligibility, REFUND_WINDOW_DAYS, splitGst, GST_RATE_PERCENT, getSeries, getTest } from '@/lib/demo';
 import { formatDate, formatPaise } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
-import { useAttemptStore } from '@/lib/store/attempt';
+import { useMyAttempts } from '@/features/attempt/queries';
 import { Button, Card, Chip, Icon, Screen, StateView, Text, TextField } from '@/ui/primitives';
 import { colors, space } from '@/ui/tokens';
 
@@ -24,7 +24,7 @@ export default function PurchaseDetailScreen() {
   const purchase = useAppStore((s) => s.purchases.find((p) => p.id === id));
   const profile = useAppStore((s) => s.profile);
   const attempted = useAppStore((s) => s.attemptedTestIds);
-  const liveTestId = useAttemptStore((s) => (s.status === 'in_progress' ? s.test?.id ?? null : null));
+  const myAttempts = useMyAttempts().data;
   const requestRefund = useAppStore((s) => s.requestRefund);
 
   const [refundOpen, setRefundOpen] = useState(false);
@@ -47,7 +47,8 @@ export default function PurchaseDetailScreen() {
   const gstPaise = purchase.gstPaise ?? splitGst(purchase.amountPaise).gstPaise;
   const basePaise = purchase.amountPaise - gstPaise;
   const listPaise = purchase.amountPaise + (purchase.discountPaise ?? 0);
-  const started = liveTestId ? [...attempted, liveTestId] : attempted;
+  // Refund policy counts any started test, including ones still running.
+  const started = [...attempted, ...(myAttempts ?? []).map((x) => x.testId)];
   const eligibility = refundEligibility(purchase, started, Date.now());
   const item = purchase.kind === 'test' ? getTest(purchase.itemId) : getSeries(purchase.itemId);
 

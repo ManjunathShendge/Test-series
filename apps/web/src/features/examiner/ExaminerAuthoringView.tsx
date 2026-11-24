@@ -16,8 +16,10 @@ import { Alert } from '@/features/auth/ui';
 import { isCode, LoadGate, State, messageOf, useLoad } from '@/features/admin/ui';
 import { RichText } from '@/ui/patterns/RichText';
 import { ImageList } from './ImageList';
+import { PageHead, useExaminer } from './ExaminerShell';
 import { uploadExaminerFile } from './upload';
 import styles from '@/features/admin/admin.module.css';
+import shell from './examiner.module.css';
 
 type QuestionFormData = Omit<DraftQuestionInput, 'expectedRevision'>;
 
@@ -62,112 +64,80 @@ function questionForm(question: DraftQuestion): QuestionFormData {
   };
 }
 
-export function ExaminerAuthoringView() {
-  const { state, reload } = useLoad(async () => {
-    const [options, application] = await Promise.all([
-      adminApi.examinerOptions(),
-      adminApi.examinerApplication(),
-    ]);
-    return { options, application };
-  }, []);
+/** Question bank page: write or revise drafts and browse your own bank. */
+export function QuestionsView() {
+  const { assigned } = useExaminer();
   const [editing, setEditing] = useState<BankQuestion | null>(null);
   const [newFormKey, setNewFormKey] = useState(0);
   const [savedVersion, setSavedVersion] = useState<number | null>(null);
   const [bankKey, setBankKey] = useState(0);
-
+  const newQuestion = () => {
+    setEditing(null);
+    setNewFormKey((key) => key + 1);
+    setSavedVersion(null);
+  };
   return (
-    <LoadGate state={state} reload={() => void reload()} what="examiner workspace">
-      {({ options, application }) => {
-        if (!application || application.status !== 'approved') {
-          return (
-            <section className={styles.card}>
-              <h1>Question authoring</h1>
-              <p>
-                {application?.status === 'pending'
-                  ? 'Your application is awaiting human review. Draft authoring is enabled only after approval.'
-                  : application?.rejectionReason
-                    ? `Your application was not approved: ${application.rejectionReason}`
-                    : 'Submit an examiner application and ten sample questions to request access.'}
-              </p>
-              <Link className="btn btn-primary" href="/examiner/apply">
-                {application?.status === 'pending'
-                  ? 'View application'
-                  : 'Apply to become an examiner'}
-              </Link>
-            </section>
-          );
+    <div className={shell.stack}>
+      <PageHead
+        title="Question bank"
+        lead="Write and revise draft questions. QC review approves each question before students see it."
+        action={
+          <button type="button" className="btn btn-primary" onClick={newQuestion}>
+            New question
+          </button>
         }
-        const allowedExamIds = application.examIds;
-        // The API accepts only the approved application's exams and subjects; offer nothing else.
-        const assignedOptions: ExaminerAuthoringOptions = {
-          ...options,
-          exams: options.exams
-            .filter((exam) => allowedExamIds.includes(exam.id))
-            .map((exam) => ({
-              ...exam,
-              subjects: exam.subjects.filter((subject) =>
-                application.subjectIds.includes(subject.id),
-              ),
-            })),
-        };
-        const newQuestion = () => {
-          setEditing(null);
-          setNewFormKey((key) => key + 1);
-          setSavedVersion(null);
-        };
-        const saveQuestion = (saved: DraftQuestion) => {
+      />
+      {savedVersion !== null ? (
+        <p role="status" className={shell.uploadOk}>
+          Saved as draft version {savedVersion}. It is not yet approved or published.
+        </p>
+      ) : null}
+      <QuestionEditor
+        key={editing ? `${editing.id}-${editing.versionNumber}` : `new-${newFormKey}`}
+        options={assigned}
+        question={editing}
+        onSaved={(saved) => {
           setEditing(null);
           setNewFormKey((key) => key + 1);
           setBankKey((key) => key + 1);
           setSavedVersion(saved.versionNumber);
-        };
-        return (
+        }}
+        onConflict={() => {
+          setEditing(null);
+          setSavedVersion(null);
+          setNewFormKey((key) => key + 1);
+          setBankKey((key) => key + 1);
+        }}
+      />
+      <QuestionBank
+        options={assigned}
+        refreshKey={bankKey}
+        onOpen={(question) => {
+          setSavedVersion(null);
+          setEditing(question);
+          document.getElementById('question-editor')?.scrollIntoView({ block: 'start' });
+        }}
+      />
+    </div>
+  );
+}
+
+/** Bulk upload page: many questions from one workbook into the bank. */
+export function ImportsView() {
+  const { assigned } = useExaminer();
+  return (
+    <div className={shell.stack}>
+      <PageHead
+        title="Upload questions"
+        lead={
           <>
-            <div className={styles.pageHead}>
-              <div>
-                <h1>Question authoring</h1>
-                <p>
-                  Create and revise drafts. Human QC approval is separate from examiner approval.
-                </p>
-              </div>
-              <button type="button" className="btn btn-primary" onClick={newQuestion}>
-                New question
-              </button>
-            </div>
-            {savedVersion !== null ? (
-              <p role="status">
-                Saved as draft version {savedVersion}. It is not yet approved or published.
-              </p>
-            ) : null}
-            <QuestionEditor
-              key={editing ? `${editing.id}-${editing.versionNumber}` : `new-${newFormKey}`}
-              options={assignedOptions}
-              question={editing}
-              onSaved={saveQuestion}
-              onConflict={() => {
-                setEditing(null);
-                setSavedVersion(null);
-                setNewFormKey((key) => key + 1);
-                setBankKey((key) => key + 1);
-              }}
-            />
-            <ImportPanel
-              options={assignedOptions}
-              onCommitted={() => setBankKey((key) => key + 1)}
-            />
-            <QuestionBank
-              options={assignedOptions}
-              refreshKey={bankKey}
-              onOpen={(question) => {
-                setSavedVersion(null);
-                setEditing(question);
-                document.getElementById('question-editor')?.scrollIntoView({ block: 'start' });
-              }}
-            />
+            Add many questions to your bank from one workbook. To upload a whole test paper into a test, open the
+            test in <Link href="/examiner/tests">Tests</Link> and upload it there.
           </>
-        );
-      }}
-    </LoadGate>
+        }
+      />
+      <ImportPanel options={assigned} />
+    </div>
   );
 }
 
@@ -792,18 +762,26 @@ function QuestionEditor({
   );
 }
 
-function ImportPanel({
+/**
+ * Workbook upload: template download, upload, row-level preview and commit. With `fixed`, the
+ * exam, stage and template come from a test and `onCommitted` places the questions in it.
+ */
+export function ImportPanel({
   options,
+  fixed,
   onCommitted,
+  title = 'Import workbook',
 }: {
   options: ExaminerAuthoringOptions;
-  onCommitted: () => void;
+  fixed?: { examId: string; stageId: string; templateId: string; label: string };
+  onCommitted?: (result: { id: string; questionIds: string[] }) => Promise<void> | void;
+  title?: string;
 }) {
-  const [examId, setExamId] = useState(options.exams[0]?.id ?? '');
+  const [examId, setExamId] = useState(fixed?.examId ?? options.exams[0]?.id ?? '');
   const exam = options.exams.find((item) => item.id === examId);
-  const [stageId, setStageId] = useState(exam?.stages[0]?.id ?? '');
+  const [stageId, setStageId] = useState(fixed?.stageId ?? exam?.stages[0]?.id ?? '');
   const stage = exam?.stages.find((item) => item.id === stageId);
-  const [templateId, setTemplateId] = useState(stage?.templates[0]?.id ?? '');
+  const [templateId, setTemplateId] = useState(fixed?.templateId ?? stage?.templates[0]?.id ?? '');
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [committed, setCommitted] = useState<number | null>(null);
   const [error, setError] = useState<unknown>(null);
@@ -818,7 +796,7 @@ function ImportPanel({
     try {
       const blob = await adminApi.examinerImportTemplate({ examId, stageId, templateId });
       const template = stage?.templates.find((item) => item.id === templateId);
-      const name = `${exam?.name ?? 'exam'} ${template?.name ?? 'template'} v${template?.version ?? ''}`
+      const name = (fixed?.label ?? `${exam?.name ?? 'exam'} ${template?.name ?? 'template'} v${template?.version ?? ''}`)
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
@@ -871,9 +849,9 @@ function ImportPanel({
         manifestHash: preview.manifestHash,
         idempotencyKey: preview.idempotencyKey,
       });
+      await onCommitted?.(result);
       setPreview(null);
       setCommitted(result.questionIds.length);
-      onCommitted();
     } catch (caught) {
       setError(caught);
     } finally {
@@ -882,8 +860,8 @@ function ImportPanel({
   }
 
   return (
-    <section className={styles.card}>
-      <h2>Import workbook</h2>
+    <section className={`${styles.card} ${shell.section}`} aria-label={title}>
+      <h2>{title}</h2>
       <p>
         Upload an XLSX or ZIP (20 MB max). Add a Groups sheet for shared passages and include
         referenced JPEG, PNG or WebP files in the ZIP. Use safe relative paths in image_refs,
@@ -892,6 +870,10 @@ function ImportPanel({
       </p>
       {error ? <Alert>{error instanceof Error ? error.message : messageOf(error)}</Alert> : null}
       <div className={styles.inline}>
+        {fixed ? (
+          <p className={styles.helper}>Checked against {fixed.label}.</p>
+        ) : (
+        <>
         <label className={styles.field}>
           <span>Exam</span>
           <select
@@ -943,6 +925,8 @@ function ImportPanel({
             ))}
           </select>
         </label>
+        </>
+        )}
         <button
           type="button"
           className="btn btn-secondary"
@@ -969,8 +953,9 @@ function ImportPanel({
       {busy ? <p role="status">Uploading or validating…</p> : null}
       {committed !== null ? (
         <p role="status">
-          Imported {committed} draft question{committed === 1 ? '' : 's'}. They are in your bank
-          below and still need QC approval.
+          Imported {committed} draft question{committed === 1 ? '' : 's'}
+          {fixed ? ' and placed them in this test' : ' into your question bank'}. They still need QC
+          approval.
         </p>
       ) : null}
       {preview ? (

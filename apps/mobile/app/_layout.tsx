@@ -13,7 +13,6 @@ import { onAuthChange } from '@/lib/auth';
 import { missingConfig } from '@/lib/config';
 import { useAppStore } from '@/lib/store/app';
 import { resetLocalSession } from '@/lib/store/session';
-import { useAttemptStore } from '@/lib/store/attempt';
 import { useResultsStore } from '@/lib/store/results';
 import { useHydrated } from '@/lib/store/storage';
 import { Text } from '@/ui/primitives';
@@ -32,7 +31,7 @@ void SplashScreen.preventAutoHideAsync();
  * exit path (docs/TEST_ENGINE.md).
  */
 export default function RootLayout() {
-  const storesHydrated = useHydrated([useAppStore, useAttemptStore, useResultsStore]);
+  const storesHydrated = useHydrated([useAppStore, useResultsStore]);
   // Bundled with the JS, so this resolves offline. On a load error the app still starts
   // and React Native falls back to the system face.
   const [fontsLoaded, fontError] = useFonts({
@@ -48,16 +47,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!hydrated) return;
-    // Resume rules (PRD 6.4): an attempt that outlived its deadline while the
-    // app was closed is auto-submitted now; a live one restarts its clock.
-    const attempt = useAttemptStore.getState();
-    if (attempt.resume() === 'expired') {
-      const result = attempt.submit('deadline');
-      if (result) {
-        useResultsStore.getState().addResult(result);
-        useAppStore.getState().markAttempted(result.testId);
-      }
-    }
+    // Running attempts resume from the server (timer, answers); its finalizer closes expired ones.
     void SplashScreen.hideAsync();
   }, [hydrated]);
 
@@ -105,7 +95,8 @@ export default function RootLayout() {
         <Stack.Screen name="test/[id]/index" options={{ title: 'Test' }} />
         <Stack.Screen name="result/[attemptId]" options={{ title: 'Result' }} />
         <Stack.Screen name="test/[id]/instructions" options={{ title: 'Instructions' }} />
-        <Stack.Screen name="test/[id]/attempt" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="attempt/[id]/index" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="attempt/[id]/summary" options={{ title: 'Score' }} />
         <Stack.Screen name="profile/edit-exams" options={{ title: 'Target exams' }} />
         <Stack.Screen name="practice/[list]" options={{ title: 'Practice' }} />
         <Stack.Screen name="purchase/[id]" options={{ title: 'Purchase' }} />

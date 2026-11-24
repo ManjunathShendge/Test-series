@@ -3,7 +3,7 @@ import { revokeDevice } from '@/lib/api/identity';
 import { signOutOfFirebase } from '@/lib/auth';
 import { getDeviceId } from '@/lib/storage/device-id';
 import { useAppStore } from './app';
-import { useAttemptStore } from './attempt';
+import { clearAttempts } from '@/lib/storage/attempt-outbox';
 import { useResultsStore } from './results';
 
 /**
@@ -22,7 +22,7 @@ export async function signOutEverywhere(): Promise<void> {
 /** Clears local state only; used when Firebase reports no signed-in user. */
 export function resetLocalSession(): void {
   queryClient.clear();
-  useAttemptStore.getState().reset();
+  void clearAttempts();
   useResultsStore.getState().reset();
   useAppStore.getState().signOut();
 }

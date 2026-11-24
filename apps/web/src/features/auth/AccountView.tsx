@@ -9,6 +9,8 @@ import { listDevices, revokeDevice } from '@/lib/api/identity';
 import { Glyph } from '@/features/marketing/showcase/Glyph';
 import { useAuth } from './AuthProvider';
 import { DeviceRows } from './DeviceRows';
+import { PurchasesPanel } from '@/features/commerce/PurchasesPanel';
+import { AttemptsPanel } from '@/features/attempt/AttemptsPanel';
 import { RequireSession } from './RequireSession';
 import { Alert, BusyButton, Notice, Waiting } from './ui';
 import styles from './auth.module.css';
@@ -126,6 +128,9 @@ function Account({ profile }: { profile: Profile }) {
             Log out of this browser
           </BusyButton>
         </section>
+
+        <AttemptsPanel />
+        <PurchasesPanel />
       </div>
     </div>
   );

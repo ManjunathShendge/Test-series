@@ -223,7 +223,7 @@ export const ExaminerApplicationStatusResponse = z.object({ application: Examine
 export type ExaminerApplicationStatusResponse = z.infer<typeof ExaminerApplicationStatusResponse>;
 
 export const AssetUploadIntentRequest = z.strictObject({
-  classification: z.enum(['public_media', 'question_asset', 'examiner_kyc', 'import_archive']),
+  classification: z.enum(['public_media', 'question_asset', 'examiner_kyc', 'import_archive', 'payout_document']),
   filename: z.string().trim().min(1).max(255),
   mimeType: z.enum([
     'image/jpeg',

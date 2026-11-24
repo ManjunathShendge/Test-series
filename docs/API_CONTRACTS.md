@@ -32,11 +32,14 @@ Authenticated requests carry Firebase bearer token, registered device/session pr
 | POST /qc/reviews/:id/verdicts | Assigned reviewer | Expected version, action/reason, audit |
 | POST /qc/reviews/:id/complete | Assigned reviewer | All questions approved or change request |
 | POST /tests/:id/publish | Authorized publication service/staff | Approval and artifact gate |
-| POST /attempts | Student | testId, mode, instructionsAccepted; idempotent start |
-| GET /attempts/:id | Owner | Canonical state, clock, cursor, paper URL refresh |
-| POST /attempts/:id/takeover | Owner + current device | New session epoch, prior lease invalidation |
-| PUT /attempts/:id/answers | Attempt owner/session | Contiguous batch; see TEST_ENGINE |
-| POST /attempts/:id/submit | Attempt owner/session | Final batch + closure in transaction |
+| POST /attempts | Student | testId, instructionsAccepted; entitlement checked; returns state + session token, or {attemptId, resume} when one is running (409 ATTEMPT_IN_PROGRESS for another test, 403 NOT_ENTITLED) |
+| GET /me/attempts | Student | Own attempts, newest first |
+| GET /attempts/:id | Owner + x-attempt-session while running | Canonical state: server time, deadline, section windows, answers, cursor, epoch, ack; 409 SESSION_REPLACED without the current token |
+| POST /attempts/:id/takeover | Owner | New token, epoch + 1, ack reset; the old session gets SESSION_REPLACED |
+| GET /attempts/:id/paper, /images/:assetId | Owner | Questions without keys or solutions; images by short-lived signed link |
+| POST /attempts/:id/sync | Owner + session | {epoch, lastAckSeq, events ≤200}; contiguous seq, replay no-op, SYNC_GAP / SYNC_CONFLICT; late events acknowledged as rejected with a reason |
+| POST /attempts/:id/submit | Owner + session | Final batch and close in one transaction; idempotent, returns the summary |
+| GET /attempts/:id/summary | Owner | Server score, rank (first attempts), percentile, sections, late events |
 | GET /attempts/:id/results, /review | Owner | Terminal/result-release gate, solutions only in review |
 | GET /me/progress, /me/mistakes, /me/bookmarks | Student | Authorized own history and aggregates |
 | PUT/DELETE /me/bookmarks/:questionId | Student | Must have review access |
@@ -51,6 +54,18 @@ Authenticated requests carry Firebase bearer token, registered device/session pr
 | Admin CRUD /exams,/templates,/reviewers,/examiners,/banners,/settings | Explicit permission | Version check, ownership/capability and audit |
 
 Implemented 22 November 2026 (`packages/contracts/src/catalogue`): `GET /v1/exams`, `/v1/exams/:id`, `/v1/tests` (query `exam`, `examiner`, `type`, `access`, `featured`, `q`, `cursor`, `limit` 1-50, default 20; unknown fields rejected), `/v1/tests/:id`, `/v1/series/:id`, `/v1/examiners/:id`. Exam, test and series ids accept the UUID or the slug; examiner ids are UUIDs. Live tests of active exams by approved examiners only; no questions, keys or solutions; `Cache-Control: public, max-age=60, stale-while-revalidate=300`. Per-student fields (owned, attempted, followed) arrive with authenticated variants in later milestones.
+
+Implemented 24 November 2026 (`packages/contracts/src/qc`, `authoring/examiner-tests.ts`):
+- Examiner: `POST /v1/examiner/tests/:id/precheck` now returns policy `issues` (block or warn, PRD 5.1) and `patternFit`; `submit` runs Stage 1 and routes to a reviewer; `POST /tests/:id/use-latest-versions`; access `free | paid | pass_included | series_only` with `includedInPass`, paid prices inside the exam band for the examiner's tier; `GET /examiner/quality`, `GET /examiner/reports`, `POST /examiner/reports/:id/response`.
+- Reviewer (`qc_reviewer` or ops admin; assignment checked): `GET /v1/qc/queue`, `GET /qc/reviews/:id`, `PUT /qc/reviews/:id/items/:itemId` (approve needs the five-item checklist; change/reject need reason and comment), `POST /qc/reviews/:id/finish`, `POST /qc/reviews/:id/spot-check`, `GET /qc/reviews/:id/images/:assetId`, `GET /qc/reports`, `POST /qc/reports/:id/resolve`.
+- Admin (ops): `GET /v1/admin/qc`, `POST /admin/qc/reviewers`, `DELETE /admin/qc/reviewers/:id`, `POST /admin/qc/reviewers/:id/exams`, `DELETE /admin/qc/mappings/:id`, `PATCH /admin/qc/reviews/:id/assign`, `POST /admin/qc/spot-checks`, `PUT /admin/qc/settings/:examId` (version-checked), `GET /admin/examiners`, `PATCH /admin/examiners/:id` (tier, status, KYC verified; reason audited).
+
+Implemented 24 November 2026 (`packages/contracts/src/commerce`, `qc`):
+- Student: `GET /v1/me/ownership?itemType&itemId`, `GET /me/purchases`, `POST /orders/quote` (price with coupon, nothing stored), `POST /orders` (Razorpay order; public key id only), `POST /orders/:id/verify` (signature, then the payment is fetched and must be captured for the exact amount). `POST /webhooks/razorpay` verifies `x-razorpay-signature` over the raw body. Without keys: 503 `PAYMENTS_NOT_CONFIGURED`. Errors: `ALREADY_OWNED`, `COUPON_INVALID`, `PAYMENT_NOT_VERIFIED`, `PAYMENT_REJECTED`, `PAYMENT_PROVIDER_UNAVAILABLE`.
+- Examiner: `GET /v1/examiner/sales?days=7-365`, `GET /examiner/earnings`, `GET /examiner/earnings/:id/statement` (CSV), `GET /examiner/earnings/:id/tds-certificate`, `GET /examiner/coupons`. `PATCH /examiner/tests/:id` accepts `scheduledPublishAt`.
+- Examiner series: `POST /v1/examiner/series/:id/publish`, `POST /examiner/series/:id/unpublish` (body `expectedUpdatedAt`); publish needs one live test; `ExaminerSeries.liveTestCount`.
+- Reviewer: `PUT /v1/qc/reviews/:id/items/:itemId/edit` (minor edit), `POST /qc/reports/:id/correct-key`.
+- Admin (ops): `GET /v1/admin/pricing`, `POST /admin/coupons`, `PATCH /admin/coupons/:id`, `PUT /admin/price-bands/:examId` (version-checked), `GET /admin/students?q`, `GET /admin/students/:id`, `PATCH /admin/students/:id` (block, reason audited), `POST /admin/students/:id/grants`, `POST /admin/purchases/:id/refund` (`REFUND_NOT_ALLOWED` outside policy). Admin (finance): `GET /admin/payouts?month`, `GET /admin/payouts/export?month`, `POST /admin/payouts/calculate`, `POST /admin/payouts/:id` (`approve`, `hold`, `release`, `mark_paid`, `attach_tds`; version-checked).
 
 Paths above describe resource families; define exact single-resource PATCH routes in contracts during their milestone. No implicit catch-all admin mutation endpoint.
 

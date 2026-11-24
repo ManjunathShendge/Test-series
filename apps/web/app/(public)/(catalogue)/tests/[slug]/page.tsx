@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { TestDetail } from '@exam-prep/contracts';
 import { catalogue } from '@/lib/api/catalogue';
 import { formatCount, formatDuration, formatMarks, formatPrice, LANGUAGE_LABEL, TEST_TYPE_LABEL } from '@/features/catalogue/format';
 import { ExaminerLink, Facts, PageHero, SectionHead, SectionTable, TestGrid } from '@/features/catalogue/parts';
 import { Glyph } from '@/features/marketing/showcase/Glyph';
+import { testRules } from '@/features/catalogue/rules';
+import { BuyPanel } from '@/features/commerce/BuyPanel';
 import styles from '@/features/catalogue/catalogue.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -23,36 +24,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-/** Rules derived from the test's own sections; nothing here is invented copy. */
-function rules(test: TestDetail): string[] {
-  const out: string[] = [];
-  const marking = [...new Set(test.sections.map((s) => `${formatMarks(s.positiveMarks)}|${formatMarks(s.negativeMarks)}`))];
-  if (marking.length === 1 && test.sections[0]) {
-    const s = test.sections[0];
-    out.push(
-      `Each correct answer earns ${formatMarks(s.positiveMarks)} mark${s.positiveMarks === 1 ? '' : 's'}. ${
-        s.negativeMarks ? `${formatMarks(s.negativeMarks)} is deducted for a wrong answer.` : 'There is no negative marking.'
-      } Unanswered questions score zero.`,
-    );
-  } else {
-    out.push('Marks per question differ by section; see the table above. Unanswered questions score zero.');
-  }
-  out.push(
-    test.sections.some((s) => s.durationSeconds !== null)
-      ? 'Each section has its own timer. When it ends, the section locks and the next one opens.'
-      : `You can move between sections freely within the ${formatDuration(test.durationSeconds)}.`,
-  );
-  out.push('The paper submits automatically when time runs out.');
-  if (test.languages.length > 1) out.push('Switch between English and Hindi at any time without losing your answers.');
-  return out;
-}
-
 export default async function TestPage({ params }: Props) {
   const { slug } = await params;
   const test = await catalogue.test(slug);
   const more = (await catalogue.tests({ exam: test.exam.slug, limit: 4 })).items.filter((t) => t.id !== test.id).slice(0, 3);
   const free = test.pricePaise === 0;
-  const signIn = `/sign-in?next=${encodeURIComponent(`/tests/${test.slug}`)}`;
+  // The start page asks visitors to sign in first and brings them back.
+  const start = `/attempt/start/${test.slug}`;
 
   return (
     <>
@@ -82,9 +60,13 @@ export default async function TestPage({ params }: Props) {
                 <Glyph name="check" size={16} /> Rank and section analysis
               </li>
             </ul>
-            <Link href={signIn} className="btn btn-primary btn-lg btn-full">
-              {free ? 'Start free test' : 'Sign in to buy'} <Glyph name="arrow" size={18} />
-            </Link>
+            {free ? (
+              <Link href={start} className="btn btn-primary btn-lg btn-full">
+                Start free test <Glyph name="arrow" size={18} />
+              </Link>
+            ) : (
+              <BuyPanel item={{ itemType: 'single_test', itemId: test.id, path: `/tests/${test.slug}`, title: test.title }} />
+            )}
             <p className={styles.note}>
               {free ? 'Sign in with email or Google. No payment needed.' : 'You can see the full pattern before you buy.'}
             </p>
@@ -117,7 +99,7 @@ export default async function TestPage({ params }: Props) {
               <SectionHead id="rules-title" eyebrow="Before you start" title="How this test works" />
               <div className="card">
                 <ul className={styles.checks}>
-                  {rules(test).map((r) => (
+                  {testRules(test).map((r) => (
                     <li key={r}>
                       <Glyph name="check" size={16} /> {r}
                     </li>
