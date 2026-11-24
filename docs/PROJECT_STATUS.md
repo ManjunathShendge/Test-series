@@ -1,6 +1,6 @@
 # Project status
 
-Date: 24 November 2026.
+Date: 25 November 2026.
 
 ## Completed
 
@@ -11,9 +11,24 @@ Date: 24 November 2026.
 
 ## Implementation state
 
-The development foundation runs on PostgreSQL 17 (Docker locally and in CI; Supabase Mumbai for staging, owner decision 18 November 2026). Identity, catalogue, and examiner-authoring API slices now use the database; staging has the baseline schema and restricted roles. Mobile email sign-in/profile/device flows use the API, and the Home, Discover, exam, test, series, and examiner catalogue surfaces now use catalogue API hooks instead of demo catalogue reads. Demo attempt, result, purchase and profile-history data remain for milestones not yet implemented. M3 authoring, malware scanning, and staff KYC downloads are implemented; full browser acceptance, real archive checkout, owner/legal KYC policy and production scanner remain open. Later domain contracts, attempt, results, billing, and launch milestones remain incomplete.
+Built and on `main` (CI green: lint, typecheck, unit, database and API integration, smoke, image builds, secret scan). PostgreSQL 17 (Docker locally and in CI; Supabase Mumbai for staging), schema version 26.
+
+- Students (web and app): sign-in (Google, email), device limit, catalogue, follows, banners, timed test player with durable answers, results, solutions after close, progress, saved questions, notifications, data export and account deletion. No demo data remains.
+- Buying: Razorpay web checkout, webhook, ledger, entitlements, refunds, invoices. App store billing is the client's work (STORE_RELEASE); the app shows paid items as "Available soon" until then.
+- Examiners (web): application, KYC, authoring and import, QC submission, earnings, payouts.
+- QC reviewers (web): review queue and checklist, reports, key corrections, scheduled publishing, advisory AI checks (off until `LLM_API_KEY` is set and an admin enables them per exam).
+- Admin (web): catalogue moderation, CMS banners, reports with CSV, audit log, money, students, QC settings.
+- Platform: worker with outbox jobs; every provider optional and switched on by its env key (HANDOVER); start-up key checks; rate limits and security headers; per-row database rules.
+
+Open (see HANDOVER and LAUNCH_CHECKLIST): confirm in the Supabase dashboard that the Data API is disabled; M3 browser acceptance (synthetic test sign-in); server-side store purchase verification after the store product decision; Sign in with Apple; owner decisions O01-O12; legal and CA review; production hosting, backups, monitoring, load test and closed beta.
 
 ## Log
+
+## 25 November 2026: staging migrated, AI adapter fixed for current models, CI actions updated
+- Supabase staging: migrations 009-026 applied in one transaction with verified TLS (it was at 008). Checked afterwards: schema version 26, API and worker roles pass readiness, every table has row-level security, the new device rules are active, existing staging data intact (4 profiles, 3 exams, 11 tests), Supabase `anon`/`authenticated` have no table access. They can execute functions granted to PUBLIC: extension helpers, trigger functions, Supabase's own `rls_auto_enable` and `has_role` (false without a signed-in app user); every sensitive function is revoked from PUBLIC in its migration.
+- AI adapter: current Claude models reject `temperature` (every check would have come back unavailable) and think before answering, so the adapter now sends no sampling parameters, a low effort and room for thinking (2,000 output tokens), and records a model refusal as "AI declined to check this question". Default model `claude-opus-5` at $5/$25 per million tokens; `claude-sonnet-5` ($2/$10) is the cheaper option. Correction: `claude-sonnet-5` is a valid model ID; the earlier note calling it invalid was wrong. Switching the adapter to the official Anthropic SDK needs owner approval to add the package.
+- CI: actions/checkout v7, actions/setup-node v7, pnpm/action-setup v6 (Node 24 runtime; inputs unchanged).
+- Checks: AI unit tests incl. a request-shape test (no sampling parameters, key only in the header), C5 database check 18/18, staging verification above.
 
 ## 24 November 2026: database integration tests brought up to date
 - CI had not passed since M2: 11 of 41 `packages/db` integration tests still described pre-M7 behaviour and were not part of the local checks run for C1-C6. No product code changed; every failure was a stale test:

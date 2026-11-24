@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import type { Database } from '@exam-prep/db';
-import { LlmTransientError, type AnthropicLlm } from '../providers/llm/anthropic.js';
+import { LlmRefusalError, LlmTransientError, type AnthropicLlm } from '../providers/llm/anthropic.js';
 import { enqueue, PermanentJobError, type JobHandler } from './runner.js';
 
 /**
@@ -13,7 +13,8 @@ import { enqueue, PermanentJobError, type JobHandler } from './runner.js';
 
 export const PROMPT_VERSION = 1;
 export type AiCheck = 'answer' | 'ambiguity' | 'language';
-const MAX_OUTPUT_TOKENS = 400;
+// Room for the model's (low-effort) thinking plus the short JSON reply; reserved at the output price.
+const MAX_OUTPUT_TOKENS = 2000;
 const NOTE_MAX = 300;
 
 export interface AiDeps {
@@ -195,7 +196,12 @@ export function checkQuestionHandler(deps: AiDeps): JobHandler {
       try {
         reply = await llm.complete(SYSTEM, userText, MAX_OUTPUT_TOKENS);
       } catch (error) {
-        reason = error instanceof LlmTransientError ? 'AI provider busy or unreachable' : 'AI provider refused the request';
+        reason =
+          error instanceof LlmTransientError
+            ? 'AI provider busy or unreachable'
+            : error instanceof LlmRefusalError
+              ? 'AI declined to check this question'
+              : 'AI provider refused the request';
         if (!(error instanceof LlmTransientError)) break;
         await new Promise((r) => setTimeout(r, 2000));
       }
