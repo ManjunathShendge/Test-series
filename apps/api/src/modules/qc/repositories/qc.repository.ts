@@ -112,7 +112,20 @@ const QUEUE_SELECT = `
 /** Fast lane (Top tier) first, then flag count, then SLA deadline (PRD 5.3.1, 5.5). */
 const QUEUE_ORDER = `ORDER BY (ep.tier='top') DESC, rv.flag_count DESC, rv.sla_deadline_at ASC`;
 
+export interface AiSuggestionJson {
+  status: 'ok' | 'unavailable';
+  checks: ('answer' | 'ambiguity' | 'language')[];
+  selected_option: string | null;
+  matches_key: boolean | null;
+  ambiguity_note: string | null;
+  language_note: string | null;
+  unavailable_reason: string | null;
+  model: string;
+  created_at: string;
+}
+
 export interface ReviewQuestionRow {
+  ai_suggestion: AiSuggestionJson | null;
   item_id: string;
   section_name: string | null;
   display_order: number | null;
@@ -406,7 +419,8 @@ export const qcRepository = {
               oq.version_number AS edited_from_version,
               r.carried_over,r.reviewer_action::text AS reviewer_action,r.reason_code,r.reviewer_comment,
               r.checklist_key_matches_solution,r.checklist_single_defensible_option,r.checklist_bilingual_match,
-              r.checklist_in_syllabus,r.checklist_no_watermarks
+              r.checklist_in_syllabus,r.checklist_no_watermarks,
+              CASE WHEN ai.status IS NULL THEN NULL ELSE to_jsonb(ai) END AS ai_suggestion
          FROM qc_question_reviews r
          JOIN qc_reviews rv ON rv.id=r.qc_review_id
          JOIN questions q ON q.id=r.question_id
@@ -420,6 +434,11 @@ export const qcRepository = {
          LEFT JOIN questions mq ON mq.id=r.matched_question_id
          LEFT JOIN profiles mp ON mp.id=mq.examiner_id
          LEFT JOIN questions oq ON oq.id=r.original_question_id
+         LEFT JOIN LATERAL (
+           SELECT s.status,s.checks,s.selected_option,s.matches_key,s.ambiguity_note,s.language_note,
+                  s.unavailable_reason,s.model,s.created_at
+             FROM ai_suggestions s WHERE s.question_id=q.id AND s.question_version=q.version_number
+            ORDER BY s.created_at DESC LIMIT 1) ai ON true
         WHERE r.qc_review_id=$1
         ORDER BY r.display_order NULLS LAST`,
       [reviewId],

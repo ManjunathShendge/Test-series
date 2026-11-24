@@ -15,6 +15,13 @@ The development foundation runs on PostgreSQL 17 (Docker locally and in CI; Supa
 
 ## Log
 
+## 24 November 2026: C5 AI assistance for reviewers (M6)
+- Database (025): per-exam AI switches off by default (plus a Hindi/English check), append-only `ai_suggestions`, monthly spend ledger, cache readable only by admins, trigger that queues checks when a test enters QC.
+- Worker: Anthropic adapter behind `LLM_API_KEY` (model, prices and monthly cap in `.env.example`); per-question jobs with blind answer, ambiguity and language checks; key and solution never sent; output validated and bounded; exact-input cache; atomic cost reservation against the cap; failures recorded as "AI check unavailable". Details in QC_PIPELINE "Implementation (C5)".
+- Web: AI switches on the admin exam page; advisory AI panel on each question in the reviewer page (blind pick vs key, notes, or unavailable reason). AI never changes a question or verdict.
+- Checks: rolled-back worker script against the real database with a fake model (19 passed: off by default, QC entry queues once, nothing sent with switches off, one call and record per question, no key or solution in any prompt, server key comparison, language check only for bilingual questions, spend settles to actual cost, repeat skipped, cache hit at zero cost, unusable reply, busy provider retried once, budget cap stops calls, reservations released, content and test unchanged, append-only, reviewers read but students cannot read or write); reviewer query returns the latest suggestion; unit tests for prompt input, cache key and reply parsing. Found and fixed: notes for checks not asked for were being stored.
+- Needs from the owner: an Anthropic API key with suitable data terms, and switching the checks on per exam.
+
 ## 24 November 2026: C4 admin operations (M11)
 - Database (024): banner placement, schedule window, https image and safe-link checks, visitor/admin policies; audit log readable by admins only and appendable only in the actor's own name.
 - API (`/admin/ops`, ops or super admins): catalogue list with feature/unfeature (free published tests; published series) and unpublish (tests archive for good; series can be republished), reasons kept in the audit log; banner CRUD and public GET /banners for web and app; reports (sales, refunds, channels, students, attempts, QC turnaround, open reports, top tests, daily series) with sales/attempts/daily CSV exports (formula cells neutralised, each download audited); audit log with filters, changed fields and before/after values, keyset paging. New error code INVALID_STATE.

@@ -78,6 +78,14 @@ const schema = z
     // Firebase service account JSON (one line, or base64 of it): lets the worker delete the
     // sign-in identity of a deleted account. Without it the identity is left for manual removal.
     FIREBASE_SERVICE_ACCOUNT_JSON: blankAsUnset(z.string().trim().min(20).optional()),
+    // AI suggestions for QC reviewers (QC_PIPELINE "AI boundary"). Off without a key; also off
+    // per exam until an admin enables it. Prices are USD per million tokens: check the
+    // provider's current price list for the chosen model before launch.
+    LLM_API_KEY: blankAsUnset(z.string().trim().min(20).optional()),
+    LLM_MODEL: z.string().trim().min(3).max(100).default('claude-sonnet-5'),
+    LLM_PRICE_INPUT_PER_MTOK_USD: z.coerce.number().min(0).max(1000).default(3),
+    LLM_PRICE_OUTPUT_PER_MTOK_USD: z.coerce.number().min(0).max(1000).default(15),
+    AI_MONTHLY_CAP_USD: z.coerce.number().min(0).max(100_000).default(25),
   })
   .superRefine((env, ctx) => {
     const deployed =

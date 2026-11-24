@@ -84,6 +84,7 @@ function Details({
       lastCutoff: exam.lastCutoffScore === null ? '' : String(exam.lastCutoffScore),
       dates: exam.importantDates,
       cutoffs: exam.previousCutoffs.map((c) => ({ label: c.label, score: String(c.score) })),
+      ai: exam.aiChecks,
     }),
     [exam],
   );
@@ -132,6 +133,7 @@ function Details({
         lastCutoffScore: lastCutoff === null ? null : Math.round(lastCutoff * 100) / 100,
         importantDates: dates.map((d) => ({ label: d.label.trim(), date: d.date })),
         previousCutoffs: cutoffs,
+        aiChecks: form.ai,
       });
       onChange(next);
       setSaved(true);
@@ -192,6 +194,26 @@ function Details({
         <p id="exam-active-help" className={styles.helper} style={{ marginTop: '-12px' }}>
           {hasPublished ? 'Students see the exam page and its live tests.' : 'Publish a template first; the exam page shows its pattern.'}
         </p>
+
+        <fieldset className={styles.field} aria-describedby="exam-ai-help">
+          <legend className={styles.label}>AI suggestions for QC reviewers</legend>
+          <p id="exam-ai-help" className={styles.helper}>
+            Advisory only: AI never approves, rejects or edits a question. It never sees the answer key. Runs when a test enters QC and only
+            when the server has an AI key.
+          </p>
+          {(
+            [
+              ['answer', 'Blind answer check (flags a possible wrong key; skipped for questions with figures)'],
+              ['ambiguity', 'Ambiguity check (more than one or no defensible option)'],
+              ['language', 'Hindi and English equivalence (bilingual questions)'],
+            ] as const
+          ).map(([key, label]) => (
+            <label key={key} className={styles.check}>
+              <input type="checkbox" checked={form.ai[key]} onChange={(e) => field('ai', { ...form.ai, [key]: e.target.checked })} />
+              {label}
+            </label>
+          ))}
+        </fieldset>
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="exam-syllabus">Syllabus</label>

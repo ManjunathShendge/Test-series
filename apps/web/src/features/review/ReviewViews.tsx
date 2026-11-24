@@ -9,6 +9,7 @@ import {
   QC_REASON_LABELS,
   QcReasonCode,
   REPORT_REASON_LABELS,
+  type AiSuggestion,
   type QcAction,
   type QcChecklist,
   type QcQueueItem,
@@ -354,6 +355,8 @@ function QuestionCard({
         <RichText text={question.solutionEn} lang="en" />
         {question.solutionHi ? <RichText text={question.solutionHi} lang="hi" /> : null}
       </div>
+
+      {question.aiSuggestion ? <AiPanel ai={question.aiSuggestion} correct={question.correctOption} /> : null}
 
       {question.match ? (
         <div className={styles.compare}>
@@ -909,3 +912,35 @@ function CorrectKey({ report, onDone }: { report: QuestionReport; onDone: (items
     </fieldset>
   );
 }
+
+/** Advisory AI suggestion (QC_PIPELINE "AI boundary"); the reviewer decides. */
+function AiPanel({ ai, correct }: { ai: AiSuggestion; correct: string }) {
+  if (ai.status === 'unavailable') {
+    return (
+      <p className={styles.aiNote} role="note">
+        <b>AI check unavailable</b> · {ai.unavailableReason ?? 'Review as usual.'}
+      </p>
+    );
+  }
+  const answered = ai.checks.includes('answer');
+  return (
+    <div className={`${styles.aiNote} ${ai.matchesKey === false ? styles.aiWarn : ''}`} role="note" aria-label="AI suggestion">
+      <p>
+        <b>AI suggestion</b> <span className={styles.aiTag}>advisory</span>
+      </p>
+      {answered ? (
+        <p>
+          {ai.selectedOption && ai.selectedOption !== 'unknown'
+            ? ai.matchesKey
+              ? `Answered blind: ${ai.selectedOption}, same as the key.`
+              : `Answered blind: ${ai.selectedOption}, but the key is ${correct}. Check the key and the solution.`
+            : 'Could not pick one answer.'}
+        </p>
+      ) : null}
+      {ai.ambiguityNote ? <p>Ambiguity: {ai.ambiguityNote}</p> : null}
+      {ai.languageNote ? <p>Hindi/English: {ai.languageNote}</p> : null}
+      {!ai.ambiguityNote && !ai.languageNote && !answered ? <p>No issues noted.</p> : null}
+    </div>
+  );
+}
+

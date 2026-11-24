@@ -109,6 +109,10 @@ export const AdminTemplateSummary = z.object({
 });
 export type AdminTemplateSummary = z.infer<typeof AdminTemplateSummary>;
 
+/** Blind answer check, ambiguity check, Hindi/English equivalence check. Suggestions only. */
+export const AiChecks = z.strictObject({ answer: z.boolean(), ambiguity: z.boolean(), language: z.boolean() });
+export type AiChecks = z.infer<typeof AiChecks>;
+
 export const AdminExam = z.object({
   id: Id,
   name: z.string(),
@@ -119,6 +123,8 @@ export const AdminExam = z.object({
   importantDates: z.array(ExamDateInput),
   previousCutoffs: z.array(ExamCutoff),
   lastCutoffScore: z.number().nullable(),
+  /** AI suggestions for QC reviewers on this exam's questions (all off by default). */
+  aiChecks: AiChecks,
   /** Live tests on the website; the slug is locked while the exam is shown and has any. */
   liveTestCount: z.number().int().nonnegative(),
   updatedAt: IsoTime,
@@ -140,6 +146,7 @@ export const UpdateExamRequest = z.strictObject({
   importantDates: z.array(ExamDateInput).max(20).optional(),
   previousCutoffs: z.array(ExamCutoff).max(30).optional(),
   lastCutoffScore: z.number().min(0).max(1000).multipleOf(0.01).nullable().optional(),
+  aiChecks: AiChecks.partial().optional(),
 });
 export type UpdateExamRequest = z.infer<typeof UpdateExamRequest>;
 

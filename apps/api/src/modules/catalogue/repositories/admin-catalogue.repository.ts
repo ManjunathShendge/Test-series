@@ -41,6 +41,9 @@ export interface ExamRow {
   important_dates: unknown;
   previous_cutoffs: unknown;
   last_cutoff_score: string | null;
+  ai_answer_check_enabled: boolean;
+  ai_ambiguity_check_enabled: boolean;
+  ai_language_check_enabled: boolean;
   live_test_count: number;
   updated_at: Date;
 }
@@ -214,6 +217,7 @@ export const adminCatalogueRepository = {
     const { rows } = await db.query<ExamRow>(
       `SELECT e.id, e.name, e.slug, e.category_id, c.name AS category_name, e.is_active, e.syllabus_markdown,
               e.important_dates, e.previous_cutoffs, e.last_cutoff_score, e.updated_at,
+              e.ai_answer_check_enabled, e.ai_ambiguity_check_enabled, e.ai_language_check_enabled,
               (SELECT count(*)::int FROM tests t WHERE t.exam_id = e.id AND t.status = 'live') AS live_test_count
          FROM exams e JOIN exam_categories c ON c.id = e.category_id WHERE e.id = $1${lock ? ' FOR UPDATE OF e' : ''}`,
       [id],

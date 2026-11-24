@@ -113,6 +113,23 @@ export const QcMatch = z.object({
 });
 export type QcMatch = z.infer<typeof QcMatch>;
 
+/**
+ * AI suggestion for the reviewer (QC_PIPELINE "AI boundary"): advisory only. The model answered
+ * blind (without the key); `matchesKey` is the server's comparison.
+ */
+export const AiSuggestion = z.object({
+  status: z.enum(['ok', 'unavailable']),
+  checks: z.array(z.enum(['answer', 'ambiguity', 'language'])),
+  selectedOption: z.string().nullable(),
+  matchesKey: z.boolean().nullable(),
+  ambiguityNote: z.string().nullable(),
+  languageNote: z.string().nullable(),
+  unavailableReason: z.string().nullable(),
+  model: z.string(),
+  createdAt: z.iso.datetime({ offset: true }),
+});
+export type AiSuggestion = z.infer<typeof AiSuggestion>;
+
 export const QcReviewQuestion = z.object({
   itemId: z.uuid(),
   sectionName: z.string(),
@@ -141,6 +158,8 @@ export const QcReviewQuestion = z.object({
   reasonCode: QcReasonCode.nullable(),
   comment: z.string().nullable(),
   checklist: QcChecklist.nullable(),
+  /** Latest AI suggestion for this question version; null when AI checks are off for the exam. */
+  aiSuggestion: AiSuggestion.nullable().optional(),
 });
 export type QcReviewQuestion = z.infer<typeof QcReviewQuestion>;
 

@@ -15,7 +15,7 @@ Authenticated requests carry Firebase bearer token, registered device/session pr
 | POST /me/deletion | Reauthenticated self | Idempotent deletion request/status workflow |
 | GET /exams, /exams/:id, /tests, /series/:id, /examiners/:id | Public | Published metadata only, filters, cursor |
 | GET/POST/PATCH/DELETE /admin/catalogue/categories[/:id] | Admin, ops or super | Categories; delete only without exams |
-| GET/POST/PATCH /admin/catalogue/exams[/:id], GET .../exams/:id/history | Admin, ops or super | Exam details (`expectedUpdatedAt`, 409 `STALE_EDIT`); new exams hidden; shown only with a published template; slug locked while shown with live tests; history from the audit log |
+| GET/POST/PATCH /admin/catalogue/exams[/:id], GET .../exams/:id/history | Admin, ops or super | Exam details (`expectedUpdatedAt`, 409 `STALE_EDIT`; `aiChecks` {answer, ambiguity, language} switches); new exams hidden; shown only with a published template; slug locked while shown with live tests; history from the audit log |
 | POST /admin/catalogue/exams/:id/stages, PUT/DELETE /stages/:id; POST .../subjects, PUT/DELETE /subjects/:id; POST /subjects/:id/topics, PUT/DELETE /topics/:id | Admin, ops or super | Stages and syllabus tree; responses return the whole exam; delete refused (409 `IN_USE`) when templates, tests, questions or topic targets use it; topics added in bulk, duplicates skipped case-insensitively |
 | POST /admin/catalogue/exams/:id/templates, GET/PUT/DELETE /templates/:id, POST /templates/:id/{publish,new-version,retire,reinstate} | Admin, ops or super | Draft saves allowed while inconsistent (`issues` lists why); publish 422 `TEMPLATE_NOT_PUBLISHABLE`; published templates 409 `TEMPLATE_LOCKED`; new version copies into a draft (repeat returns it) and publishing it retires the previous one |
 | PUT/DELETE /examiners/:id/follow | Student | Idempotent follow state |
@@ -28,7 +28,7 @@ Authenticated requests carry Firebase bearer token, registered device/session pr
 | POST /examiner/imports, /:id/commit | Owner | Validate file/zip, row errors, atomic accepted import |
 | POST /examiner/tests/:id/precheck | Owner | Immediate bounded checks or 202 job ID |
 | POST /examiner/tests/:id/submit | Owner | Freeze manifest and enqueue QC |
-| GET /qc/reviews, /qc/reviews/:id | Assigned reviewer/ops | Queue and exact submitted content |
+| GET /qc/reviews, /qc/reviews/:id | Assigned reviewer/ops | Queue and exact submitted content; each question carries `aiSuggestion` (latest advisory AI record for that version, or null) |
 | POST /qc/reviews/:id/verdicts | Assigned reviewer | Expected version, action/reason, audit |
 | POST /qc/reviews/:id/complete | Assigned reviewer | All questions approved or change request |
 | POST /tests/:id/publish | Authorized publication service/staff | Approval and artifact gate |

@@ -222,3 +222,9 @@ Row-level security: every public table has RLS. `exam_worker` has full row acces
 - `cms_banners`: `placement` (web, app, both), optional `starts_at`/`ends_at` window, `updated_at`; checks for an https image and a safe link (an in-app path or https). Policies: visitors read banners on show; admins manage all (replaces the allow-all app policy).
 - `admin_audit_logs`: admins read; staff may append entries only in their own name (the audit trigger writes as its definer); append-only triggers unchanged. Index on (created_at DESC, id DESC) for the viewer's keyset paging.
 
+## AI reviewer assistance (C5, 24 November 2026; migration 025)
+
+- `exams`: AI switches default to false; new `ai_language_check_enabled`.
+- `ai_suggestions`: one append-only record per question version and run (`cache_key`, provider, model, `prompt_version`, `status` ok|unavailable, `checks`, `selected_option`, server-computed `matches_key`, notes, `unavailable_reason`, `cost_micro_usd`). Read by QC reviewers and admins; written only by the worker.
+- `ai_spend_months`: per-month reserved spend in micro-USD (never negative) and call count; admins read.
+- `ai_question_cache`: admins read (worker writes). Trigger `tests_ai_checks` queues `ai.check_test` when a test enters `in_qc`.

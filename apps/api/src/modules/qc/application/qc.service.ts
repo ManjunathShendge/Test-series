@@ -249,6 +249,19 @@ export class QcService {
                 }
               : null,
           carriedOver: row.carried_over,
+          aiSuggestion: row.ai_suggestion
+            ? {
+                status: row.ai_suggestion.status,
+                checks: row.ai_suggestion.checks,
+                selectedOption: row.ai_suggestion.selected_option,
+                matchesKey: row.ai_suggestion.matches_key,
+                ambiguityNote: row.ai_suggestion.ambiguity_note,
+                languageNote: row.ai_suggestion.language_note,
+                unavailableReason: row.ai_suggestion.unavailable_reason,
+                model: row.ai_suggestion.model,
+                createdAt: new Date(row.ai_suggestion.created_at).toISOString(),
+              }
+            : null,
           action: row.reviewer_action as QcItemAction,
           reasonCode: row.reason_code as QcReasonCode | null,
           comment: row.reviewer_comment,

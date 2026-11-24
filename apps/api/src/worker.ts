@@ -2,12 +2,14 @@ import 'reflect-metadata';
 import { createServer } from 'node:http';
 import { checkDatabase, createDatabase } from '@exam-prep/db';
 import { parseEnvironment } from './config/env.js';
+import { checkQuestionHandler, checkTestHandler } from './jobs/ai-checks.js';
 import { deleteIdentityHandler, finalizeDeletionsHandler, purchaseAnalyticsHandler } from './jobs/account.js';
 import { notificationHandler } from './jobs/notifications.js';
 import { enqueue, JobRunner } from './jobs/runner.js';
 import { PostHogCapture } from './providers/analytics/posthog.js';
 import { SmtpEmail } from './providers/email/smtp-email.js';
 import { FirebaseAdminIdentity, parseServiceAccount } from './providers/firebase/admin-identity.js';
+import { AnthropicLlm } from './providers/llm/anthropic.js';
 import { ExpoPush } from './providers/push/expo-push.js';
 
 const env = parseEnvironment(process.env);
@@ -20,6 +22,7 @@ const database = createDatabase(env.WORKER_DATABASE_URL ?? env.DATABASE_URL, {
 const email = env.EMAIL_SMTP_URL && env.EMAIL_FROM ? new SmtpEmail(env.EMAIL_SMTP_URL, env.EMAIL_FROM) : null;
 const push = new ExpoPush(env.EXPO_ACCESS_TOKEN);
 const posthog = env.POSTHOG_API_KEY ? new PostHogCapture(env.POSTHOG_API_KEY, env.POSTHOG_HOST) : null;
+const llm = env.LLM_API_KEY ? new AnthropicLlm(env.LLM_API_KEY, env.LLM_MODEL) : null;
 const firebase = env.FIREBASE_SERVICE_ACCOUNT_JSON ? new FirebaseAdminIdentity(parseServiceAccount(env.FIREBASE_SERVICE_ACCOUNT_JSON)) : null;
 
 const runner = new JobRunner(database, {
@@ -27,6 +30,14 @@ const runner = new JobRunner(database, {
   analytics: purchaseAnalyticsHandler(database, posthog),
   'account.finalize_deletions': finalizeDeletionsHandler(database),
   'account.delete_identity': deleteIdentityHandler(firebase),
+  'ai.check_test': checkTestHandler(database, llm !== null),
+  'ai.check_question': checkQuestionHandler({
+    db: database,
+    llm,
+    priceInPerMTok: env.LLM_PRICE_INPUT_PER_MTOK_USD,
+    priceOutPerMTok: env.LLM_PRICE_OUTPUT_PER_MTOK_USD,
+    monthlyCapUsd: env.AI_MONTHLY_CAP_USD,
+  }),
 });
 
 /** Periodic work is queued like any job; the hourly key keeps several workers from doubling it. */
@@ -79,7 +90,7 @@ try {
   runner.start();
   ready = true;
   console.log(
-    `Worker ready on port ${env.WORKER_PORT}; email ${email ? 'on' : 'off'}, analytics ${posthog ? 'on' : 'off'}, identity deletion ${firebase ? 'on' : 'off'}`,
+    `Worker ready on port ${env.WORKER_PORT}; email ${email ? 'on' : 'off'}, analytics ${posthog ? 'on' : 'off'}, identity deletion ${firebase ? 'on' : 'off'}, AI ${llm ? `on (${env.LLM_MODEL})` : 'off'}`,
   );
 } catch {
   console.error('Worker startup failed: check database connectivity and migrations');

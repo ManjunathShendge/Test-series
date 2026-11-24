@@ -217,6 +217,9 @@ export class AdminCatalogueService {
         important_dates: req.importantDates === undefined ? undefined : JSON.stringify(req.importantDates),
         previous_cutoffs: req.previousCutoffs === undefined ? undefined : JSON.stringify(req.previousCutoffs),
         last_cutoff_score: req.lastCutoffScore,
+        ai_answer_check_enabled: req.aiChecks?.answer,
+        ai_ambiguity_check_enabled: req.aiChecks?.ambiguity,
+        ai_language_check_enabled: req.aiChecks?.language,
       });
       if (!ok) throw stale();
       return this.loadExam(c, id);
@@ -469,6 +472,7 @@ export class AdminCatalogueService {
       importantDates: list(exam.important_dates, ExamDateInput),
       previousCutoffs: list(exam.previous_cutoffs, ExamCutoff),
       lastCutoffScore: num(exam.last_cutoff_score),
+      aiChecks: { answer: exam.ai_answer_check_enabled, ambiguity: exam.ai_ambiguity_check_enabled, language: exam.ai_language_check_enabled },
       liveTestCount: exam.live_test_count,
       updatedAt: iso(exam.updated_at),
       stages: stages.map((s) => ({ id: s.id, name: s.name, slug: s.slug, displayOrder: s.display_order, inUse: s.in_use })),
