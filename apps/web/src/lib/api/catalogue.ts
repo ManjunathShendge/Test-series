@@ -10,6 +10,7 @@ import {
   type TestAccess,
   type TestType,
 } from '@exam-prep/contracts';
+import { serverApiHeaders } from './server-headers';
 
 /*
  * Server-side reads of the public catalogue API (contracts/catalogue). Responses are
@@ -31,7 +32,7 @@ export class CatalogueUnavailable extends Error {
 async function read<S extends z.ZodType>(path: string, schema: S): Promise<z.infer<S>> {
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, { next: { revalidate: REVALIDATE_SECONDS }, headers: { accept: 'application/json' } });
+    res = await fetch(`${API_BASE}${path}`, { next: { revalidate: REVALIDATE_SECONDS }, headers: serverApiHeaders() });
   } catch (error) {
     throw new CatalogueUnavailable(path, error);
   }

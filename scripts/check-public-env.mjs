@@ -19,6 +19,12 @@ const allowed = new Set([
   // Google OAuth client IDs are public identifiers, like the Firebase web config.
   'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
   'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID',
+  // PostHog project API keys (phc_) are write-only by design: they can send events, never read
+  // data. Personal API keys (phx_) must never be used here; the server refuses them too.
+  'NEXT_PUBLIC_POSTHOG_KEY',
+  'NEXT_PUBLIC_POSTHOG_HOST',
+  'EXPO_PUBLIC_POSTHOG_KEY',
+  'EXPO_PUBLIC_POSTHOG_HOST',
 ]);
 async function inspect(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {

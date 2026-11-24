@@ -1,4 +1,5 @@
 import { PublicBannerList, type PublicBanner } from '@exam-prep/contracts';
+import { serverApiHeaders } from './server-headers';
 
 /*
  * Server-side read of the public banners (GET /v1/banners?placement=web). Banners are
@@ -12,7 +13,7 @@ export async function webBanners(): Promise<PublicBanner[]> {
   try {
     const res = await fetch(`${API_BASE}/banners?placement=web`, {
       next: { revalidate: REVALIDATE_SECONDS },
-      headers: { accept: 'application/json' },
+      headers: serverApiHeaders(),
       signal: AbortSignal.timeout(3000),
     });
     if (!res.ok) return [];

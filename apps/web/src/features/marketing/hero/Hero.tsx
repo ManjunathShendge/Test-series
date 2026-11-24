@@ -22,14 +22,14 @@ export function Hero() {
         <div className={`container ${styles.top}`}>
           <div className={styles.copy}>
             <h1 id="hero-title" className={styles.title}>
-              <span className={styles.rise} style={{ animationDelay: '40ms' }}>
+              <span className={styles.riseVisible} style={{ animationDelay: '40ms' }}>
                 Practise like it’s exam day.
               </span>
-              <span className={`${styles.rise} ${styles.gradientText}`} style={{ animationDelay: '140ms' }}>
+              <span className={`${styles.riseVisible} ${styles.gradientText}`} style={{ animationDelay: '140ms' }}>
                 Walk in ready.
               </span>
             </h1>
-            <p className={`${styles.lead} ${styles.rise}`} style={{ animationDelay: '240ms' }}>
+            <p className={`${styles.lead} ${styles.riseVisible}`} style={{ animationDelay: '240ms' }}>
               Timed mock tests for SSC, Banking and Railways, written by examiners who have cleared them and checked by
               a subject reviewer before you see a single question.
             </p>

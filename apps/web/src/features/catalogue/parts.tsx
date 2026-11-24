@@ -14,6 +14,7 @@ import {
   TIER_LABEL,
 } from './format';
 import styles from './catalogue.module.css';
+import { jsonLdHtml } from '@/lib/utils/json-ld';
 
 /*
  * Shared catalogue building blocks (server components). Cards keep one clear action, show
@@ -73,7 +74,7 @@ export function PageHero({
         </div>
         {aside ? <div className={styles.heroAside}>{aside}</div> : null}
       </div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }} />
     </section>
   );
 }

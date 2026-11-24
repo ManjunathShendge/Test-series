@@ -3,6 +3,7 @@ import { Inter, Outfit } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { isIndexable, site } from '@/lib/config/site';
 import './globals.css';
+import { jsonLdHtml } from '@/lib/utils/json-ld';
 
 // Same families as mobile (DECISIONS V4), self-hosted by next/font so no request leaves for Google.
 const outfit = Outfit({ subsets: ['latin'], weight: ['500', '600', '700'], variable: '--font-outfit', display: 'swap' });
@@ -55,7 +56,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           Skip to content
         </a>
         {children}
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(organization) }} />
       </body>
     </html>
   );

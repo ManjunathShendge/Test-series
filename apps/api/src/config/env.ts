@@ -26,6 +26,11 @@ const schema = z
     API_PORT: z.coerce.number().int().min(1).max(65535).default(3001),
     WORKER_PORT: z.coerce.number().int().min(1).max(65535).default(3002),
     PUBLIC_WEB_ORIGIN: origin,
+    // Load balancers or proxies in front of the API, so rate limits see the real client address.
+    TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
+    // Shared with the website's server (never the browser): its page rendering skips the
+    // per-network rate limit. A long random string, e.g. `openssl rand -base64 32`.
+    INTERNAL_CALLER_TOKEN: blankAsUnset(z.string().trim().min(32).optional()),
     CORS_ORIGINS: z
       .string()
       .transform((s) => s.split(',').map((v) => v.trim()))

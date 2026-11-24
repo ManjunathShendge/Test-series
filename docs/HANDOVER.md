@@ -32,6 +32,7 @@ Every provider is optional: unset means off, never a crash. A wrong or half-set 
 | AI for reviewers | `LLM_API_KEY`, `LLM_MODEL`, prices, `AI_MONTHLY_CAP_USD` | Advisory checks, also switched on per exam by an admin |
 | Object storage | `STORAGE_*` | Examiner uploads and KYC (required when deployed) |
 | Malware scan | `ANTIVIRUS_HOST`, `ANTIVIRUS_PORT` | ClamAV (required when deployed) |
+| Rate limits behind a proxy | `TRUST_PROXY_HOPS`; `INTERNAL_CALLER_TOKEN` (API) = `API_INTERNAL_TOKEN` (web server) | Real client addresses for limits; page rendering not limited as one visitor (SECURITY "HTTP protections") |
 
 ## Running it
 

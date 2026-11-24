@@ -241,6 +241,18 @@
 .rise {
   animation: rise 640ms var(--ease-out) backwards;
 }
+/* Headline and intro: motion without fading, so the largest text paints at once (LCP). */
+.riseVisible {
+  animation: riseVisible 640ms var(--ease-out) backwards;
+}
+@keyframes riseVisible {
+  from {
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    transform: none;
+  }
+}
 @keyframes rise {
   from {
     opacity: 0;
@@ -678,6 +690,7 @@
   .illustrationFloat,
   .bars span,
   .glass,
+  .riseVisible,
   .rise {
     animation: none;
   }

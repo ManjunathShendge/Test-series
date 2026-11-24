@@ -20,6 +20,11 @@ catalog:
   prettier: 3.10.1
   vitest: 5.1.0
 
+# Security patches for transitive dependencies whose parents have no fixed release yet
+# (checked 24 November 2026). Same major line as the parent expects.
+overrides:
+  '@grpc/grpc-js': ^1.13.6  # via firebase > @firebase/firestore (Firestore is not imported)
+
 minimumReleaseAgeExclude:
   - prettier@3.10.1
   - '@nestjs/common@12.5.0'

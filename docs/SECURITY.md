@@ -30,6 +30,13 @@ Roles can combine; still prohibit self-review. Backend ownership checks required
 
 Register at most two active devices under user row lock. One active attempt lease per account. Rate limit authentication, purchase, reports, imports and signed URLs; multi-instance deployment must not rely only on per-process memory.
 
+## HTTP protections (24 November 2026)
+
+- Rate limits (API, per instance, `common/security/http-protection.ts`): 1,200 requests a minute per network address (sized for a classroom on one connection during a live test), 300 per sign-in, 30 sign-in attempts a minute per address, 10 export or deletion requests a minute. Over the limit: HTTP 429 `RATE_LIMITED` with `Retry-After`; web and app attempt sync treat it as retryable, so no answer is dropped. Webhooks and health checks are never limited. Behind a load balancer set `TRUST_PROXY_HOPS`; the website server sends `INTERNAL_CALLER_TOKEN` (its `API_INTERNAL_TOKEN`) so page rendering is not counted as one visitor. Use an edge or CDN limit as well for distributed floods.
+- Headers: API sends `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `default-src 'none'` CSP, HSTS when deployed, and no `X-Powered-By`. Web sends `nosniff`, `DENY` framing, strict referrer, a Permissions-Policy without camera, microphone or location, a CSP limited to framing, plugins, base and form targets (script sources stay open for Firebase, Razorpay and PostHog), and HSTS.
+- Inline structured data (JSON-LD) is escaped (`jsonLdHtml`), so examiner-written titles cannot close the script tag. Maths renders through KaTeX with `trust: false`.
+- Checked 24 November 2026: no source, config or `.env` files served by either server; no secrets or source maps in the browser bundle; CORS refuses unknown origins; error replies carry no stack traces; images run as a non-root user in production mode. Gitleaks over all commits: 7 findings, all reviewed false positives (an empty `.env.example` value, documentation prose, the local-only MinIO container login in an archived script).
+
 ## Privacy and deletion workflow
 
 Inventory profile/preferences, auth identity, attempts, purchase/financial records, KYC, device tokens, analytics and external processors. Version notice/consent records, provide access/export/deletion requests, named grievance contact and documented grievance workflow. 18+ proposal needs owner/legal approval and current exam-age verification before public eligibility claims.

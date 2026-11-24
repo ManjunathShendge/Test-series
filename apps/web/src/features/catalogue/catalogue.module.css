@@ -81,6 +81,8 @@
   border-radius: var(--radius-full);
   background: rgb(255 255 255 / 0.7);
   border: 1px solid rgb(255 255 255 / 0.9);
+  /* The translucent pill sits on the light page tint, where steel text falls under 4.5:1. */
+  --text-secondary: var(--navy-700);
   transition: translate var(--dur-slow) var(--ease-out), background-color var(--dur-base) var(--ease-out);
 }
 .factIcon {
@@ -130,6 +132,8 @@
   justify-content: space-between;
   gap: var(--space-md) var(--space-xl);
   margin-bottom: var(--space-xl);
+  /* Sits on the page tint, where steel text is just under 4.5:1. */
+  --text-secondary: var(--navy-700);
 }
 .sectionHead h2 {
   margin-top: var(--space-xs);
@@ -365,7 +369,7 @@
   font-size: 0.75rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: var(--navy-700);
   background: var(--background);
 }
 .table tbody tr {

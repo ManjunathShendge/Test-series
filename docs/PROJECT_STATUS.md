@@ -15,6 +15,15 @@ The development foundation runs on PostgreSQL 17 (Docker locally and in CI; Supa
 
 ## Log
 
+## 24 November 2026: security and performance checks (owner checklist)
+- Added: API rate limits (429 `RATE_LIMITED`, new additive error code) and security headers, website security headers, JSON-LD escaping (an examiner could otherwise inject markup through a test title), patched gRPC through a pnpm override, PostHog keys added to the public-variable allowlist (the CI check had been failing since C3).
+- Fixed from Lighthouse: squashed logo on narrow screens; home page hero text started invisible (LCP 4.5 s simulated mobile, now 1.2 s); secondary text on light tiles and the page tint under 4.5:1 contrast (now navy there, per MASTER.md).
+- Lighthouse (production build, mobile, Edge): home, exam, test and privacy pages performance 99-100 over repeat runs, accessibility 100, best practices 100. SEO 69 locally only because non-production pages are deliberately `noindex` (`SITE_INDEXABLE`).
+- Load (autocannon, 50 connections, 20 s, catalogue reads, one API process on a laptop with Docker Postgres): about 1,260 requests a second, p99 86 ms, no errors; with limits on, about 1,200 served per address per minute and the rest refused cheaply.
+- Dependency audit (production): 7 left (1 high), all inside minio, exceljs and Expo build tooling with no fixed parent release; reachable only with server-controlled input or at build time. Outdated: patch and minor releases only, plus deliberately held TypeScript and Node type definitions.
+- Gitleaks: 60 commits, 7 findings, all false positives (SECURITY "HTTP protections"). Not yet in CI: needs the reviewed findings recorded in `.gitleaksignore` first (owner decision).
+- Checks: typecheck, lint, unit tests (API 54, web 18, mobile 38, contracts 14, engine 6), integration 26/26, public-variable check, full build and smoke tests.
+
 ## 24 November 2026: C6 hardening, store readiness and handover
 - Database (026): per-row rules for `user_devices` and `test_series`; remaining API-only tables listed in DATA_MODEL "Row rules (C6)".
 - Reliability: a database connection lost mid-transaction no longer crashes the API or worker (it was an unhandled error event; found as an intermittent integration failure).

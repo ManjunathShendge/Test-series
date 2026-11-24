@@ -179,6 +179,12 @@ svg {
 
 .logo-wordmark {
   display: inline-flex;
+  min-width: 0;
+}
+/* When the header is tight the wordmark narrows; scale its height with it instead of squashing. */
+.logo-wordmark img {
+  max-width: 100%;
+  height: auto;
 }
 @media (max-width: 400px) {
   .logo-compact .logo-wordmark {
@@ -342,7 +348,8 @@ svg {
 .chip-muted {
   background: var(--surface-muted);
   border-color: var(--border);
-  color: var(--text-secondary);
+  /* Steel fails 4.5:1 on the muted tile (MASTER.md: navy blue on light tiles). */
+  color: var(--navy-700);
 }
 
 .section {

@@ -9,6 +9,7 @@ import { AppDownload } from './showcase/AppDownload';
 import { Ecosystem } from './showcase/Ecosystem';
 import { TrendLine } from './motion';
 import styles from './landing.module.css';
+import { jsonLdHtml } from '@/lib/utils/json-ld';
 
 /**
  * Public landing page in the mobile app's visual language (DECISIONS V1-V9). The hero and
@@ -28,7 +29,7 @@ export function Landing() {
       <Examiners />
       <FaqSection />
       <FinalCta />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(faqSchema) }} />
     </>
   );
 }

@@ -52,6 +52,8 @@ export const ErrorCode = z.enum([
   'SYNC_CONFLICT',
   /** The item is not in a state that allows this action (e.g. featuring an unpublished test). */
   'INVALID_STATE',
+  /** Too many requests from this device or network; retry after the Retry-After header. */
+  'RATE_LIMITED',
   'INTERNAL',
 ]);
 export type ErrorCode = z.infer<typeof ErrorCode>;
