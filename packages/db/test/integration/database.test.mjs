@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readdirSync } from 'node:fs';
 import {
   checkDatabase,
   enqueueJob,
@@ -16,7 +17,7 @@ test('migrations are repeatable, checksummed and install the required extensions
   await checkDatabase(owner);
   assert.equal(
     (await owner.query('SELECT count(*)::int AS n FROM schema_migrations')).rows[0].n,
-    12,
+    readdirSync(new URL('../../migrations/postgres/', import.meta.url)).filter((f) => f.endsWith('.sql')).length,
   );
   assert.equal(
     (await owner.query("SELECT version FROM bootstrap_state WHERE id = 'schema'")).rows[0].version,
@@ -79,5 +80,8 @@ test('every table has RLS; worker has full access, API is governed by schema pol
   }
   assert.ok(byName.profiles.policies.includes('Users manage own profile'));
   assert.ok(!byName.profiles.policies.includes('exam_app_access'));
-  assert.ok(byName.user_devices.policies.includes('exam_app_access'));
+  // Devices got their own per-row rules in migration 026; reference tables stay API-governed.
+  assert.ok(byName.user_devices.policies.includes('Users manage own devices'));
+  assert.ok(!byName.user_devices.policies.includes('exam_app_access'));
+  assert.ok(byName.subjects.policies.includes('exam_app_access'));
 });

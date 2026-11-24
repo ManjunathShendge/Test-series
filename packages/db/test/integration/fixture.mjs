@@ -100,3 +100,15 @@ export async function startAttempt(client, studentId, testId, expiresInSeconds =
     VALUES ($1, $2, now() + make_interval(secs => $3), $3, 2) RETURNING id`, [studentId, testId, expiresInSeconds]);
   return rows[0].id;
 }
+
+/**
+ * Creates the attempt's answer and section rows the way start_attempt() does (server side, no
+ * user context): one answer row per question, and every section open until the attempt deadline.
+ */
+export async function openAnswers(owner, attemptId) {
+  await owner.query(`INSERT INTO student_attempt_answers (attempt_id, test_question_id, question_id, section_id)
+    SELECT a.id, tq.id, tq.question_id, tq.section_id FROM student_attempts a JOIN test_questions tq ON tq.test_id = a.test_id WHERE a.id = $1`, [attemptId]);
+  await owner.query(`INSERT INTO student_attempt_sections (attempt_id, section_id, section_order, opens_at, closes_at)
+    SELECT a.id, s.id, s.section_order, LEAST(now(), a.server_expires_at - interval '10 minutes'), a.server_expires_at
+      FROM student_attempts a JOIN test_sections s ON s.test_id = a.test_id WHERE a.id = $1`, [attemptId]);
+}

@@ -15,6 +15,15 @@ The development foundation runs on PostgreSQL 17 (Docker locally and in CI; Supa
 
 ## Log
 
+## 24 November 2026: database integration tests brought up to date
+- CI had not passed since M2: 11 of 41 `packages/db` integration tests still described pre-M7 behaviour and were not part of the local checks run for C1-C6. No product code changed; every failure was a stale test:
+  - migration count was hard-coded (now read from the folder); devices now have per-row rules (C6);
+  - device, audit-log and follower rows are written as the acting user (rules from C2, C4, C6); an audit edit by the API role now matches no rows, and the worker edit still hits the append-only trigger;
+  - answer rows are created at attempt start (M7): a test helper creates them as `start_attempt()` does, and students update them;
+  - single-test purchases name their test (migration 016);
+  - payouts: only finished months, KYC before payout, first-payout hold from payout history, and the current minimum wording (M9). The hand-calculated amounts are unchanged.
+- Checks: `pnpm test:int` database 41/41, API 26/26.
+
 ## 24 November 2026: security and performance checks (owner checklist)
 - Added: API rate limits (429 `RATE_LIMITED`, new additive error code) and security headers, website security headers, JSON-LD escaping (an examiner could otherwise inject markup through a test title), patched gRPC through a pnpm override, PostHog keys added to the public-variable allowlist (the CI check had been failing since C3).
 - Fixed from Lighthouse: squashed logo on narrow screens; home page hero text started invisible (LCP 4.5 s simulated mobile, now 1.2 s); secondary text on light tiles and the page tint under 4.5:1 contrast (now navy there, per MASTER.md).

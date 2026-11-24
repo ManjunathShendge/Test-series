@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { withUser } from '../../dist/index.js';
-import { fixture, profile, seedExam, examiner, question, draftTest, liveTest, startAttempt } from './fixture.mjs';
+import { fixture, profile, seedExam, examiner, question, draftTest, liveTest, startAttempt, openAnswers } from './fixture.mjs';
 
 test('QC queue orders by flag count then SLA; SLA defaults are 48h (review) and 72h (reports)', async (t) => {
   const { app, owner } = await fixture(t);
@@ -69,18 +69,22 @@ test('students see and change only their own attempts and answers; admins see al
   const s1 = await profile(app, owner); const s2 = await profile(app, owner);
   const admin = await profile(app, owner, ['admin']);
   const a1 = await withUser(app, s1, (c) => startAttempt(c, s1, live));
-  await withUser(app, s2, (c) => startAttempt(c, s2, live));
+  const a2 = await withUser(app, s2, (c) => startAttempt(c, s2, live));
+  await openAnswers(owner, a1); await openAnswers(owner, a2);
   await assert.rejects(withUser(app, s1, (c) => startAttempt(c, s2, live)), /row-level security/);
   const count = (who, table) => withUser(app, who, (c) => c.query(`SELECT count(*)::int AS n FROM ${table}`)).then((r) => r.rows[0].n);
   assert.equal(await count(s1, 'student_attempts'), 1);
   assert.equal(await count(admin, 'student_attempts'), 2);
-  await withUser(app, s1, (c) => c.query("INSERT INTO student_attempt_answers (attempt_id, test_question_id, question_id, section_id, palette_state, selected_option) VALUES ($1, $2, $3, $4, 'answered', 'B')", [a1, items[0].testQuestion, items[0].question, section]));
-  assert.equal(await count(s2, 'student_attempt_answers'), 0);
-  assert.equal((await withUser(app, s2, (c) => c.query("UPDATE student_attempt_answers SET selected_option = 'A'"))).rowCount, 0);
-  // Answer sync is an idempotent upsert per (attempt, question).
-  await withUser(app, s1, (c) => c.query(`INSERT INTO student_attempt_answers (attempt_id, test_question_id, question_id, section_id, palette_state, selected_option)
-    VALUES ($1, $2, $3, $4, 'answered_and_marked', 'A') ON CONFLICT (attempt_id, question_id) DO UPDATE SET selected_option = EXCLUDED.selected_option, palette_state = EXCLUDED.palette_state`, [a1, items[0].testQuestion, items[0].question, section]));
-  const answer = (await owner.query('SELECT selected_option, palette_state FROM student_attempt_answers WHERE attempt_id = $1', [a1])).rows;
+  // Answer rows exist from the start (start_attempt); students only update their own.
+  const save = (who, attempt, option, state) => withUser(app, who, (c) => c.query('UPDATE student_attempt_answers SET selected_option = $3, palette_state = $4 WHERE attempt_id = $1 AND question_id = $2', [attempt, items[0].question, option, state]));
+  assert.equal((await save(s1, a1, 'B', 'answered')).rowCount, 1);
+  await assert.rejects(withUser(app, s1, (c) => c.query("INSERT INTO student_attempt_answers (attempt_id, test_question_id, question_id, section_id) VALUES ($1, $2, $3, $4)", [a1, items[0].testQuestion, items[0].question, section])), /created when the attempt starts/);
+  assert.equal(await count(s2, 'student_attempt_answers'), items.length);
+  assert.equal((await withUser(app, s2, (c) => c.query("UPDATE student_attempt_answers SET selected_option = 'A' WHERE attempt_id = $1", [a1]))).rowCount, 0);
+  // Saving again is idempotent: the latest value wins.
+  await save(s1, a1, 'A', 'answered_and_marked');
+  await save(s1, a1, 'A', 'answered_and_marked');
+  const answer = (await owner.query('SELECT selected_option, palette_state FROM student_attempt_answers WHERE attempt_id = $1 AND question_id = $2', [a1, items[0].question])).rows;
   assert.deepEqual(answer, [{ selected_option: 'A', palette_state: 'answered_and_marked' }]);
 });
 
@@ -91,13 +95,15 @@ test('students cannot change timers, scores or evaluation; the server can', asyn
   const { test: live, section, items } = await liveTest(owner, exam, alice);
   const s1 = await profile(app, owner);
   const a1 = await withUser(app, s1, (c) => startAttempt(c, s1, live));
+  await openAnswers(owner, a1);
   const asStudent = (sql, p = [a1]) => withUser(app, s1, (c) => c.query(sql, p));
   for (const change of ['total_score = 100', "server_expires_at = server_expires_at + interval '1 hour'", 'rank = 1', 'is_qualified_pass_attempt = true', "status = 'timed_out'"]) {
     await assert.rejects(asStudent(`UPDATE student_attempts SET ${change} WHERE id = $1`), /server-managed|Only the server/, change);
   }
   await assert.rejects(withUser(app, s1, (c) => c.query(`INSERT INTO student_attempts (student_id, test_id, server_expires_at, remaining_seconds_at_last_sync, total_questions, total_score)
     VALUES ($1, $2, now() + interval '10 minutes', 600, 2, 8)`, [s1, live])), /server-managed/);
-  await assert.rejects(asStudent("INSERT INTO student_attempt_answers (attempt_id, test_question_id, question_id, section_id, selected_option, is_correct, marks_awarded) VALUES ($1, $2, $3, $4, 'B', true, 2)", [a1, items[0].testQuestion, items[0].question, section]), /server-managed/);
+  await assert.rejects(asStudent("UPDATE student_attempt_answers SET selected_option = 'B', is_correct = true, marks_awarded = 2 WHERE attempt_id = $1 AND question_id = $2", [a1, items[0].question]), /server-managed/);
+  void section;
   // Allowed for the student: progress, palette, app switches, submission.
   await asStudent('UPDATE student_attempts SET remaining_seconds_at_last_sync = 300, app_switch_count = 1, current_question_id = $2 WHERE id = $1', [a1, items[1].question]);
   await asStudent("UPDATE student_attempts SET status = 'submitted', submitted_at = now() WHERE id = $1");
@@ -113,16 +119,18 @@ test('answers are rejected after submission or after the server deadline, and ca
   const alice = await examiner(app, owner);
   const { test: live, section, items } = await liveTest(owner, exam, alice);
   const s1 = await profile(app, owner); const s2 = await profile(app, owner);
-  const answer = (who, attempt, option = 'B') => withUser(app, who, (c) => c.query(`INSERT INTO student_attempt_answers (attempt_id, test_question_id, question_id, section_id, selected_option)
-    VALUES ($1, $2, $3, $4, $5) ON CONFLICT (attempt_id, question_id) DO UPDATE SET selected_option = EXCLUDED.selected_option`, [attempt, items[0].testQuestion, items[0].question, section, option]));
+  const answer = (who, attempt, option = 'B') => withUser(app, who, (c) => c.query('UPDATE student_attempt_answers SET selected_option = $3 WHERE attempt_id = $1 AND question_id = $2', [attempt, items[0].question, option]));
+  void section;
   const expired = await withUser(app, s1, (c) => startAttempt(c, s1, live, -1));
+  await openAnswers(owner, expired);
   await assert.rejects(answer(s1, expired), /closed for answers/);
   const open = await withUser(app, s2, (c) => startAttempt(c, s2, live));
+  await openAnswers(owner, open);
   await answer(s2, open);
   await assert.rejects(withUser(app, s2, (c) => c.query('DELETE FROM student_attempt_answers WHERE attempt_id = $1', [open])), /cannot be deleted/);
   await withUser(app, s2, (c) => c.query("UPDATE student_attempts SET status = 'submitted', submitted_at = now() WHERE id = $1", [open]));
   await assert.rejects(answer(s2, open, 'A'), /closed for answers/);
-  assert.equal((await owner.query('SELECT selected_option FROM student_attempt_answers WHERE attempt_id = $1', [open])).rows[0].selected_option, 'B');
+  assert.equal((await owner.query('SELECT selected_option FROM student_attempt_answers WHERE attempt_id = $1 AND question_id = $2', [open, items[0].question])).rows[0].selected_option, 'B');
 });
 
 test('bookmarks, mistake notebook and ratings keep one row per student', async (t) => {

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { withUser } from '../../dist/index.js';
-import { fixture, profile, seedExam, examiner, question, draftTest, liveTest, startAttempt } from './fixture.mjs';
+import { fixture, profile, seedExam, examiner, question, draftTest, liveTest, startAttempt, openAnswers } from './fixture.mjs';
 
 /** A purchase row written as the server (no user context). */
 async function purchase(db, student, extra = {}) {
@@ -15,7 +15,9 @@ async function purchase(db, student, extra = {}) {
 test('students create only their own pending orders; capture, entitlement and ledger are server-managed', async (t) => {
   const { app, owner, worker } = await fixture(t);
   const s1 = await profile(app, owner); const s2 = await profile(app, owner);
-  const order = (who, student, status = 'created', extra = {}) => withUser(app, who, (c) => purchase(c, student, { status, ...extra }));
+  // Every single-test purchase names its test (purchases_one_item, migration 016).
+  const { test: item } = await liveTest(owner, await seedExam(owner), await examiner(app, owner));
+  const order = (who, student, status = 'created', extra = {}) => withUser(app, who, (c) => purchase(c, student, { status, test_id: item, ...extra }));
   const id = await order(s1, s1, 'created', { razorpay_order_id: 'order_1' });
   await assert.rejects(order(s1, s2), /row-level security/);
   await assert.rejects(order(s1, s1, 'captured'), /row-level security/);
@@ -24,11 +26,11 @@ test('students create only their own pending orders; capture, entitlement and le
   const seen = (who) => withUser(app, who, (c) => c.query('SELECT status FROM purchases')).then((r) => r.rows.map((x) => x.status));
   assert.deepEqual(await seen(s1), ['captured']);
   assert.deepEqual(await seen(s2), []);
-  await assert.rejects(purchase(worker, s2, { razorpay_order_id: 'order_1' }), /duplicate key/);
-  await purchase(worker, s2, { payment_channel: 'apple_iap', store_transaction_id: 'apple-1', store_product_id: 'test.4900', store_environment: 'sandbox' });
-  await assert.rejects(purchase(worker, s2, { payment_channel: 'apple_iap', store_transaction_id: 'apple-1' }), /duplicate key/);
-  await purchase(worker, s2, { payment_channel: 'google_play', play_purchase_token: 'tok-1', store_transaction_id: 'GPA.1' });
-  await assert.rejects(purchase(worker, s2, { payment_channel: 'google_play', play_purchase_token: 'tok-1', store_transaction_id: 'GPA.2' }), /duplicate key/);
+  await assert.rejects(purchase(worker, s2, { test_id: item, razorpay_order_id: 'order_1' }), /duplicate key/);
+  await purchase(worker, s2, { test_id: item, payment_channel: 'apple_iap', store_transaction_id: 'apple-1', store_product_id: 'test.4900', store_environment: 'sandbox' });
+  await assert.rejects(purchase(worker, s2, { test_id: item, payment_channel: 'apple_iap', store_transaction_id: 'apple-1' }), /duplicate key/);
+  await purchase(worker, s2, { test_id: item, payment_channel: 'google_play', play_purchase_token: 'tok-1', store_transaction_id: 'GPA.1' });
+  await assert.rejects(purchase(worker, s2, { test_id: item, payment_channel: 'google_play', play_purchase_token: 'tok-1', store_transaction_id: 'GPA.2' }), /duplicate key/);
 
   await assert.rejects(withUser(app, s1, (c) => c.query("INSERT INTO student_entitlements (student_id, purchase_id, item_type) VALUES ($1, $2, 'single_test')", [s1, id])), /managed by the server/);
   await worker.query("INSERT INTO student_entitlements (student_id, purchase_id, item_type) VALUES ($1, $2, 'single_test')", [s1, id]);
@@ -119,12 +121,13 @@ test('key correction re-scores past attempts and ranks from the correction recor
   const exam = await seedExam(owner);
   const alice = await examiner(app, owner);
   const reviewer = await profile(app, owner, ['qc_reviewer']);
-  const { test: live, section, items } = await liveTest(owner, exam, alice);
+  const { test: live, items } = await liveTest(owner, exam, alice);
   const [s1, s2] = [await profile(app, owner), await profile(app, owner)];
   const sit = async (student, picks) => {
     const attempt = await withUser(app, student, (c) => startAttempt(c, student, live));
+    await openAnswers(owner, attempt);
     await withUser(app, student, async (c) => {
-      for (const [i, pick] of picks.entries()) await c.query("INSERT INTO student_attempt_answers (attempt_id, test_question_id, question_id, section_id, palette_state, selected_option) VALUES ($1, $2, $3, $4, 'answered', $5)", [attempt, items[i].testQuestion, items[i].question, section, pick]);
+      for (const [i, pick] of picks.entries()) await c.query("UPDATE student_attempt_answers SET palette_state = 'answered', selected_option = $3 WHERE attempt_id = $1 AND question_id = $2", [attempt, items[i].question, pick]);
       await c.query("UPDATE student_attempts SET status = 'submitted', submitted_at = now() WHERE id = $1", [attempt]);
     });
     // Initial scoring by the engine against key B.
@@ -174,24 +177,33 @@ test('monthly payouts match a hand-calculated fixture with holds, refunds, the m
   const exam = await seedExam(owner);
   const e1 = await examiner(app, owner); const e2 = await examiner(app, owner);
   await owner.query('UPDATE examiner_profiles SET first_payout_completed = true WHERE user_id = $1', [e1]);
+  // Payouts are held until KYC is verified (migration 016); both examiners have completed it.
+  await owner.query('UPDATE examiner_profiles SET kyc_verified_at = now() WHERE user_id = ANY($1)', [[e1, e2]]);
+  // A paid payout in an earlier month: that is what lifts the first-payout hold.
+  const history = (e) => worker.query(`INSERT INTO examiner_payouts (examiner_id, payout_month, gross_earnings_paise, net_payable_paise, status, paid_at, bank_transfer_ref)
+    VALUES ($1::uuid, (date_trunc('month', now() AT TIME ZONE 'Asia/Kolkata') - interval '3 months')::date, 60000, 54000, 'paid', now(), 'UTR0-' || $1::text)`, [e]);
   const t1 = (await liveTest(owner, exam, e1)).test; const t2 = (await liveTest(owner, exam, e2)).test;
   const student = await profile(app, owner);
-  const month = (await owner.query("SELECT date_trunc('month', now())::date AS m")).rows[0].m;
+  // Only a finished month can be calculated: everything happens mid last month (India time).
+  const { m: month, mid } = (await owner.query(`SELECT (date_trunc('month', now() AT TIME ZONE 'Asia/Kolkata') - interval '1 month')::date AS m,
+    ((date_trunc('month', now() AT TIME ZONE 'Asia/Kolkata') - interval '1 month' + interval '14 days 12 hours') AT TIME ZONE 'Asia/Kolkata') AS mid`)).rows[0];
+  // The refunded sale was captured the month before, so only its refund falls in this month.
+  const earlier = new Date(new Date(mid).getTime() - 30 * 86400000);
   // Direct sale 100000 net (65% = 65000), coupon sale 20000 net (75% = 15000), refund 10000 net (65% = 6500).
-  await purchase(worker, student, { examiner_id: e1, test_id: t1, net_revenue_paise: 100000 });
-  await purchase(worker, student, { examiner_id: e1, test_id: t1, net_revenue_paise: 20000, is_examiner_coupon: true });
-  await purchase(worker, student, { examiner_id: e1, test_id: t1, net_revenue_paise: 10000, status: 'refunded', refunded_at: new Date() });
+  await purchase(worker, student, { examiner_id: e1, test_id: t1, net_revenue_paise: 100000, captured_at: mid });
+  await purchase(worker, student, { examiner_id: e1, test_id: t1, net_revenue_paise: 20000, is_examiner_coupon: true, captured_at: mid });
+  await purchase(worker, student, { examiner_id: e1, test_id: t1, net_revenue_paise: 10000, status: 'refunded', captured_at: earlier, refunded_at: mid });
   // A 30-day Pass with 40000 net: pool = 50% = 20000; two qualified attempts, one per examiner: 10000 each.
   const plan = (await owner.query("INSERT INTO pass_plans (name, duration_days, price_paise) VALUES ('1 Month Pass', 30, 47200) RETURNING id")).rows[0].id;
-  const passPurchase = await purchase(worker, student, { item_type: 'pass', pass_plan_id: plan, net_revenue_paise: 40000 });
-  await worker.query("INSERT INTO student_entitlements (student_id, purchase_id, item_type, pass_plan_id, valid_until) VALUES ($1, $2, 'pass', $3, now() + interval '30 days')", [student, passPurchase, plan]);
+  const passPurchase = await purchase(worker, student, { item_type: 'pass', pass_plan_id: plan, net_revenue_paise: 40000, captured_at: mid });
+  await worker.query("INSERT INTO student_entitlements (student_id, purchase_id, item_type, pass_plan_id, valid_from, valid_until) VALUES ($1, $2, 'pass', $3, $4, $4::timestamptz + interval '30 days')", [student, passPurchase, plan, mid]);
   for (const testId of [t1, t2]) {
     await worker.query(`INSERT INTO student_attempts (student_id, test_id, server_expires_at, remaining_seconds_at_last_sync, total_questions, status, submitted_at, attempted_count, used_pass_access)
-      VALUES ($1, $2, now(), 0, 2, 'submitted', now(), 1, true)`, [student, testId]);
+      VALUES ($1, $2, $3, 0, 2, 'submitted', $3, 1, true)`, [student, testId, mid]);
   }
   // Not qualified: practice reattempt, and an attempt below 50% answered.
   await worker.query(`INSERT INTO student_attempts (student_id, test_id, server_expires_at, remaining_seconds_at_last_sync, total_questions, status, submitted_at, attempted_count, used_pass_access, attempt_number)
-    VALUES ($1, $2, now(), 0, 2, 'submitted', now(), 2, true, 2), ($1, $2, now(), 0, 4, 'submitted', now(), 1, true, 1)`, [student, t1]);
+    VALUES ($1, $2, $3, 0, 2, 'submitted', $3, 2, true, 2), ($1, $2, $3, 0, 4, 'submitted', $3, 1, true, 1)`, [student, t1, mid]);
 
   const plain = await profile(app, owner, ['admin']);
   const finance = await profile(app, owner, ['admin']);
@@ -199,24 +211,25 @@ test('monthly payouts match a hand-calculated fixture with holds, refunds, the m
   const calculate = (who) => withUser(app, who, (c) => c.query('SELECT calculate_monthly_examiner_payouts($1)', [month]));
   await assert.rejects(calculate(plain), /Only finance admins/);
   await assert.rejects(calculate(student), /Only finance admins/);
+  await history(e1);
   await calculate(finance);
 
   const pool = (await owner.query('SELECT total_net_pass_revenue_paise, examiner_pool_50_pct_paise, total_qualified_attempts, per_attempt_rate_paise FROM monthly_pass_pools WHERE payout_month = $1', [month])).rows[0];
   assert.deepEqual(pool, { total_net_pass_revenue_paise: '40000', examiner_pool_50_pct_paise: '20000', total_qualified_attempts: 2, per_attempt_rate_paise: '10000.0000' });
-  const payout = async (e) => (await owner.query('SELECT direct_sales_65_paise d, coupon_sales_75_paise c, pass_pool_share_paise p, refund_deductions_paise r, gross_earnings_paise g, tds_deducted_paise tds, net_payable_paise n, status, hold_reason FROM examiner_payouts WHERE examiner_id = $1', [e])).rows[0];
+  const payout = async (e) => (await owner.query('SELECT direct_sales_65_paise d, coupon_sales_75_paise c, pass_pool_share_paise p, refund_deductions_paise r, gross_earnings_paise g, tds_deducted_paise tds, net_payable_paise n, status, hold_reason FROM examiner_payouts WHERE examiner_id = $1 AND payout_month = $2', [e, month])).rows[0];
   // e1: 65000 + 15000 + 10000 - 6500 = 83500 gross; 10% TDS 8350; net 75150.
   assert.deepEqual(await payout(e1), { d: '65000', c: '15000', p: '10000', r: '6500', g: '83500', tds: '8350', n: '75150', status: 'calculated', hold_reason: null });
-  // e2: pool share only, first payout held for one cycle.
+  // e2: pool share only, and no earlier payout: held for one cycle.
   const p2 = await payout(e2);
-  assert.deepEqual([p2.g, p2.status, p2.hold_reason], ['10000', 'on_hold', 'New examiner first-payout 1-cycle hold']);
+  assert.deepEqual([p2.g, p2.status, p2.hold_reason], ['10000', 'on_hold', 'First payout is held for one cycle']);
 
   // Paid rows are never overwritten by a recalculation; held rows are.
-  await worker.query("UPDATE examiner_payouts SET status = 'paid', paid_at = now(), bank_transfer_ref = 'UTR1' WHERE examiner_id = $1", [e1]);
-  await owner.query('UPDATE examiner_profiles SET first_payout_completed = true WHERE user_id = $1', [e2]);
-  await purchase(worker, student, { examiner_id: e1, test_id: t1, net_revenue_paise: 100000 });
+  await worker.query("UPDATE examiner_payouts SET status = 'paid', paid_at = now(), bank_transfer_ref = 'UTR1' WHERE examiner_id = $1 AND payout_month = $2", [e1, month]);
+  await history(e2);
+  await purchase(worker, student, { examiner_id: e1, test_id: t1, net_revenue_paise: 100000, captured_at: mid });
   await calculate(finance);
   assert.deepEqual([(await payout(e1)).g, (await payout(e1)).status], ['83500', 'paid']);
-  assert.deepEqual([(await payout(e2)).status, (await payout(e2)).hold_reason], ['on_hold', 'Below minimum payout threshold of INR 500']);
+  assert.deepEqual([(await payout(e2)).status, (await payout(e2)).hold_reason], ['on_hold', 'Below the ₹500 minimum; carries forward']);
   // One audit row per calculation run; the rows it writes are system work, not separate admin edits.
   const audits = (await owner.query('SELECT action_name FROM admin_audit_logs WHERE admin_id = $1', [finance])).rows.map((r) => r.action_name);
   assert.deepEqual(audits, ['CALCULATE_MONTHLY_PAYOUTS', 'CALCULATE_MONTHLY_PAYOUTS']);
