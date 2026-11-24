@@ -18,7 +18,7 @@ import { serverApiHeaders } from './server-headers';
  * wrong data. Data is cached for a minute, matching the API's own Cache-Control.
  */
 
-const API_BASE = (process.env['API_BASE_URL'] ?? process.env['NEXT_PUBLIC_API_BASE_URL'] ?? 'http://localhost:3001/v1').replace(/\/$/, '');
+const API_BASE = (process.env['API_BASE_URL'] || process.env['NEXT_PUBLIC_API_BASE_URL'] || 'http://localhost:3001/v1').replace(/\/$/, '');
 const REVALIDATE_SECONDS = 60;
 
 /** The API could not be reached or answered unexpectedly; pages show a retry state. */

@@ -23,6 +23,7 @@ The development foundation runs on PostgreSQL 17 (Docker locally and in CI; Supa
   - single-test purchases name their test (migration 016);
   - payouts: only finished months, KYC before payout, first-payout hold from payout history, and the current minimum wording (M9). The hand-calculated amounts are unchanged.
 - Checks: `pnpm test:int` database 41/41, API 26/26.
+- CI web build: a fresh `.env` copied from `.env.example` has an empty `NEXT_PUBLIC_SITE_URL`, which the site config used as the address (Invalid URL at build). Empty values now fall back to the defaults (site address and API address); reproduced locally and fixed.
 
 ## 24 November 2026: security and performance checks (owner checklist)
 - Added: API rate limits (429 `RATE_LIMITED`, new additive error code) and security headers, website security headers, JSON-LD escaping (an examiner could otherwise inject markup through a test title), patched gRPC through a pnpm override, PostHog keys added to the public-variable allowlist (the CI check had been failing since C3).
