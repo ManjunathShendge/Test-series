@@ -21,6 +21,7 @@ import {
   type DraftQuestionList,
   type ImportPreviewRequest,
   type ImportPreview,
+  type ImportTemplateQuery,
   type ImportCommitRequest,
   type ImportRowError,
   type ExaminerAuthoringOptions,
@@ -55,6 +56,46 @@ interface ImportedGroup {
   passageHi: string | null;
   imageRefs: string[];
 }
+
+/** Questions sheet columns in CONTENT_AUTHORING order; the parser matches headers by name. */
+const IMPORT_QUESTION_COLUMNS = [
+  'row_id',
+  'section',
+  'position',
+  'group_id',
+  'stem_en',
+  'stem_hi',
+  'option_a_en',
+  'option_b_en',
+  'option_c_en',
+  'option_d_en',
+  'option_a_hi',
+  'option_b_hi',
+  'option_c_hi',
+  'option_d_hi',
+  'correct_option',
+  'solution_en',
+  'solution_hi',
+  'subject_code',
+  'topic_code',
+  'difficulty',
+  'source',
+  'pyq_year',
+  'pyq_shift',
+  'image_refs',
+];
+
+const IMPORT_INSTRUCTIONS = [
+  'One question per row on the Questions sheet, at most 200 rows. Do not rename or reorder the header row.',
+  'row_id: your own unique label for the row. section: a name from the Sections sheet. position: 1 to the section size, unique within the section.',
+  'subject_code and topic_code: copy them from the Codes sheet. A section with a subject_code accepts only that subject.',
+  'correct_option: A, B, C or D. difficulty: easy, medium or hard. source: original (default) or pyq; pyq needs pyq_year, pyq_shift is optional.',
+  'Hindi is all or none: a row with any Hindi needs stem_hi, all four option_*_hi and solution_hi.',
+  String.raw`Write plain text. Math: \( x^2 \) inline or \[ \frac{a}{b} \] on its own line. Tables: | a | b | header, | --- | --- |, then rows.`,
+  'Passages: add a row on the Groups sheet (group_id, passage_en, optional passage_hi and image_refs) and put its group_id on each question.',
+  'Images: upload a ZIP with this workbook and the image files; list their paths in image_refs separated by semicolons (images/q1.png). JPEG, PNG or WebP, 10 MB each.',
+  'No formulas, macros or links. The Sections, Codes and Instructions sheets are for reference and are ignored on import.',
+];
 
 @Injectable()
 export class AuthoringService {
@@ -175,6 +216,14 @@ export class AuthoringService {
       identity.name,
     );
     return withUser(this.db, examinerId, async (client) => {
+      // The 18+ gate covers examiners too (PRD 12, O05); the server records it, never the page.
+      if (!(await identityRepository.getProfile(client, examinerId))?.is_age_verified_18_plus) {
+        throw new ApiError(
+          400,
+          'AGE_CONFIRMATION_REQUIRED',
+          'Confirm you are 18 or older before applying.',
+        );
+      }
       if (
         !(await repo.validateApplicationTaxonomy(client, req.examIds, req.subjectIds, req.samples))
       ) {
@@ -651,6 +700,83 @@ export class AuthoringService {
         );
       return this.toDraftQuestion(row);
     });
+  }
+
+  /**
+   * A blank import workbook for one published template: the Questions and Groups headers the
+   * parser reads, plus reference sheets (ignored on import) listing the template's sections and
+   * the subject/topic codes this examiner may use, so a workbook can be filled without lookups.
+   */
+  async importTemplate(identity: VerifiedIdentity, query: ImportTemplateQuery): Promise<Buffer> {
+    const ownerId = await identityRepository.ensureProfile(
+      this.db,
+      identity.uid,
+      identity.email,
+      identity.name,
+    );
+    const { sections, codes } = await withUser(this.db, ownerId, async (client) => {
+      if (!(await repo.requireExaminer(client, ownerId)))
+        throw new ApiError(403, 'FORBIDDEN', 'Approved examiner access is required.');
+      if (
+        !(await repo.validateImportTarget(
+          client,
+          ownerId,
+          query.examId,
+          query.stageId,
+          query.templateId,
+        ))
+      ) {
+        throw new ApiError(
+          422,
+          'VALIDATION_FAILED',
+          'The selected exam, stage, or published template is not assigned to this examiner.',
+        );
+      }
+      return {
+        sections: await repo.listImportSections(client, query.templateId),
+        codes: await repo.listImportCodes(client, ownerId, query.examId),
+      };
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    const bold = (sheet: ExcelJS.Worksheet) => {
+      sheet.getRow(1).font = { bold: true };
+      sheet.views = [{ state: 'frozen', ySplit: 1 }];
+    };
+    const questions = workbook.addWorksheet('Questions');
+    questions.addRow(IMPORT_QUESTION_COLUMNS);
+    questions.columns.forEach((column) => (column.width = 18));
+    bold(questions);
+    const groups = workbook.addWorksheet('Groups');
+    groups.addRow(['group_id', 'passage_en', 'passage_hi', 'image_refs']);
+    groups.columns.forEach((column) => (column.width = 30));
+    bold(groups);
+
+    const subjectName = new Map(codes.map((code) => [code.subjectId, code.subjectName]));
+    const sectionSheet = workbook.addWorksheet('Sections');
+    sectionSheet.addRow(['section', 'positions', 'subject', 'subject_code']);
+    for (const section of sections) {
+      sectionSheet.addRow([
+        section.name,
+        `1-${section.questionCount}`,
+        section.subjectId
+          ? (subjectName.get(section.subjectId) ?? 'Not assigned to you')
+          : 'Any assigned subject',
+        section.subjectId ?? '',
+      ]);
+    }
+    sectionSheet.columns.forEach((column) => (column.width = 28));
+    bold(sectionSheet);
+    const codeSheet = workbook.addWorksheet('Codes');
+    codeSheet.addRow(['subject', 'subject_code', 'topic', 'topic_code']);
+    for (const code of codes)
+      codeSheet.addRow([code.subjectName, code.subjectId, code.topicName, code.topicId]);
+    codeSheet.columns.forEach((column) => (column.width = 40));
+    bold(codeSheet);
+    const help = workbook.addWorksheet('Instructions');
+    for (const line of IMPORT_INSTRUCTIONS) help.addRow([line]);
+    help.getColumn(1).width = 120;
+    return Buffer.from(await workbook.xlsx.writeBuffer());
   }
 
   async previewImport(

@@ -383,7 +383,8 @@ export function ExaminerApplicationView() {
             <h2>Ten sample questions</h2>
             <p>
               Each question needs English stem, four distinct options, an answer, and a solution.
-              All samples use the selected exam.
+              All samples use the selected exam. The subjects you use here are the subjects you
+              can author after approval, so include each subject you want to write for.
             </p>
             <div className={styles.grid}>
               {samples.map((sample, index) => {

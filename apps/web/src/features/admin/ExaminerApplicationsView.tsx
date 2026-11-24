@@ -1,15 +1,39 @@
 'use client';
 
 import { useState } from 'react';
-import type { ExaminerApplication, DecideExaminerApplicationRequest } from '@exam-prep/contracts';
+import type {
+  ExaminerApplication,
+  DecideExaminerApplicationRequest,
+  ExaminerAuthoringOptions,
+} from '@exam-prep/contracts';
 import { adminApi } from '@/lib/api/admin';
 import { RichText } from '@/ui/patterns/RichText';
 import { Alert } from '@/features/auth/ui';
 import { Confirm, LoadGate, State, messageOf, useLoad } from './ui';
 import styles from './admin.module.css';
 
+/** Exam, subject and topic names by id, so reviewers never read raw UUIDs. */
+type Names = Map<string, string>;
+function namesOf(options: ExaminerAuthoringOptions): Names {
+  const names: Names = new Map();
+  for (const exam of options.exams) {
+    names.set(exam.id, exam.name);
+    for (const subject of exam.subjects) {
+      names.set(subject.id, subject.name);
+      for (const topic of subject.topics) names.set(topic.id, topic.name);
+    }
+  }
+  return names;
+}
+
 export function ExaminerApplicationsView() {
-  const { state, reload, set } = useLoad(() => adminApi.examinerApplications(), []);
+  const { state, reload, set } = useLoad(async () => {
+    const [items, options] = await Promise.all([
+      adminApi.examinerApplications(),
+      adminApi.examinerOptions(),
+    ]);
+    return { items, names: namesOf(options) };
+  }, []);
   return (
     <>
       <div className={styles.pageHead}>
@@ -22,7 +46,7 @@ export function ExaminerApplicationsView() {
         </div>
       </div>
       <LoadGate state={state} reload={() => void reload()} what="examiner applications">
-        {(items) =>
+        {({ items, names }) =>
           items.length ? (
             <div className={styles.card}>
               <div
@@ -49,8 +73,12 @@ export function ExaminerApplicationsView() {
                       <ApplicationRow
                         key={application.id}
                         application={application}
+                        names={names}
                         onChange={(next) =>
-                          set(items.map((item) => (item.id === next.id ? next : item)))
+                          set({
+                            items: items.map((item) => (item.id === next.id ? next : item)),
+                            names,
+                          })
                         }
                       />
                     ))}
@@ -71,11 +99,14 @@ export function ExaminerApplicationsView() {
 
 function ApplicationRow({
   application,
+  names,
   onChange,
 }: {
   application: ExaminerApplication;
+  names: Names;
   onChange: (application: ExaminerApplication) => void;
 }) {
+  const name = (id: string) => names.get(id) ?? id;
   const [decision, setDecision] = useState<'approved' | 'rejected' | null>(null);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -162,8 +193,8 @@ function ApplicationRow({
             <summary>Review {application.samples.length} sample questions and attachments</summary>
             <p>
               <b>Experience:</b> {application.experienceYears ?? 'Not provided'} years ·{' '}
-              <b>Exams:</b> {application.examIds.join(', ')} · <b>Subjects:</b>{' '}
-              {application.subjectIds.join(', ')}
+              <b>Exams:</b> {application.examIds.map(name).join(', ')} · <b>Subjects:</b>{' '}
+              {application.subjectIds.map(name).join(', ')}
             </p>
             <section aria-label="KYC documents">
               <h3>KYC documents</h3>
@@ -209,7 +240,7 @@ function ApplicationRow({
                 <RichText text={sample.solutionEn} lang="en" />
                 {sample.solutionHi ? <RichText text={sample.solutionHi} lang="hi" /> : null}
                 <p className="t-small t-secondary">
-                  Exam {sample.examId} · Subject {sample.subjectId} · Topic {sample.topicId}
+                  {name(sample.examId)} · {name(sample.subjectId)} · {name(sample.topicId)}
                 </p>
               </article>
             ))}

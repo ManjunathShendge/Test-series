@@ -183,6 +183,11 @@ export function isStaffArea(path: string | null): boolean {
   return path === '/admin' || (path?.startsWith('/admin/') ?? false) || (path?.startsWith('/admin?') ?? false);
 }
 
+/** Examiner pages check the 18+ confirmation themselves and skip student onboarding. */
+export function isExaminerArea(path: string | null): boolean {
+  return path === '/examiner' || (path?.startsWith('/examiner/') ?? false) || (path?.startsWith('/examiner?') ?? false);
+}
+
 export function isStaff(profile: Profile): boolean {
   return profile.roles.includes('admin') || profile.roles.includes('qc_reviewer');
 }

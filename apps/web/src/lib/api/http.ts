@@ -70,3 +70,26 @@ export async function apiRequest<S extends z.ZodType>(
   if (!parsed.success) throw new ApiRequestError(response.status, 'BAD_RESPONSE', 'The server sent an unexpected reply.');
   return parsed.data;
 }
+
+/** GETs a file (for example an XLSX template) with the same credentials and error handling. */
+export async function apiDownload(path: string, { timeoutMs = 30000 }: { timeoutMs?: number } = {}): Promise<Blob> {
+  const headers: Record<string, string> = {};
+  const token = await idToken();
+  if (token) headers['authorization'] = `Bearer ${token}`;
+  const deviceId = getDeviceId();
+  if (deviceId) headers[DEVICE_ID_HEADER] = deviceId;
+  let response: Response;
+  try {
+    response = await fetch(`${browserApiBase}${path}`, { headers, signal: AbortSignal.timeout(timeoutMs) });
+  } catch {
+    throw new ApiRequestError(0, 'NETWORK', 'Cannot reach the server. Check your connection and try again.');
+  }
+  if (response.ok) return response.blob();
+  const payload: unknown = await response.json().catch(() => undefined);
+  const parsed = ApiErrorBody.safeParse(payload);
+  if (parsed.success) {
+    const { code, message, details } = parsed.data.error;
+    throw new ApiRequestError(response.status, code, message, details);
+  }
+  throw new ApiRequestError(response.status, 'BAD_RESPONSE', 'The server sent an unexpected reply.');
+}

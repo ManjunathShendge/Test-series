@@ -24,6 +24,7 @@ import {
   type QuestionBankQuery,
   ImportPreviewRequest,
   ImportPreview,
+  type ImportTemplateQuery,
   ImportCommitRequest,
   CompleteAssetResponse,
   ImportCommitResponse,
@@ -35,7 +36,7 @@ import {
   type UpdateExamRequest,
   type UpdateTemplateRequest,
 } from '@exam-prep/contracts';
-import { apiRequest } from './http';
+import { apiDownload, apiRequest } from './http';
 
 /** Admin catalogue calls (/v1/admin/catalogue). The API authorizes each one; the UI only hides what it cannot do. */
 const base = '/admin/catalogue';
@@ -57,8 +58,9 @@ export const adminApi = {
     apiRequest('GET', `/assets/${enc(id)}/view-url`, { schema: AssetViewUrl }),
   examinerOptions: () =>
     apiRequest('GET', '/examiner/options', { schema: ExaminerAuthoringOptions }),
-  examinerApplication: () =>
-    apiRequest('GET', '/examiner/application', { schema: ExaminerApplicationStatusResponse }),
+  examinerApplication: async () =>
+    (await apiRequest('GET', '/examiner/application', { schema: ExaminerApplicationStatusResponse }))
+      .application,
   submitExaminerApplication: (body: CreateExaminerApplicationRequest) =>
     apiRequest('POST', '/examiner/applications', { schema: ExaminerApplication, body }),
   createExaminerQuestion: (body: DraftQuestionInput) =>
@@ -67,6 +69,8 @@ export const adminApi = {
     apiRequest('PATCH', `/examiner/questions/${enc(id)}`, { schema: DraftQuestion, body }),
   previewExaminerImport: (body: ImportPreviewRequest) =>
     apiRequest('POST', '/examiner/imports/preview', { schema: ImportPreview, body }),
+  examinerImportTemplate: (query: ImportTemplateQuery) =>
+    apiDownload(`/examiner/imports/template?${new URLSearchParams(query)}`),
   commitExaminerImport: (id: string, body: ImportCommitRequest) =>
     apiRequest('POST', `/examiner/imports/${enc(id)}/commit`, {
       schema: ImportCommitResponse,

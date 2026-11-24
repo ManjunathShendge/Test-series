@@ -29,6 +29,8 @@
     "app/**/*.tsx",
     "src/**/*.ts",
     "src/**/*.tsx",
+    "test/e2e/**/*.ts",
+    "playwright.config.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": [

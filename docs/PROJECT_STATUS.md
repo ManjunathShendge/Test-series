@@ -218,6 +218,17 @@ M3 remains in progress: validate browser-based upload and grouped-import preview
 - The 100-question parser unit fixture and integration commit path pass separately. They do not establish one end-to-end browser result.
 - M3 engineering browser acceptance remains blocked locally by missing synthetic authentication; owner agreement/KYC text and a production malware scanner remain external blockers.
 
+## 24 November 2026: M3 close-out work (browser acceptance not yet passing)
+
+- Fixed: a first-time examiner saw "Could not load application" because `GET /examiner/application` returned an empty body for null; it now returns `{ application: null }` (contract change, web and tests updated).
+- Added `GET /examiner/imports/template` and a "Download template" button: the workbook lists the template's sections and the examiner's subject/topic codes, which were previously unobtainable from the UI.
+- Examiner pages skip student onboarding and ask for the 18+ confirmation once; `POST /examiner/applications` now refuses an account without it (`AGE_CONFIRMATION_REQUIRED`).
+- The question editor offers only the approved application's subjects (others failed on save); the staff review shows exam/subject/topic names instead of UUIDs; the application form explains that sample subjects become authoring subjects.
+- Added `pnpm test:browser` (apps/web/test/e2e): fresh database with the demo catalogue, API in test mode with a locally generated signing key, separate web build in `.next-e2e`, Firebase answered in the browser; real MinIO and ClamAV. Playwright 1.65.1 pinned.
+- Checks run: API, contracts and web typecheck and lint; authoring integration tests 3/3 (new: 18+ refusal, `{ application: null }`, template content, examiner-only and assigned-template access).
+- Not verified: the browser journey has not passed. Run 1 found the null-body bug above; run 2 timed out on a test-script selector (`getByLabel('Exam', { exact: true })` does not match a select whose accessible name includes its value). Fix the selector and rerun before claiming M3 acceptance. Full `pnpm test`/`test:int`/`build` were not rerun for this change.
+- External blockers unchanged: owner/legal agreement and KYC policy, production malware scanner.
+
 ## Update template
 
 ```text

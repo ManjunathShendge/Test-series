@@ -498,6 +498,34 @@ export const authoringRepository = {
     }));
   },
 
+  /** Subjects and topics the approved examiner may use in the exam (their application subjects). */
+  async listImportCodes(
+    db: Queryable,
+    examinerId: string,
+    examId: string,
+  ): Promise<{ subjectId: string; subjectName: string; topicId: string; topicName: string }[]> {
+    const { rows } = await db.query<{
+      subject_id: string;
+      subject_name: string;
+      topic_id: string;
+      topic_name: string;
+    }>(
+      `SELECT s.id AS subject_id,s.name AS subject_name,t.id AS topic_id,t.name AS topic_name
+         FROM examiner_profiles ep
+         JOIN subjects s ON s.exam_id=$2 AND s.id=ANY(ep.subject_ids)
+         JOIN topics t ON t.subject_id=s.id
+        WHERE ep.user_id=$1 AND ep.onboarding_status='approved' AND $2=ANY(ep.exam_ids)
+        ORDER BY s.name,t.name`,
+      [examinerId, examId],
+    );
+    return rows.map((row) => ({
+      subjectId: row.subject_id,
+      subjectName: row.subject_name,
+      topicId: row.topic_id,
+      topicName: row.topic_name,
+    }));
+  },
+
   async getImportByIdempotencyKey(db: Queryable, ownerId: string, idempotencyKey: string) {
     const { rows } = await db.query<{
       id: string;

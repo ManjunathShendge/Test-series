@@ -8,7 +8,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint app src",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "test:browser": "node --env-file-if-exists=../../.env test/e2e/run.mjs"
   },
   "dependencies": {
     "@exam-prep/contracts": "workspace:*",
@@ -23,8 +24,11 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@playwright/test": "1.65.1",
     "@types/node": "catalog:",
     "@types/react": "19.3.0",
+    "exceljs": "4.4.0",
+    "fflate": "0.8.3",
     "oxlint": "1.93.0",
     "typescript": "catalog:",
     "vitest": "catalog:"

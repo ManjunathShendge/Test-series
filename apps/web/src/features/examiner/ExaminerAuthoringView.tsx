@@ -98,9 +98,17 @@ export function ExaminerAuthoringView() {
           );
         }
         const allowedExamIds = application.examIds;
+        // The API accepts only the approved application's exams and subjects; offer nothing else.
         const assignedOptions: ExaminerAuthoringOptions = {
           ...options,
-          exams: options.exams.filter((exam) => allowedExamIds.includes(exam.id)),
+          exams: options.exams
+            .filter((exam) => allowedExamIds.includes(exam.id))
+            .map((exam) => ({
+              ...exam,
+              subjects: exam.subjects.filter((subject) =>
+                application.subjectIds.includes(subject.id),
+              ),
+            })),
         };
         const newQuestion = () => {
           setEditing(null);
@@ -800,6 +808,32 @@ function ImportPanel({
   const [committed, setCommitted] = useState<number | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+
+  async function downloadTemplate() {
+    if (!examId || !stageId || !templateId)
+      return setError(new Error('Choose an exam, stage, and published template.'));
+    setDownloading(true);
+    setError(null);
+    try {
+      const blob = await adminApi.examinerImportTemplate({ examId, stageId, templateId });
+      const template = stage?.templates.find((item) => item.id === templateId);
+      const name = `${exam?.name ?? 'exam'} ${template?.name ?? 'template'} v${template?.version ?? ''}`
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${name}-import.xlsx`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (caught) {
+      setError(caught);
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   async function previewImport(file: File) {
     setBusy(true);
@@ -853,7 +887,8 @@ function ImportPanel({
       <p>
         Upload an XLSX or ZIP (20 MB max). Add a Groups sheet for shared passages and include
         referenced JPEG, PNG or WebP files in the ZIP. Use safe relative paths in image_refs,
-        separated with semicolons.
+        separated with semicolons. Start from the template: it lists this template&apos;s sections
+        and the subject and topic codes you may use.
       </p>
       {error ? <Alert>{error instanceof Error ? error.message : messageOf(error)}</Alert> : null}
       <div className={styles.inline}>
@@ -908,6 +943,15 @@ function ImportPanel({
             ))}
           </select>
         </label>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          disabled={downloading || !templateId}
+          aria-busy={downloading || undefined}
+          onClick={() => void downloadTemplate()}
+        >
+          {downloading ? 'Preparing…' : 'Download template'}
+        </button>
       </div>
       <label className={styles.field}>
         <span>Workbook/archive</span>

@@ -2,11 +2,13 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   Headers,
   Param,
   Patch,
   Post,
   Query,
+  StreamableFile,
   UseGuards,
 } from '@nestjs/common';
 import { z } from 'zod';
@@ -16,6 +18,7 @@ import {
   DEVICE_ID_HEADER,
   type ExaminerApplication,
   type ExaminerApplicationList,
+  type ExaminerApplicationStatusResponse,
   AssetUploadIntentRequest,
   AssetUploadIntent,
   AdminKycDownloadUrl,
@@ -27,6 +30,7 @@ import {
   type AssetViewUrl,
   ImportPreviewRequest,
   ImportPreview,
+  ImportTemplateQuery,
   ImportCommitRequest,
   ExaminerAuthoringOptions,
 } from '@exam-prep/contracts';
@@ -42,6 +46,7 @@ import {
 import { AuthoringService } from '../application/authoring.service.js';
 
 const IdParam = z.uuid();
+const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 @Controller()
 export class AuthoringController {
@@ -70,10 +75,10 @@ export class AuthoringController {
 
   @Get('examiner/application')
   @UseGuards(FirebaseAuthGuard, RolesGuard)
-  ownApplication(
+  async ownApplication(
     @CurrentIdentity() identity: VerifiedIdentity,
-  ): Promise<ExaminerApplication | null> {
-    return this.service.ownApplication(identity);
+  ): Promise<ExaminerApplicationStatusResponse> {
+    return { application: await this.service.ownApplication(identity) };
   }
 
   @Get('admin/examiner-applications')
@@ -174,6 +179,20 @@ export class AuthoringController {
       identity,
       parseContract(IdParam, id),
       parseContract(DraftQuestionInput, body),
+    );
+  }
+
+  @Get('examiner/imports/template')
+  @UseGuards(FirebaseAuthGuard, RolesGuard)
+  @Header('content-type', XLSX_MIME)
+  @Header('content-disposition', 'attachment; filename="question-import-template.xlsx"')
+  @Header('cache-control', 'no-store')
+  async importTemplate(
+    @CurrentIdentity() identity: VerifiedIdentity,
+    @Query() query: unknown,
+  ): Promise<StreamableFile> {
+    return new StreamableFile(
+      await this.service.importTemplate(identity, parseContract(ImportTemplateQuery, query)),
     );
   }
 

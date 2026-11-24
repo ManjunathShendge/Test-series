@@ -218,7 +218,8 @@ export const ExaminerApplicationList = z.object({
   items: z.array(ExaminerApplication),
 });
 export type ExaminerApplicationList = z.infer<typeof ExaminerApplicationList>;
-export const ExaminerApplicationStatusResponse = ExaminerApplication.nullable();
+// An object, not a bare null: Nest sends an empty body for a null return, which no JSON client can parse.
+export const ExaminerApplicationStatusResponse = z.object({ application: ExaminerApplication.nullable() });
 export type ExaminerApplicationStatusResponse = z.infer<typeof ExaminerApplicationStatusResponse>;
 
 export const AssetUploadIntentRequest = z.strictObject({
@@ -393,6 +394,14 @@ export const ImportPreviewRequest = z.strictObject({
   assetId: z.uuid(),
 });
 export type ImportPreviewRequest = z.infer<typeof ImportPreviewRequest>;
+
+/** GET /examiner/imports/template: an XLSX with the template's sections and the examiner's codes. */
+export const ImportTemplateQuery = z.strictObject({
+  examId: z.uuid(),
+  stageId: z.uuid(),
+  templateId: z.uuid(),
+});
+export type ImportTemplateQuery = z.infer<typeof ImportTemplateQuery>;
 
 export const ImportRowError = z.object({
   sheet: z.enum(['Questions', 'Groups']).optional(),

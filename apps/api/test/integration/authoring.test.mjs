@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { NestFactory } from '@nestjs/core';
+import ExcelJS from 'exceljs';
 import { SignJWT, exportJWK, generateKeyPair } from 'jose';
 import { AppModule } from '../../dist/app.module.js';
 import { AuthoringService } from '../../dist/modules/authoring/application/authoring.service.js';
@@ -47,7 +48,7 @@ async function api(t) {
     const text = response.status === 204 ? '' : await response.text();
     return { status: response.status, body: text ? JSON.parse(text) : null };
   };
-  const user = async ({ admin = false } = {}) => {
+  const user = async ({ admin = false, ageConfirmed = true } = {}) => {
     const uid = `uid-${randomUUID()}`;
     const jwt = await new SignJWT({
       email: `${uid}@example.test`,
@@ -65,7 +66,7 @@ async function api(t) {
       .sign(privateKey);
     const session = await call('POST', '/identity/session', {
       as: { jwt },
-      body: { deviceName: 'Test browser', platform: 'web', ageConfirmed: true },
+      body: { deviceName: 'Test browser', platform: 'web', ...(ageConfirmed ? { ageConfirmed } : {}) },
     });
     assert.equal(session.status, 200);
     const user = { jwt, device: session.body.device.id, id: session.body.profile.id };
@@ -124,7 +125,7 @@ async function api(t) {
     await db.owner.query('UPDATE exams SET is_active=true WHERE id=$1', [exam]);
     return { exam, stage, template, subject, topic };
   };
-  return { app, db, call, user, catalog };
+  return { app, db, base, call, user, catalog };
 }
 
 function applicationBody(catalog, overrides = {}) {
@@ -205,7 +206,10 @@ test('examiner application, approval and question revisions enforce authorizatio
     [409, 'APPLICATION_ALREADY_EXISTS'],
   );
   const own = await call('GET', '/examiner/application', { as: applicant });
-  assert.deepEqual([own.body.id, own.body.status], [submitted.body.id, 'pending']);
+  assert.deepEqual(
+    [own.body.application.id, own.body.application.status],
+    [submitted.body.id, 'pending'],
+  );
 
   const listed = await call('GET', '/admin/examiner-applications', { as: admin });
   assert.ok(listed.body.items.some((item) => item.samples[0].stemEn === 'Question 1?'));
@@ -549,4 +553,82 @@ test('rejected applications can be revised but approvals cannot be resubmitted',
     ).length,
     1,
   );
+});
+
+test('applications need an 18+ confirmation and approved examiners get an import template', async (t) => {
+  const { db, base, call, user, catalog } = await api(t);
+  const taxonomy = await catalog();
+  const otherTopic = (
+    await db.owner.query("INSERT INTO topics (subject_id,name) VALUES ($1,'Geometry') RETURNING id", [
+      taxonomy.subject,
+    ])
+  ).rows[0].id;
+  const otherSubject = (
+    await db.owner.query("INSERT INTO subjects (exam_id,name) VALUES ($1,'Reasoning') RETURNING id", [
+      taxonomy.exam,
+    ])
+  ).rows[0].id;
+  await db.owner.query("INSERT INTO topics (subject_id,name) VALUES ($1,'Series') RETURNING id", [
+    otherSubject,
+  ]);
+  const admin = await user({ admin: true });
+  const applicant = await user({ ageConfirmed: false });
+  const download = (as, query) =>
+    fetch(`${base}/examiner/imports/template?${new URLSearchParams(query)}`, {
+      headers: { authorization: `Bearer ${as.jwt}`, 'x-device-id': as.device },
+    });
+  const target = { examId: taxonomy.exam, stageId: taxonomy.stage, templateId: taxonomy.template };
+  const none = await call('GET', '/examiner/application', { as: applicant });
+  assert.deepEqual([none.status, none.body], [200, { application: null }], 'no application is JSON, not an empty body');
+
+  const underage = await call('POST', '/examiner/applications', {
+    as: applicant,
+    body: applicationBody(taxonomy),
+  });
+  assert.deepEqual([underage.status, underage.body.error.code], [400, 'AGE_CONFIRMATION_REQUIRED']);
+  assert.equal(
+    (await call('PATCH', '/me', { as: applicant, body: { ageConfirmed: true } })).status,
+    200,
+  );
+  const submitted = await call('POST', '/examiner/applications', {
+    as: applicant,
+    body: applicationBody(taxonomy),
+  });
+  assert.equal(submitted.status, 201);
+  assert.equal((await download(applicant, target)).status, 403, 'pending applicants get no template');
+  await call('PATCH', `/admin/examiner-applications/${submitted.body.id}`, {
+    as: admin,
+    body: { status: 'approved' },
+  });
+
+  const response = await download(applicant, target);
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type'), /spreadsheetml\.sheet/);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(Buffer.from(await response.arrayBuffer()));
+  assert.deepEqual(
+    workbook.worksheets.map((sheet) => sheet.name),
+    ['Questions', 'Groups', 'Sections', 'Codes', 'Instructions'],
+  );
+  const questions = workbook.getWorksheet('Questions');
+  assert.equal(questions.rowCount, 1, 'the Questions sheet holds only headers');
+  assert.ok(questions.getRow(1).values.includes('subject_code'));
+  assert.deepEqual(workbook.getWorksheet('Sections').getRow(2).values.slice(1), [
+    'Mathematics',
+    '1-10',
+    'Mathematics',
+    taxonomy.subject,
+  ]);
+  const codes = workbook.getWorksheet('Codes').getSheetValues().slice(2).map((row) => row.slice(1));
+  assert.deepEqual(
+    codes.map((row) => row[3]).sort(),
+    [taxonomy.topic, otherTopic].sort(),
+    'only the approved subject is listed, with all its topics',
+  );
+
+  const wrongTemplate = await download(applicant, { ...target, templateId: randomUUID() });
+  assert.equal(wrongTemplate.status, 422);
+  assert.equal((await download(admin, target)).status, 403, 'staff are not examiners');
+  assert.equal((await download(applicant, { examId: 'x' })).status, 400);
 });

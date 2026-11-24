@@ -23,6 +23,8 @@ Authenticated requests carry Firebase bearer token, registered device/session pr
 | POST /assets/upload-intents | Authorized owner/staff | Restricted upload URL, MIME/size limits and object scope |
 | POST /assets/:id/complete | Owner | Validate hash/type, quarantine until checks finish |
 | POST/PATCH /examiner/tests | Examiner owner | Draft only, optimistic revision check |
+| GET /examiner/application | Signed-in account | `{ application: ExaminerApplication \| null }` (never a bare null) |
+| GET /examiner/imports/template?examId&stageId&templateId | Approved examiner | XLSX: Questions/Groups headers plus Sections, Codes (own subjects/topics) and Instructions reference sheets; `no-store` |
 | POST /examiner/imports, /:id/commit | Owner | Validate file/zip, row errors, atomic accepted import |
 | POST /examiner/tests/:id/precheck | Owner | Immediate bounded checks or 202 job ID |
 | POST /examiner/tests/:id/submit | Owner | Freeze manifest and enqueue QC |
