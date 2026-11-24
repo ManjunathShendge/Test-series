@@ -15,11 +15,20 @@ The development foundation runs on PostgreSQL 17 (Docker locally and in CI; Supa
 
 ## Log
 
+## 24 November 2026: C6 hardening, store readiness and handover
+- Database (026): per-row rules for `user_devices` and `test_series`; remaining API-only tables listed in DATA_MODEL "Row rules (C6)".
+- Reliability: a database connection lost mid-transaction no longer crashes the API or worker (it was an unhandled error event; found as an intermittent integration failure).
+- Start-up checks: Anthropic and PostHog key shapes, email URL and sender set together, Firebase service account must parse and belong to the project, Razorpay test keys refused in production, webhook secret required when deployed. Errors name the variable, never the value.
+- App store readiness: `preview` and `production` EAS profiles, version 1.0.0, production build refuses the development bundle ID, export-compliance flag, iOS privacy manifest, storage, microphone and overlay permissions removed for store builds. Web `.env.example` now lists the Firebase and site URL variables.
+- Docs: STORE_RELEASE (what is ready, billing and Sign in with Apple hand-off, listing answers, release steps), HANDOVER, new runbooks in OPERATIONS (jobs, notifications, deletion, AI, scheduled publishing), launch checklist item for store verification.
+- Checks: rolled-back row-rule script (11 passed); earlier milestone scripts re-run after the new rules (C2 23, C3 20, C4 24, series 8, C5 18); integration tests 26/26 three runs in a row; environment tests 19; full build and smoke tests (`pnpm test:e2e`); Expo config resolves for development, preview and production.
+- Correction: the C5 entry earlier said 19 checks; the script has 18.
+
 ## 24 November 2026: C5 AI assistance for reviewers (M6)
 - Database (025): per-exam AI switches off by default (plus a Hindi/English check), append-only `ai_suggestions`, monthly spend ledger, cache readable only by admins, trigger that queues checks when a test enters QC.
 - Worker: Anthropic adapter behind `LLM_API_KEY` (model, prices and monthly cap in `.env.example`); per-question jobs with blind answer, ambiguity and language checks; key and solution never sent; output validated and bounded; exact-input cache; atomic cost reservation against the cap; failures recorded as "AI check unavailable". Details in QC_PIPELINE "Implementation (C5)".
 - Web: AI switches on the admin exam page; advisory AI panel on each question in the reviewer page (blind pick vs key, notes, or unavailable reason). AI never changes a question or verdict.
-- Checks: rolled-back worker script against the real database with a fake model (19 passed: off by default, QC entry queues once, nothing sent with switches off, one call and record per question, no key or solution in any prompt, server key comparison, language check only for bilingual questions, spend settles to actual cost, repeat skipped, cache hit at zero cost, unusable reply, busy provider retried once, budget cap stops calls, reservations released, content and test unchanged, append-only, reviewers read but students cannot read or write); reviewer query returns the latest suggestion; unit tests for prompt input, cache key and reply parsing. Found and fixed: notes for checks not asked for were being stored.
+- Checks: rolled-back worker script against the real database with a fake model (18 passed: off by default, QC entry queues once, nothing sent with switches off, one call and record per question, no key or solution in any prompt, server key comparison, language check only for bilingual questions, spend settles to actual cost, repeat skipped, cache hit at zero cost, unusable reply, busy provider retried once, budget cap stops calls, reservations released, content and test unchanged, append-only, reviewers read but students cannot read or write); reviewer query returns the latest suggestion; unit tests for prompt input, cache key and reply parsing. Found and fixed: notes for checks not asked for were being stored.
 - Needs from the owner: an Anthropic API key with suitable data terms, and switching the checks on per exam.
 
 ## 24 November 2026: C4 admin operations (M11)

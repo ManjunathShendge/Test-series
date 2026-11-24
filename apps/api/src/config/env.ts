@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { parseServiceAccount } from '../providers/firebase/admin-identity.js';
 
 const origin = z.url().refine((value) => {
   if (!URL.canParse(value)) return false;
@@ -73,7 +74,9 @@ const schema = z
     // Optional Expo access token when "enhanced push security" is on for the Expo project.
     EXPO_ACCESS_TOKEN: blankAsUnset(z.string().trim().min(10).optional()),
     // Server-side PostHog capture (purchase_confirmed); project API key, not a personal key.
-    POSTHOG_API_KEY: blankAsUnset(z.string().trim().min(10).optional()),
+    POSTHOG_API_KEY: blankAsUnset(
+      z.string().trim().regex(/^phc_\w{10,}$/, 'Expected a PostHog project API key (phc_...), not a personal key').optional(),
+    ),
     POSTHOG_HOST: blankAsUnset(origin.optional()),
     // Firebase service account JSON (one line, or base64 of it): lets the worker delete the
     // sign-in identity of a deleted account. Without it the identity is left for manual removal.
@@ -81,7 +84,7 @@ const schema = z
     // AI suggestions for QC reviewers (QC_PIPELINE "AI boundary"). Off without a key; also off
     // per exam until an admin enables it. Prices are USD per million tokens: check the
     // provider's current price list for the chosen model before launch.
-    LLM_API_KEY: blankAsUnset(z.string().trim().min(20).optional()),
+    LLM_API_KEY: blankAsUnset(z.string().trim().regex(/^sk-ant-[\w-]{20,}$/, 'Expected an Anthropic API key (sk-ant-...)').optional()),
     LLM_MODEL: z.string().trim().min(3).max(100).default('claude-sonnet-5'),
     LLM_PRICE_INPUT_PER_MTOK_USD: z.coerce.number().min(0).max(1000).default(3),
     LLM_PRICE_OUTPUT_PER_MTOK_USD: z.coerce.number().min(0).max(1000).default(15),
@@ -167,6 +170,42 @@ const schema = z
         path: ['RAZORPAY_KEY_ID'],
         message: 'Live Razorpay keys are allowed only in production; use rzp_test_ keys',
       });
+    // Provider keys: a mistyped or half-set key fails here at boot, never at first use.
+    // Messages name the variable only; values are never echoed.
+    if (env.RAZORPAY_KEY_ID?.startsWith('rzp_test_') && env.APP_ENV === 'production')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['RAZORPAY_KEY_ID'],
+        message: 'Production needs live Razorpay keys (rzp_live_); test keys take no real payments',
+      });
+    if (env.RAZORPAY_KEY_ID && !env.RAZORPAY_WEBHOOK_SECRET && ['staging', 'production'].includes(env.APP_ENV))
+      ctx.addIssue({
+        code: 'custom',
+        path: ['RAZORPAY_WEBHOOK_SECRET'],
+        message: 'Deployed Razorpay checkout needs the webhook secret so missed payments are still fulfilled',
+      });
+    if (Boolean(env.EMAIL_SMTP_URL) !== Boolean(env.EMAIL_FROM))
+      ctx.addIssue({ code: 'custom', path: ['EMAIL_FROM'], message: 'Set both EMAIL_SMTP_URL and EMAIL_FROM, or neither' });
+    if (env.EMAIL_SMTP_URL && (!URL.canParse(env.EMAIL_SMTP_URL) || new URL(env.EMAIL_SMTP_URL).hostname === ''))
+      ctx.addIssue({ code: 'custom', path: ['EMAIL_SMTP_URL'], message: 'Expected smtp://user:pass@host:port or smtps://...' });
+    if (env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+      let projectId: string | undefined;
+      try {
+        projectId = parseServiceAccount(env.FIREBASE_SERVICE_ACCOUNT_JSON).project_id;
+      } catch {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['FIREBASE_SERVICE_ACCOUNT_JSON'],
+          message: 'Expected the service account JSON file contents (one line, or base64 of it)',
+        });
+      }
+      if (projectId && projectId !== env.FIREBASE_PROJECT_ID)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['FIREBASE_SERVICE_ACCOUNT_JSON'],
+          message: 'Service account belongs to a different Firebase project than FIREBASE_PROJECT_ID',
+        });
+    }
     if (env.API_PORT === env.WORKER_PORT)
       ctx.addIssue({
         code: 'custom',

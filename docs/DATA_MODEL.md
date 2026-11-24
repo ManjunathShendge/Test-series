@@ -228,3 +228,9 @@ Row-level security: every public table has RLS. `exam_worker` has full row acces
 - `ai_suggestions`: one append-only record per question version and run (`cache_key`, provider, model, `prompt_version`, `status` ok|unavailable, `checks`, `selected_option`, server-computed `matches_key`, notes, `unavailable_reason`, `cost_micro_usd`). Read by QC reviewers and admins; written only by the worker.
 - `ai_spend_months`: per-month reserved spend in micro-USD (never negative) and call count; admins read.
 - `ai_question_cache`: admins read (worker writes). Trigger `tests_ai_checks` queues `ai.check_test` when a test enters `in_qc`.
+
+## Row rules (C6, 24 November 2026; migration 026)
+
+- `user_devices`: a user reads and changes only their own devices; admins read. Push tokens cannot be set on another account's device.
+- `test_series`: published series are public; examiners read and edit their own; QC reviewers and admins read all; admins edit; a student who bought or was granted a series still sees it after it is unpublished.
+- Still governed by API checks only (allow-all for the app role, never reachable by Supabase's Data API roles): reference and template tables (`exam_categories`, `exams`, `exam_stages`, `exam_templates`, `exam_template_sections`, `subjects`, `topics`, `pass_plans`), paper structure (`test_sections`, `test_questions`, `question_passages`), staff workflow (`qc_reviews`, `qc_question_reviews`, `qc_reviewer_mappings`, `question_key_corrections`, `examiner_profiles`), money and system tables written through definer functions (`billing_events`, `coupons`, `invoice_counters`, `ledger_entries`, `monthly_pass_pools`, `student_entitlements`, `jobs`, `bootstrap_state`) and `test_ratings`. Candidates for the next hardening pass, in that order of value: `question_passages`, `student_entitlements`, `test_ratings`.

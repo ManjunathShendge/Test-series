@@ -9,6 +9,7 @@ Unchecked means unverified; documentation completion does not satisfy implementa
 - [ ] Last-five-years PYQ coverage register records available years/shifts and missing papers; no claim of complete corpus without evidence.
 - [ ] Trigram ~200-pair calibration signed off; Hindi review and reviewer capacity/48h SLA covered.
 - [ ] Complete student/examiner/reviewer/finance E2E tested; keys never leak to active students.
+- [ ] Server-side store purchase verification and refund notifications built after the store product decision (STORE_RELEASE.md).
 - [ ] Payments in store sandboxes and Razorpay test mode pass recovery/refund/replay/restore; live credentials separated and audited.
 - [ ] Finance confirms tax/share/net definitions, invoice issuer and payout reconciliation with hand-checked fixtures.
 - [ ] Security/ownership/privacy/deletion/accessibility tests pass; capture behavior checked on actual iOS/Android.

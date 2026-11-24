@@ -119,4 +119,26 @@ describe('environment boundary', () => {
   it('rejects colliding listener ports', () => {
     expect(() => parseEnvironment({ ...local, WORKER_PORT: 3001 })).toThrow('WORKER_PORT');
   });
+  it('checks provider key shapes and pairs without echoing values', () => {
+    expect(() => parseEnvironment({ ...local, LLM_API_KEY: 'not-a-real-key-000000000000' })).toThrow('LLM_API_KEY');
+    expect(parseEnvironment({ ...local, LLM_API_KEY: `sk-ant-${'a'.repeat(30)}` }).LLM_API_KEY).toBeDefined();
+    expect(() => parseEnvironment({ ...local, POSTHOG_API_KEY: 'phx_personal0000000000' })).toThrow('POSTHOG_API_KEY');
+    expect(() => parseEnvironment({ ...local, EMAIL_SMTP_URL: 'smtp://u:p@mail.test:587' })).toThrow('EMAIL_FROM');
+    try {
+      parseEnvironment({ ...local, LLM_API_KEY: 'secret-value-must-not-leak-123' });
+    } catch (error) {
+      expect(String(error)).not.toContain('secret-value');
+    }
+  });
+  it('checks the Firebase service account belongs to this project', () => {
+    const account = (project_id: string) =>
+      JSON.stringify({ project_id, client_email: 'svc@x.iam.gserviceaccount.com', private_key: '-----BEGIN PRIVATE KEY-----' + 'x' + '-----END PRIVATE KEY-----' });
+    expect(parseEnvironment({ ...local, FIREBASE_SERVICE_ACCOUNT_JSON: account('demo-exam-prep') }).FIREBASE_SERVICE_ACCOUNT_JSON).toBeDefined();
+    expect(() => parseEnvironment({ ...local, FIREBASE_SERVICE_ACCOUNT_JSON: account('other-project') })).toThrow('different Firebase project');
+    expect(() => parseEnvironment({ ...local, FIREBASE_SERVICE_ACCOUNT_JSON: '{"broken": true}' })).toThrow('FIREBASE_SERVICE_ACCOUNT_JSON');
+  });
+  it('refuses Razorpay test keys in production', () => {
+    const prod = { ...local, APP_ENV: 'production', NODE_ENV: 'production', FIREBASE_AUTH_EMULATOR_HOST: undefined };
+    expect(() => parseEnvironment({ ...prod, RAZORPAY_KEY_ID: 'rzp_test_abc123', RAZORPAY_KEY_SECRET: 'secret123' })).toThrow('live Razorpay');
+  });
 });

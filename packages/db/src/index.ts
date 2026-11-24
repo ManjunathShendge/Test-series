@@ -33,7 +33,7 @@ export function createDatabase(url: string, options: DatabaseOptions = {}): Data
 }
 
 /** Bumped by every migration that changes the schema this code expects. */
-export const SCHEMA_VERSION = 25;
+export const SCHEMA_VERSION = 26;
 
 export async function checkDatabase(db: Queryable): Promise<void> {
   const { rows } = await db.query<{ version: number }>(
@@ -48,6 +48,11 @@ export async function transaction<T>(
   action: (client: DatabaseClient) => Promise<T>,
 ): Promise<T> {
   const client = await db.connect();
+  // A connection lost while checked out emits 'error' on the client; unheard, that crashes the
+  // process. The pending query rejects anyway, and the broken client is discarded on release.
+  let lost: Error | undefined;
+  const onError = (error: Error) => (lost = error);
+  client.on('error', onError);
   try {
     await client.query('BEGIN');
     const result = await action(client);
@@ -57,7 +62,8 @@ export async function transaction<T>(
     await client.query('ROLLBACK').catch(() => {});
     throw error;
   } finally {
-    client.release();
+    client.off('error', onError);
+    client.release(lost);
   }
 }
 

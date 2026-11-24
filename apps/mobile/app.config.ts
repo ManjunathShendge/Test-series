@@ -19,21 +19,50 @@ const googleIosUrlScheme = process.env.GOOGLE_IOS_URL_SCHEME ?? '';
 if (process.env.EAS_BUILD === 'true' && process.env.EAS_BUILD_PLATFORM === 'ios' && !googleIosUrlScheme) {
   throw new Error('GOOGLE_IOS_URL_SCHEME is not set for this EAS build environment (docs/SETUP.md).');
 }
+// A store build under the development package name could never be updated once published.
+const storeBuild = process.env.EAS_BUILD_PROFILE === 'production';
+if (storeBuild && !process.env.APP_BUNDLE_ID) {
+  throw new Error('APP_BUNDLE_ID is not set for the production EAS environment (docs/STORE_RELEASE.md).');
+}
 
 const config: ExpoConfig = {
   name: 'MakeMePrepare',
   slug: 'testapp',
   owner: 'testseriesapp0312s-team',
   scheme: 'examprep',
-  version: '0.0.0',
+  // Store version shown to users; build numbers are managed by EAS (appVersionSource remote).
+  version: '1.0.0',
   orientation: 'portrait',
   newArchEnabled: true,
   userInterfaceStyle: 'light',
   backgroundColor: '#001D39',
   icon: './assets/icon.png',
-  ios: { supportsTablet: false, bundleIdentifier: bundleId },
+  ios: {
+    supportsTablet: false,
+    bundleIdentifier: bundleId,
+    // HTTPS only, no custom cryptography: exempt, so App Store Connect stops asking per build.
+    config: { usesNonExemptEncryption: false },
+    // React Native's own required-reason API use; Expo modules ship their own manifests.
+    // No tracking. Data collection labels are declared in App Store Connect (STORE_RELEASE.md).
+    privacyManifests: {
+      NSPrivacyTracking: false,
+      NSPrivacyAccessedAPITypes: [
+        { NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults', NSPrivacyAccessedAPITypeReasons: ['CA92.1'] },
+        { NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryFileTimestamp', NSPrivacyAccessedAPITypeReasons: ['C617.1'] },
+        { NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategorySystemBootTime', NSPrivacyAccessedAPITypeReasons: ['35F9.1'] },
+      ],
+    },
+  },
   android: {
     package: bundleId,
+    // The app reads no shared storage and draws no overlays; keeping these out avoids Play
+    // permission declarations. The overlay stays for development builds (dev menu).
+    blockedPermissions: [
+      'android.permission.READ_EXTERNAL_STORAGE',
+      'android.permission.WRITE_EXTERNAL_STORAGE',
+      'android.permission.RECORD_AUDIO',
+      ...(storeBuild || process.env.EAS_BUILD_PROFILE === 'preview' ? ['android.permission.SYSTEM_ALERT_WINDOW'] : []),
+    ],
     softwareKeyboardLayoutMode: 'resize',
     adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#FFFFFF' },
   },
