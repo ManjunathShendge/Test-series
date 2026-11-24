@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useId, useState } from 'react';
 import type { TestDetail } from '@exam-prep/contracts';
+import { track } from '@/lib/analytics';
 import { attemptsApi } from '@/lib/api/attempts';
 import { ApiRequestError } from '@/lib/api/http';
 import { isDurable, newLocalAttempt, saveAttempt } from '@/lib/storage/attemptStore';
@@ -51,6 +52,7 @@ function Instructions({ test }: { test: TestDetail }) {
         const { state, sessionToken } = reply;
         // The token goes to the device before the player opens, so a refresh keeps this tab the writer.
         await saveAttempt(newLocalAttempt(state.attemptId, sessionToken, state.epoch, state.ackSeq)).catch(() => undefined);
+        if (test.pricePaise === 0) track('free_attempt_started', { testId: test.id });
         router.replace(`/attempt/${state.attemptId}`);
       } else {
         // Already running (another tab or device): the player offers to continue here.

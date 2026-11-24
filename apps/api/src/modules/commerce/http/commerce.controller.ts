@@ -81,6 +81,13 @@ export class CheckoutController {
     return this.service.entitlements(access);
   }
 
+  @Get('me/purchases/:id/invoice')
+  @Header('Cache-Control', 'private, no-store')
+  async invoice(@CurrentAccess() access: AccessContext, @Param('id') id: string): Promise<StreamableFile> {
+    const pdf = await this.service.invoice(access, parseContract(Id, id));
+    return new StreamableFile(pdf.file, { disposition: `attachment; filename="${pdf.filename}"`, type: 'application/pdf' });
+  }
+
   @Get('me/purchases')
   purchases(@CurrentAccess() access: AccessContext): Promise<MyPurchaseList> {
     return this.service.myPurchases(access);

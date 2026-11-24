@@ -14,3 +14,4 @@ export * from './authoring/examiner-tests.js';
 export * from './qc/index.js';
 export * from './commerce/index.js';
 export * from './attempts/index.js';
+export * from './notifications/index.js';

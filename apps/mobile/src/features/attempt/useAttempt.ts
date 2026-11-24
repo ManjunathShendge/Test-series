@@ -14,6 +14,7 @@ import {
   type AttemptState,
 } from '@exam-prep/engine';
 import { announce } from '@/lib/a11y';
+import { track } from '@/lib/analytics';
 import { attemptsApi } from '@/lib/api/attempts';
 import { ApiRequestError } from '@/lib/api/http';
 import { loadAttempt, newLocalAttempt, removeAttempt, saveAttempt, type LocalAttempt } from '@/lib/storage/attempt-outbox';
@@ -475,6 +476,7 @@ export function useAttempt(attemptId: string) {
           continue;
         }
         await attemptsApi.submit(attemptId, current.token, body);
+        track('attempt_submitted');
         return finished();
       } catch (error) {
         if (!live(gen)) return;

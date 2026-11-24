@@ -33,7 +33,7 @@ export function createDatabase(url: string, options: DatabaseOptions = {}): Data
 }
 
 /** Bumped by every migration that changes the schema this code expects. */
-export const SCHEMA_VERSION = 21;
+export const SCHEMA_VERSION = 23;
 
 export async function checkDatabase(db: Queryable): Promise<void> {
   const { rows } = await db.query<{ version: number }>(

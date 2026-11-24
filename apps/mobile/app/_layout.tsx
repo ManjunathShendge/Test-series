@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View } from 'react-native';
 import { OfflineBanner } from '@/features/common/OfflineBanner';
+import { registerPushToken, useNotificationRouting } from '@/features/notifications/push';
 import { ApiProvider } from '@/lib/api/client';
 import { onAuthChange } from '@/lib/auth';
 import { missingConfig } from '@/lib/config';
@@ -58,6 +59,15 @@ export default function RootLayout() {
       if (!user && useAppStore.getState().session.signedIn) resetLocalSession();
     });
   }, [hydrated]);
+
+  // Signed-in launches refresh the push token (it can rotate) without asking again, and
+  // tapped notifications open their screen.
+  const signedIn = useAppStore((s) => s.session.signedIn);
+  const ready = hydrated && !MISSING_CONFIG.length && signedIn;
+  useEffect(() => {
+    if (ready) void registerPushToken({ prompt: false });
+  }, [ready]);
+  useNotificationRouting(ready);
 
   if (!hydrated) return null;
 

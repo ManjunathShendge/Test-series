@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { MyPurchase } from '@exam-prep/contracts';
-import { checkoutApi, inr } from '@/lib/api/commerce';
+import { checkoutApi, inr, saveBlob } from '@/lib/api/commerce';
 import { ApiRequestError } from '@/lib/api/http';
-import { Alert, Waiting } from '@/features/auth/ui';
+import { Alert, BusyButton, Waiting } from '@/features/auth/ui';
 import authStyles from '@/features/auth/auth.module.css';
 import styles from './commerce.module.css';
 
@@ -20,16 +20,33 @@ function line(p: MyPurchase): string {
   return parts.join(' · ');
 }
 
-/** Account page: tests and series the student bought or was given. */
+/** Invoice numbers may contain characters a filename cannot (for example "/"). */
+const invoiceFile = (invoiceNumber: string) => `${invoiceNumber.replace(/[^A-Za-z0-9._-]+/g, '-')}.pdf`;
+
+/** Account page: tests and series the student bought or was given, with their tax invoices. */
 export function PurchasesPanel() {
   const [items, setItems] = useState<MyPurchase[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   useEffect(() => {
     checkoutApi
       .purchases()
       .then(setItems)
       .catch((e: unknown) => setError(e instanceof ApiRequestError ? e.message : 'Could not load your purchases.'));
   }, []);
+
+  const downloadInvoice = async (purchaseId: string, invoiceNumber: string) => {
+    setDownloading(purchaseId);
+    setDownloadError(null);
+    try {
+      saveBlob(await checkoutApi.invoice(purchaseId), invoiceFile(invoiceNumber));
+    } catch (e) {
+      setDownloadError(e instanceof ApiRequestError ? e.message : 'Could not download the invoice. Try again.');
+    } finally {
+      setDownloading((id) => (id === purchaseId ? null : id));
+    }
+  };
 
   return (
     <section className={authStyles.panel} aria-labelledby="purchases-title">
@@ -45,21 +62,36 @@ export function PurchasesPanel() {
         <Waiting label="Loading purchases…" />
       ) : items.length ? (
         <ul className={styles.list}>
-          {items.map((p) => (
-            <li key={p.id} className={styles.purchase}>
-              <Link href={`/${p.itemType === 'test_series' ? 'series' : 'tests'}/${p.itemSlug}`}>{p.itemTitle}</Link>
-              <span className={`${styles.amount} ${p.status === 'refunded' ? styles.refunded : ''}`}>
-                {p.channel === 'admin_grant' ? '—' : inr(p.totalPaise)}
-              </span>
-              <small>{line(p)}</small>
-            </li>
-          ))}
+          {items.map((p) => {
+            const invoice = p.status === 'captured' ? p.invoiceNumber : null;
+            return (
+              <li key={p.id} className={styles.purchase}>
+                <Link href={`/${p.itemType === 'test_series' ? 'series' : 'tests'}/${p.itemSlug}`}>{p.itemTitle}</Link>
+                <span className={`${styles.amount} ${p.status === 'refunded' ? styles.refunded : ''}`}>
+                  {p.channel === 'admin_grant' ? '—' : inr(p.totalPaise)}
+                </span>
+                <small>{line(p)}</small>
+                {invoice ? (
+                  <BusyButton
+                    type="button"
+                    busy={downloading === p.id}
+                    className={`btn btn-secondary ${styles.invoice}`}
+                    onClick={() => void downloadInvoice(p.id, invoice)}
+                    aria-label={`Download invoice ${invoice} for ${p.itemTitle}`}
+                  >
+                    Download invoice
+                  </BusyButton>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="t-small t-secondary">
           Nothing yet. <Link href="/exams" className="u-link">Browse tests</Link>
         </p>
       )}
+      <div aria-live="polite">{downloadError ? <Alert>{downloadError}</Alert> : null}</div>
     </section>
   );
 }

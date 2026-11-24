@@ -1,8 +1,9 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import type { ReviewQuestion } from '@exam-prep/contracts';
 import { useReview } from '@/features/results/queries';
+import { track } from '@/lib/analytics';
 import { SolutionItem, type SolutionData } from '@/features/results/SolutionItem';
 import { Chip, StateView, Text } from '@/ui/primitives';
 import { colors, space } from '@/ui/tokens';
@@ -24,6 +25,7 @@ export default function ReviewScreen() {
   const query = useReview(id);
   const [filter, setFilter] = useState<Filter>('all');
   const [hi, setHi] = useState(false);
+  useEffect(() => track('review_opened'), []);
   const data = query.data;
 
   if (query.isError)

@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { PreparationStage, Profile as ServerProfile } from '@exam-prep/contracts';
-import type { Language, NotificationPrefs } from '@/lib/catalogue/types';
+import type { Language } from '@/lib/catalogue/types';
 import { persistOptions } from './storage';
 
 /**
  * Device-side session and UI preferences (docs/MOBILE.md: Zustand for UI state). The profile
- * here mirrors the last answer from the API; follows, entitlements, attempts and purchases are
- * server data read through TanStack Query, never stored or decided on the phone.
+ * here mirrors the last answer from the API; follows, entitlements, attempts, purchases and
+ * notification preferences are server data read through TanStack Query, never stored or
+ * decided on the phone.
  */
 
 export interface StudentProfile {
@@ -25,7 +26,6 @@ interface AppState {
   /** First-launch introduction finished on this device; survives sign-out. */
   introSeen: boolean;
   profile: StudentProfile;
-  notificationPrefs: NotificationPrefs;
   /** Optional product analytics (docs/NOTIFICATIONS.md PostHog events); off until the student opts in. */
   analyticsConsent: boolean;
 
@@ -33,7 +33,6 @@ interface AppState {
   applyServerProfile: (profile: ServerProfile) => void;
   signOut: () => void;
   markIntroSeen: () => void;
-  setNotificationPref: (key: keyof NotificationPrefs, value: boolean) => void;
   setAnalyticsConsent: (value: boolean) => void;
 }
 
@@ -41,7 +40,6 @@ const seed = () => ({
   session: { signedIn: false, onboarded: false },
   introSeen: false,
   profile: { name: '', email: '', targetExamIds: [], language: 'en', preparationStage: null, deletionRequestedAt: null } as StudentProfile,
-  notificationPrefs: { newTestsFromFollowed: true, unfinishedAttempt: true, examDateChanges: true } as NotificationPrefs,
   analyticsConsent: false,
 });
 
@@ -67,7 +65,6 @@ export const useAppStore = create<AppState>()(
       // Results, attempts and cached server data are cleared by signOutEverywhere().
       signOut: () => set((s) => ({ ...seed(), introSeen: s.introSeen })),
       markIntroSeen: () => set({ introSeen: true }),
-      setNotificationPref: (key, value) => set((s) => ({ notificationPrefs: { ...s.notificationPrefs, [key]: value } })),
       setAnalyticsConsent: (value) => set({ analyticsConsent: value }),
     }),
     // A new key: state saved by the earlier demo build is not read back.
@@ -75,7 +72,6 @@ export const useAppStore = create<AppState>()(
       session: s.session,
       introSeen: s.introSeen,
       profile: s.profile,
-      notificationPrefs: s.notificationPrefs,
       analyticsConsent: s.analyticsConsent,
     })),
   ),

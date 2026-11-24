@@ -42,6 +42,9 @@ const config: ExpoConfig = {
     'expo-font',
     'expo-status-bar',
     'expo-sqlite',
+    // Adds the iOS push entitlement (aps-environment). Android permissions come from the library
+    // manifest (POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED); nothing extra is requested here.
+    'expo-notifications',
     ['expo-splash-screen', { backgroundColor: '#001D39', image: './assets/splash-icon.png', imageWidth: 200, resizeMode: 'contain' }],
     // iosUrlScheme is required when Firebase runs as the JS SDK rather than natively.
     ...(googleIosUrlScheme ? [['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosUrlScheme }] as [string, unknown]] : []),

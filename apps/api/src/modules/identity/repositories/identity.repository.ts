@@ -187,4 +187,21 @@ export const identityRepository = {
       ),
     };
   },
+
+  /** Stores (or clears) the Expo push token of one of the user's active devices. */
+  async setPushToken(db: Queryable, userId: string, deviceId: string, token: string | null): Promise<boolean> {
+    // A token belongs to one device: drop it from any other device row of this user first.
+    if (token) await db.query('UPDATE user_devices SET expo_push_token = NULL WHERE user_id = $1 AND expo_push_token = $2 AND id <> $3', [userId, token, deviceId]);
+    const result = await db.query('UPDATE user_devices SET expo_push_token = $3 WHERE id = $1 AND user_id = $2 AND is_active', [deviceId, userId, token]);
+    return result.rowCount === 1;
+  },
+
+  async notificationPrefs(db: Queryable, id: string): Promise<Record<string, unknown>> {
+    const { rows } = await db.query<{ prefs: Record<string, unknown> }>('SELECT notification_prefs AS prefs FROM profiles WHERE id = $1', [id]);
+    return rows[0]?.prefs ?? {};
+  },
+
+  async setNotificationPrefs(db: Queryable, id: string, prefs: Record<string, boolean>): Promise<void> {
+    await db.query('UPDATE profiles SET notification_prefs = notification_prefs || $2::jsonb WHERE id = $1', [id, JSON.stringify(prefs)]);
+  },
 };

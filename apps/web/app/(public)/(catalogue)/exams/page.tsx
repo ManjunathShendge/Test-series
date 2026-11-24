@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ExamSummary } from '@exam-prep/contracts';
+import { TrackView } from '@/lib/analytics-view';
 import { catalogue } from '@/lib/api/catalogue';
 import { Reveal, RevealItem } from '@/ui/motion/Reveal';
 import { formatDate } from '@/features/catalogue/format';
@@ -24,6 +25,7 @@ export default async function ExamsPage() {
 
   return (
     <>
+      <TrackView event="catalogue_viewed" />
       <PageHero
         crumbs={[{ href: '/', label: 'Home' }, { href: '/exams', label: 'Exams' }]}
         eyebrow="Exams"

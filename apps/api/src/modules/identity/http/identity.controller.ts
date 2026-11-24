@@ -1,10 +1,13 @@
-import { Body, Controller, Delete, Get, Header, Headers, HttpCode, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Headers, HttpCode, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import {
   CreateSessionRequest,
   DEVICE_ID_HEADER,
+  PushTokenRequest,
   UpdateMeRequest,
+  UpdateNotificationPrefs,
   type AccountExport,
+  type NotificationPrefs,
   type DeletionStatus,
   type DeviceList,
   type Profile,
@@ -71,5 +74,30 @@ export class IdentityController {
   @Header('Content-Disposition', 'attachment; filename="my-data.json"')
   exportData(@CurrentIdentity() who: VerifiedIdentity, @Headers(DEVICE_ID_HEADER) device?: string): Promise<AccountExport> {
     return this.identity.exportData(who, parseContract(DeviceIdHeader, device));
+  }
+
+  @Put('me/devices/:id/push-token')
+  @HttpCode(204)
+  async setPushToken(
+    @CurrentIdentity() who: VerifiedIdentity,
+    @Param('id') id: string,
+    @Body() body: unknown,
+    @Headers(DEVICE_ID_HEADER) device?: string,
+  ): Promise<void> {
+    await this.identity.setPushToken(who, parseContract(DeviceIdHeader, device), parseContract(DeviceIdParam, id), parseContract(PushTokenRequest, body));
+  }
+
+  @Get('me/notification-preferences')
+  notificationPrefs(@CurrentIdentity() who: VerifiedIdentity, @Headers(DEVICE_ID_HEADER) device?: string): Promise<NotificationPrefs> {
+    return this.identity.notificationPrefs(who, parseContract(DeviceIdHeader, device));
+  }
+
+  @Put('me/notification-preferences')
+  updateNotificationPrefs(
+    @CurrentIdentity() who: VerifiedIdentity,
+    @Body() body: unknown,
+    @Headers(DEVICE_ID_HEADER) device?: string,
+  ): Promise<NotificationPrefs> {
+    return this.identity.updateNotificationPrefs(who, parseContract(DeviceIdHeader, device), parseContract(UpdateNotificationPrefs, body));
   }
 }

@@ -37,6 +37,8 @@ export const checkoutApi = {
   verify: (purchaseId: string, body: VerifyPaymentRequest) =>
     apiRequest('POST', `/orders/${enc(purchaseId)}/verify`, { schema: OrderResult, body, timeoutMs: 30000 }),
   purchases: async () => (await apiRequest('GET', '/me/purchases', { schema: MyPurchaseList })).items,
+  /** Tax invoice PDF for one of the student's own purchases. */
+  invoice: (purchaseId: string) => apiDownload(`/me/purchases/${enc(purchaseId)}/invoice`),
 };
 
 export const earningsApi = {

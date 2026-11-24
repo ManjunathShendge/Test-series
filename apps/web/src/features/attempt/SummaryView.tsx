@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { MIN_COHORT, type AttemptReview, type ReviewQuestion } from '@exam-prep/contracts';
+import { track } from '@/lib/analytics';
 import { attemptsApi } from '@/lib/api/attempts';
 import { ApiRequestError } from '@/lib/api/http';
 import { RequireSession } from '@/features/auth/RequireSession';
@@ -39,6 +40,10 @@ function Result({ attemptId }: { attemptId: string }) {
   const [tab, setTab] = useState<'overview' | 'solutions'>('overview');
   const [filter, setFilter] = useState<Filter>('all');
   const [hi, setHi] = useState(false);
+  const openSolutions = () => {
+    if (tab !== 'solutions') track('review_opened');
+    setTab('solutions');
+  };
 
   const load = useCallback(() => {
     setError(null);
@@ -133,7 +138,7 @@ function Result({ attemptId }: { attemptId: string }) {
           <button type="button" role="tab" className={r.tab} aria-selected={tab === 'overview'} onClick={() => setTab('overview')}>
             Overview
           </button>
-          <button type="button" role="tab" className={r.tab} aria-selected={tab === 'solutions'} onClick={() => setTab('solutions')}>
+          <button type="button" role="tab" className={r.tab} aria-selected={tab === 'solutions'} onClick={openSolutions}>
             Solutions ({data.questions.length})
           </button>
         </div>
@@ -261,7 +266,7 @@ function Result({ attemptId }: { attemptId: string }) {
             </section>
 
             <div className={styles.startRow}>
-              <button type="button" className="btn btn-primary btn-lg" onClick={() => setTab('solutions')}>
+              <button type="button" className="btn btn-primary btn-lg" onClick={openSolutions}>
                 Review solutions
               </button>
               <Link href="/progress" className="btn btn-secondary btn-lg">

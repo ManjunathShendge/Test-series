@@ -50,6 +50,9 @@ Authenticated requests carry Firebase bearer token, registered device/session pr
 | POST /me/deletion | Student, signed in within 5 minutes | Starts the 7-day grace period; REAUTH_REQUIRED, DELETION_NEEDS_SUPPORT for examiner/staff; returns {requestedAt, scheduledFor} |
 | DELETE /me/deletion | Student | Cancels a pending deletion |
 | GET /me/export | Student | JSON of profile, devices, follows, attempts, saved questions, reports and purchases |
+| GET, PUT /me/notification-preferences | Student | {newTestsFromFollowed, unfinishedAttempt, examDateChanges}; PUT takes any subset |
+| PUT /me/devices/:id/push-token | The device itself | {token: ExponentPushToken[...] or null}; 204 |
+| GET /me/purchases/:id/invoice | Owner, captured or refunded purchase | PDF; tax invoice with seller GSTIN configured, otherwise receipt |
 | POST /orders | Student | One item per mobile order; server price and provider selection |
 | POST /orders/:id/verify | Owner | Razorpay callback evidence; verify capture before fulfilment |
 | POST /orders/:id/verify-store | Owner | Provider proof/token, bind to exact purchase intent |

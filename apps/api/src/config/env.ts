@@ -61,6 +61,23 @@ const schema = z
     RAZORPAY_WEBHOOK_SECRET: blankAsUnset(z.string().trim().min(8).optional()),
     // Prices include GST at this rate until the CA confirms it (DECISIONS O09).
     GST_RATE_PERCENT: z.coerce.number().min(0).max(28).default(18),
+    // Seller details printed on invoices. Without a GSTIN the document is a receipt, not a tax invoice.
+    SELLER_LEGAL_NAME: blankAsUnset(z.string().trim().min(2).max(200).optional()),
+    SELLER_GSTIN: blankAsUnset(z.string().trim().regex(/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/).optional()),
+    SELLER_ADDRESS: blankAsUnset(z.string().trim().min(5).max(400).optional()),
+    SUPPORT_EMAIL: blankAsUnset(z.email().optional()),
+    // Notifications (docs/NOTIFICATIONS.md). Unset providers are skipped and logged, never fatal.
+    // smtp://user:pass@host:587 or smtps://...:465 (Amazon SES SMTP works the same way).
+    EMAIL_SMTP_URL: blankAsUnset(z.string().trim().regex(/^smtps?:\/\//).optional()),
+    EMAIL_FROM: blankAsUnset(z.string().trim().min(3).max(200).optional()),
+    // Optional Expo access token when "enhanced push security" is on for the Expo project.
+    EXPO_ACCESS_TOKEN: blankAsUnset(z.string().trim().min(10).optional()),
+    // Server-side PostHog capture (purchase_confirmed); project API key, not a personal key.
+    POSTHOG_API_KEY: blankAsUnset(z.string().trim().min(10).optional()),
+    POSTHOG_HOST: blankAsUnset(origin.optional()),
+    // Firebase service account JSON (one line, or base64 of it): lets the worker delete the
+    // sign-in identity of a deleted account. Without it the identity is left for manual removal.
+    FIREBASE_SERVICE_ACCOUNT_JSON: blankAsUnset(z.string().trim().min(20).optional()),
   })
   .superRefine((env, ctx) => {
     const deployed =

@@ -15,6 +15,15 @@ The development foundation runs on PostgreSQL 17 (Docker locally and in CI; Supa
 
 ## Log
 
+## 24 November 2026: C3 notifications, invoices and analytics (M10)
+- Database (022-023): outbox triggers for all eight MVP notices, `notification_deliveries`, `profiles.notification_prefs`, worker permission for the deletion finalizer.
+- Worker: leased PostgreSQL job runner with retries and failed-job retention; push (Expo), email (SMTP/SES), server PostHog `purchase_confirmed`, hourly account-deletion finalizer and Firebase identity removal. Every provider is optional and switched on by its env key (`.env.example`); details in NOTIFICATIONS "Implementation".
+- API: GET/PUT /me/notification-preferences, PUT /me/devices/:id/push-token, GET /me/purchases/:id/invoice (PDF; tax invoice only with a seller GSTIN).
+- App: expo-notifications 58.1.9 and expo-device 58.0.5; push token registered after sign-in (skipped without an EAS project id, on simulators, in Android Expo Go or without permission) and cleared on sign-out; taps open in-app paths only; notification settings saved on the server; consent-gated PostHog events.
+- Web: consent-gated PostHog events, consent switch under "Your data", invoice download per purchase.
+- Checks: rolled-back worker script against the real database as the worker role (20 passed: every trigger queues once, result/followed/exam pushes with deep links, QC and report emails, receipt retry after an SMTP failure without duplicate sends, opt-out respected, reminder only while running, dead token removed, deletion finalized through the queue, identity job fails visibly without Firebase admin, tax invoice vs receipt); worker starts and runs its schedule; workspace typecheck, lint, tests (API 43, mobile 35, web 8); web build; Android bundle; new endpoints return 401 signed out.
+- Open: a new development build is needed for push; FCM/APNs credentials in the Expo project, SMTP, PostHog and Firebase service account are client keys; SAC code and IGST wording on invoices need CA confirmation.
+
 ## 24 November 2026: C2 student experience
 - Database (021): owner-only policy on examiner follows with a trigger-maintained public follower count; account deletion requests (`deletion_requested_at`) and `finalize_account_deletions(grace)`, which anonymizes the profile, removes devices, follows and saved questions, keeps attempts (anonymous) and financial records, and returns Firebase uids for the worker to delete. It is refused inside a student request.
 - API: GET/PUT/DELETE /me/following[/:examinerId] (follow list plus newest tests from followed examiners), GET /me/entitlements, POST/DELETE /me/deletion (POST needs a sign-in within 5 minutes; examiner and staff accounts go to support), GET /me/export. The profile carries `deletionRequestedAt`.

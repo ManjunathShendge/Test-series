@@ -1,10 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { withUser, type Database, type DatabaseClient } from '@exam-prep/db';
-import { DELETION_GRACE_DAYS, DELETION_REAUTH_SECONDS } from '@exam-prep/contracts';
+import { DEFAULT_NOTIFICATION_PREFS, DELETION_GRACE_DAYS, DELETION_REAUTH_SECONDS, NotificationPrefs } from '@exam-prep/contracts';
 import type {
   AccountExport,
   CreateSessionRequest,
   DeletionStatus,
+  PushTokenRequest,
+  UpdateNotificationPrefs,
   Device,
   DeviceLimitDetails,
   Profile,
@@ -27,6 +29,9 @@ export interface AccessContext {
 }
 
 const DAY_MS = 86_400_000;
+/** Stored preferences over the defaults; unknown keys in the stored JSON are ignored. */
+const readPrefs = (stored: Record<string, unknown>): NotificationPrefs =>
+  NotificationPrefs.parse({ ...DEFAULT_NOTIFICATION_PREFS, ...NotificationPrefs.partial().catch({}).parse(stored) });
 const deletionStatus = (at: Date | null): DeletionStatus => ({
   requestedAt: at?.toISOString() ?? null,
   scheduledFor: at ? new Date(at.getTime() + DELETION_GRACE_DAYS * DAY_MS).toISOString() : null,
@@ -157,6 +162,26 @@ export class IdentityService {
       exportedAt: new Date().toISOString(),
       ...(await repo.exportData(client, profile.id)),
     }));
+  }
+
+  /** Registers this device's Expo push token (or forgets it with null). */
+  async setPushToken(identity: VerifiedIdentity, deviceId: string | undefined, targetId: string, body: PushTokenRequest): Promise<void> {
+    if (targetId !== deviceId) throw new ApiError(403, 'FORBIDDEN', 'A device can only register its own push token');
+    await this.asRegisteredDevice(identity, deviceId, async (client, profile) => {
+      if (!(await repo.setPushToken(client, profile.id, targetId, body.token))) throw notFound('Device');
+    });
+  }
+
+  async notificationPrefs(identity: VerifiedIdentity, deviceId: string | undefined): Promise<NotificationPrefs> {
+    return this.asRegisteredDevice(identity, deviceId, async (client, profile) => readPrefs(await repo.notificationPrefs(client, profile.id)));
+  }
+
+  async updateNotificationPrefs(identity: VerifiedIdentity, deviceId: string | undefined, changes: UpdateNotificationPrefs): Promise<NotificationPrefs> {
+    return this.asRegisteredDevice(identity, deviceId, async (client, profile) => {
+      const clean = Object.fromEntries(Object.entries(changes).filter(([, v]) => typeof v === 'boolean')) as Record<string, boolean>;
+      await repo.setNotificationPrefs(client, profile.id, clean);
+      return readPrefs(await repo.notificationPrefs(client, profile.id));
+    });
   }
 
   private async resolveProfileId(identity: VerifiedIdentity): Promise<string> {

@@ -5,7 +5,9 @@ import {
   Entitlements,
   FollowingFeed,
   MyPurchaseList,
+  NotificationPrefs,
   type UpdateMeRequest,
+  type UpdateNotificationPrefs,
 } from '@exam-prep/contracts';
 import { useAppStore } from '@/lib/store/app';
 import { apiRequest } from './http';
@@ -16,6 +18,7 @@ export const accountKeys = {
   entitlements: ['me', 'entitlements'] as const,
   following: ['me', 'following'] as const,
   purchases: ['me', 'purchases'] as const,
+  notificationPrefs: ['me', 'notification-preferences'] as const,
 };
 
 const useSignedIn = () => useAppStore((s) => s.session.signedIn);
@@ -104,6 +107,42 @@ export function useFollow() {
     toggle: (id: string) => mutation.mutate({ id, follow: !isFollowed(id) }),
     error: mutation.error,
   };
+}
+
+// Notification preferences -------------------------------------------------------------------
+
+/** Optional push notices the student can switch off; transactional notices are always sent. */
+export function useNotificationPrefs() {
+  const signedIn = useSignedIn();
+  return useQuery({
+    queryKey: accountKeys.notificationPrefs,
+    queryFn: () => apiRequest('GET', '/me/notification-preferences', { schema: NotificationPrefs }),
+    enabled: signedIn,
+  });
+}
+
+/** Saves a change, showing it at once and putting the previous value back if the server refuses. */
+export function useUpdateNotificationPrefs() {
+  const client = useQueryClient();
+  const key = accountKeys.notificationPrefs;
+  return useMutation({
+    mutationFn: (changes: UpdateNotificationPrefs) =>
+      apiRequest('PUT', '/me/notification-preferences', { body: changes, schema: NotificationPrefs }),
+    onMutate: async (changes) => {
+      await client.cancelQueries({ queryKey: key });
+      const previous = client.getQueryData<NotificationPrefs>(key);
+      if (previous) {
+        const next = { ...previous };
+        for (const k of Object.keys(previous) as (keyof NotificationPrefs)[]) next[k] = changes[k] ?? previous[k];
+        client.setQueryData<NotificationPrefs>(key, next);
+      }
+      return { previous };
+    },
+    onError: (_error, _changes, context) => {
+      if (context?.previous) client.setQueryData(key, context.previous);
+    },
+    onSuccess: (prefs) => client.setQueryData(key, prefs),
+  });
 }
 
 // Account deletion and export ----------------------------------------------------------------

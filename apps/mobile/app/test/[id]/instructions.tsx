@@ -8,6 +8,7 @@ import { useTestDetail } from '@/lib/api/queries';
 import { formatDuration } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
 import { MY_ATTEMPTS_KEY } from '@/features/attempt/useAttempt';
+import { track } from '@/lib/analytics';
 import { attemptsApi } from '@/lib/api/attempts';
 import { ApiRequestError } from '@/lib/api/http';
 import { newLocalAttempt, saveAttempt } from '@/lib/storage/attempt-outbox';
@@ -66,6 +67,7 @@ export default function InstructionsScreen() {
       if ('sessionToken' in reply) {
         // The session goes to the phone before the player opens, so a restart keeps this phone the writer.
         await saveAttempt(newLocalAttempt(reply.state.attemptId, reply.sessionToken, reply.state.epoch, reply.state.ackSeq)).catch(() => undefined);
+        if (test.pricePaise === 0) track('free_attempt_started', { testId: test.id });
         open(reply.state.attemptId);
       } else {
         // Already running here or on another device: the player offers to continue.

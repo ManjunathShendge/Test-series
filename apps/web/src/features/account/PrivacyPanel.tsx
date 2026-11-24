@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DELETION_GRACE_DAYS, type Profile } from '@exam-prep/contracts';
+import { hasAnalyticsConsent, setAnalyticsConsent } from '@/lib/analytics';
 import { accountApi, getMe } from '@/lib/api/identity';
 import { ApiRequestError } from '@/lib/api/http';
 import { authErrorMessage, reauthenticate, signInMethod } from '@/lib/auth';
@@ -16,7 +17,8 @@ const date = (iso: string) => new Intl.DateTimeFormat('en-IN', { dateStyle: 'lon
 /**
  * Account page: data export and account deletion (docs/SECURITY.md "Privacy and deletion
  * workflow"). Deletion needs typed confirmation plus a fresh sign-in, then runs after a
- * cancellable grace period. Financial records are kept as the law requires.
+ * cancellable grace period. Financial records are kept as the law requires. The usage-data
+ * choice is per browser and off until the student opts in.
  */
 export function PrivacyPanel({ profile }: { profile: Profile }) {
   const { setProfile } = useAuth();
@@ -28,6 +30,13 @@ export function PrivacyPanel({ profile }: { profile: Profile }) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const pending = profile.deletionRequestedAt ?? null;
+  // Read after mount: localStorage is not available while the page renders on the server.
+  const [consent, setConsent] = useState(false);
+  useEffect(() => setConsent(hasAnalyticsConsent()), []);
+  const changeConsent = (granted: boolean) => {
+    setAnalyticsConsent(granted);
+    setConsent(hasAnalyticsConsent());
+  };
 
   const run = async (key: string, action: () => Promise<void>) => {
     setBusy(key);
@@ -79,6 +88,17 @@ export function PrivacyPanel({ profile }: { profile: Profile }) {
         </h2>
         <p className="t-small t-secondary">Download what we hold about you, or delete your account.</p>
       </div>
+
+      <label className={styles.check}>
+        <input type="checkbox" checked={consent} onChange={(e) => changeConsent(e.target.checked)} aria-describedby="analytics-help" />
+        <span>
+          Share anonymous usage data
+          <span id="analytics-help" className="t-small t-secondary" style={{ display: 'block' }}>
+            Helps us see which pages confuse people. Never includes questions, answers, your email or payment details. Applies to this
+            browser only.
+          </span>
+        </span>
+      </label>
 
       <BusyButton busy={busy === 'export'} className="btn btn-secondary btn-full" onClick={() => void download()} type="button">
         Download my data

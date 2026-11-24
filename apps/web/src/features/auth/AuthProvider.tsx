@@ -6,6 +6,7 @@ import { isAuthConfigured, onAuthChange, refreshVerification, signOutOfFirebase,
 import { ApiRequestError } from '@/lib/api/http';
 import { createSession, deviceLimitDevices, revokeDevice } from '@/lib/api/identity';
 import { setSignedInHint } from '@/lib/storage/device';
+import { resetAnalyticsId } from '@/lib/analytics';
 
 /**
  * Website session: Firebase says who the person is; the API session (POST /identity/session)
@@ -149,6 +150,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     sessionUid.current = null;
     setSignedInHint(false);
+    // The next person in this browser gets a fresh pseudonymous analytics id.
+    resetAnalyticsId();
     await signOutOfFirebase();
     setState({ status: 'signed-out' });
   }, []);

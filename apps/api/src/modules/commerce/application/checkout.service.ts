@@ -13,6 +13,7 @@ import type {
   VerifyPaymentRequest,
 } from '@exam-prep/contracts';
 import { z } from 'zod';
+import { invoicePdf } from './invoice.js';
 import { DATABASE, ENVIRONMENT } from '../../../database/database.module.js';
 import type { Environment } from '../../../config/env.js';
 import { ApiError, notFound } from '../../../common/errors/api-error.js';
@@ -230,6 +231,18 @@ export class CheckoutService {
   async entitlements(access: AccessContext): Promise<Entitlements> {
     const row = await withUser(this.db, access.profileId, (client) => repo.entitlements(client, access.profileId));
     return { testIds: row.test_ids, seriesIds: row.series_ids };
+  }
+
+  /** Invoice (or receipt) PDF for one of the student's own paid purchases. */
+  async invoice(access: AccessContext, purchaseId: string): Promise<{ file: Buffer; filename: string }> {
+    const row = await withUser(this.db, access.profileId, (client) => repo.invoiceRow(client, access.profileId, purchaseId));
+    if (!row) throw notFound('Purchase');
+    return invoicePdf(row, {
+      legalName: this.env.SELLER_LEGAL_NAME,
+      gstin: this.env.SELLER_GSTIN,
+      address: this.env.SELLER_ADDRESS,
+      supportEmail: this.env.SUPPORT_EMAIL,
+    });
   }
 
   async myPurchases(access: AccessContext): Promise<MyPurchaseList> {

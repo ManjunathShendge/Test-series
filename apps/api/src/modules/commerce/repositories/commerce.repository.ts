@@ -1,3 +1,4 @@
+import type { InvoiceRow } from '../application/invoice.js';
 import type { Queryable } from '@exam-prep/db';
 
 const SAME_VERSION = (column: string, param: string) =>
@@ -254,6 +255,22 @@ export const commerceRepository = {
       [studentId],
     );
     return rows[0] ?? { test_ids: [], series_ids: [] };
+  },
+
+  /** Stored amounts of one of the student's paid purchases, for the invoice PDF. */
+  async invoiceRow(db: Queryable, studentId: string, purchaseId: string): Promise<InvoiceRow | undefined> {
+    const { rows } = await db.query<InvoiceRow>(
+      `SELECT p.id, p.invoice_number, p.item_type::text AS item_type, ${ITEM_TITLE} AS item_title,
+              pr.full_name AS student_name, pr.email AS student_email,
+              p.gross_amount_paise, p.discount_paise, p.taxable_amount_paise, p.gst_rate_percent::text AS gst_rate_percent,
+              p.gst_amount_paise, p.total_paid_paise, p.payment_channel, c.code AS coupon_code, p.captured_at, p.refunded_at
+         FROM purchases p ${ITEM_JOIN}
+         JOIN profiles pr ON pr.id = p.student_id
+         LEFT JOIN coupons c ON c.id = p.coupon_id
+        WHERE p.id = $2 AND p.student_id = $1 AND p.status IN ('captured', 'refunded') AND p.payment_channel <> 'admin_grant'`,
+      [studentId, purchaseId],
+    );
+    return rows[0];
   },
 
   async myPurchases(db: Queryable, studentId: string): Promise<MyPurchaseRow[]> {

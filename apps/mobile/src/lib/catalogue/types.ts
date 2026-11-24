@@ -89,10 +89,3 @@ export interface SearchFilters {
   language?: 'hi';
   examinerId?: string;
 }
-
-/** Optional student push notices (docs/NOTIFICATIONS.md). Transactional notices are always on. */
-export interface NotificationPrefs {
-  newTestsFromFollowed: boolean;
-  unfinishedAttempt: boolean;
-  examDateChanges: boolean;
-}

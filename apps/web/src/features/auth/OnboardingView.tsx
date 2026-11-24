@@ -5,6 +5,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { ExamList, type ExamSummary, type Language, type PreparationStage, type Profile } from '@exam-prep/contracts';
 import { apiRequest, ApiRequestError } from '@/lib/api/http';
 import { updateMe } from '@/lib/api/identity';
+import { track } from '@/lib/analytics';
 import { homeFor, safeNext, useAuth } from './AuthProvider';
 import { RequireSession } from './RequireSession';
 import { Alert, BusyButton, Field, Waiting } from './ui';
@@ -78,6 +79,7 @@ function OnboardingForm({ profile }: { profile: Profile }) {
         preferredLanguage: language,
         ...(profile.ageConfirmed ? {} : { ageConfirmed: true as const }),
       });
+      if (!profile.onboarded) track('onboarding_completed', { targetExamCount: targets.length, language });
       setProfile(updated);
       router.replace(next ?? homeFor(updated));
     } catch (e) {

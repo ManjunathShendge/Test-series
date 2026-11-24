@@ -16,6 +16,11 @@ export const config = {
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '',
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '',
   },
+  /** PostHog project key (public, write-only). Optional: without it no event leaves the phone. */
+  posthog: {
+    key: process.env.EXPO_PUBLIC_POSTHOG_KEY ?? '',
+    host: process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com',
+  },
 };
 
 /** Names of required variables that are empty, for the setup screen. */

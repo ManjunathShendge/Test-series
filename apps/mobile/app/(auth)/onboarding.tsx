@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { track } from '@/lib/analytics';
 import { useUpdateProfile } from '@/lib/api/account';
 import { ApiRequestError } from '@/lib/api/http';
 import type { PreparationStage } from '@exam-prep/contracts';
@@ -50,7 +51,10 @@ export default function OnboardingScreen() {
     saveProfile.mutate(
       { targetExamIds: examIds, preferredLanguage: language, preparationStage: stage },
       {
-        onSuccess: () => router.replace('/'),
+        onSuccess: () => {
+          track('onboarding_completed', { targetExamCount: examIds.length, language });
+          router.replace('/');
+        },
         onError: (e) => setError(e instanceof ApiRequestError ? e.message : 'Could not save your choices. Try again.'),
       },
     );

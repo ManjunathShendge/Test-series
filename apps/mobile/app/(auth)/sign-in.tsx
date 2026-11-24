@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Device } from '@exam-prep/contracts';
+import { registerPushToken } from '@/features/notifications/push';
 import { ApiRequestError } from '@/lib/api/http';
 import { createSession, deviceLimitDevices, revokeDevice } from '@/lib/api/identity';
 import {
@@ -64,6 +65,8 @@ export default function SignInScreen() {
     try {
       const session = await createSession();
       applyServerProfile(session.profile);
+      // The device is registered now; push setup runs in the background and may ask permission.
+      void registerPushToken();
       router.replace(session.profile.onboarded ? '/' : '/(auth)/onboarding');
     } catch (e) {
       const devices = deviceLimitDevices(e);

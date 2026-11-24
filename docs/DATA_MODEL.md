@@ -210,3 +210,10 @@ Row-level security: every public table has RLS. `exam_worker` has full row acces
 - `examiner_followers`: owner-only policy "Students manage own follows"; trigger `examiner_followers_count` keeps `examiner_profiles.follower_count` (SECURITY DEFINER), recomputed once on migration.
 - `profiles.deletion_requested_at` (partial index on pending requests). `finalize_account_deletions(p_grace interval)` (SECURITY DEFINER, worker only: the profile privilege guard refuses it inside a user request) anonymizes due profiles (name "Deleted user", email/phone/avatar cleared, `firebase_uid = 'deleted:<id>'`, `deleted_at`), deletes devices, follows and saved questions, keeps attempts, purchases, ledger and audit rows, and returns `(profile_id, firebase_uid)` for identity deletion.
 
+## Notifications (C3, 24 November 2026; migrations 022-023)
+
+- `profiles.notification_prefs` JSONB (missing keys mean on).
+- `notification_deliveries` (user, kind, channel push|email, dedupe_key, status queued|sent|skipped|failed, detail, provider_ref, sent_at); unique (user_id, channel, dedupe_key); students read their own rows.
+- `enqueue_job(kind, key, payload, at)` SECURITY DEFINER, deduplicated on `kind:key`, called only by the outbox triggers `student_attempts_outbox`, `tests_outbox`, `exams_outbox`, `question_reports_outbox`, `examiner_payouts_outbox`, `purchases_outbox`.
+- 023: `exam_worker` may execute `finalize_account_deletions`.
+

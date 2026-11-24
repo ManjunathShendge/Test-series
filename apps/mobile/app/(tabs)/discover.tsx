@@ -6,6 +6,7 @@ import { ExamShapes } from '@/features/catalogue/components/ExamShapes';
 import { SectionHeader } from '@/features/catalogue/components/SectionHeader';
 import { TestCard } from '@/features/catalogue/components/TestCard';
 import { TestListSkeleton } from '@/features/catalogue/components/TestCardSkeleton';
+import { track } from '@/lib/analytics';
 import { useAccess, useFollow } from '@/lib/api/account';
 import { useIsOnline } from '@/lib/api/client';
 import { useExaminers, useExams, useSearch } from '@/lib/api/queries';
@@ -40,6 +41,7 @@ export default function DiscoverScreen() {
   const follow = useFollow();
   const examsQuery = useExams();
   const examinersQuery = useExaminers();
+  useEffect(() => track('catalogue_viewed'), []);
   const exams = examsQuery.data ?? [];
   const examiners = examinersQuery.data ?? [];
 
