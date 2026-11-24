@@ -21,6 +21,7 @@ import {
   type CheckoutOrder,
   type CouponList,
   type ExaminerSalesResponse,
+  type Entitlements,
   type MyPurchaseList,
   type OrderQuote,
   type OrderResult,
@@ -72,6 +73,12 @@ export class CheckoutController {
   ownership(@CurrentAccess() access: AccessContext, @Query() query: unknown): Promise<Ownership> {
     const q = parseContract(OwnershipQuery, query);
     return this.service.ownership(access, q.itemType, q.itemId);
+  }
+
+  @Get('me/entitlements')
+  @Header('Cache-Control', 'private, no-store')
+  entitlements(@CurrentAccess() access: AccessContext): Promise<Entitlements> {
+    return this.service.entitlements(access);
   }
 
   @Get('me/purchases')

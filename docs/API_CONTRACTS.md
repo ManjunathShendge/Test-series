@@ -44,6 +44,12 @@ Authenticated requests carry Firebase bearer token, registered device/session pr
 | GET /me/progress, /me/practice/:kind | Student | Topic accuracy, weakest topic, trend, recommended tests; mistakes or bookmarks lists |
 | PUT /me/saved-questions/:questionId | Student who met the question in a closed attempt | {bookmarked?, inNotebook?} |
 | POST /questions/:id/reports | Student, own closed attempt | {attemptId, reason, comment?}; one report per student per question |
+| GET /me/following | Student | Followed (public) examiners and their 20 newest tests |
+| PUT, DELETE /me/following/:examinerId | Student | Idempotent follow/unfollow of an approved examiner; 204 |
+| GET /me/entitlements | Student | {testIds, seriesIds} the student can open now (tests include those in owned series); UI only, papers re-check |
+| POST /me/deletion | Student, signed in within 5 minutes | Starts the 7-day grace period; REAUTH_REQUIRED, DELETION_NEEDS_SUPPORT for examiner/staff; returns {requestedAt, scheduledFor} |
+| DELETE /me/deletion | Student | Cancels a pending deletion |
+| GET /me/export | Student | JSON of profile, devices, follows, attempts, saved questions, reports and purchases |
 | POST /orders | Student | One item per mobile order; server price and provider selection |
 | POST /orders/:id/verify | Owner | Razorpay callback evidence; verify capture before fulfilment |
 | POST /orders/:id/verify-store | Owner | Provider proof/token, bind to exact purchase intent |

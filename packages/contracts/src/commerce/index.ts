@@ -63,6 +63,13 @@ export type OrderResult = z.infer<typeof OrderResult>;
 export const Ownership = z.object({ owned: z.boolean(), paymentsEnabled: z.boolean() });
 export type Ownership = z.infer<typeof Ownership>;
 
+/**
+ * GET /v1/me/entitlements: what the student can open now. Tests include those unlocked through
+ * a series. The server re-checks access on every paper request; this only drives the UI.
+ */
+export const Entitlements = z.object({ testIds: z.array(z.uuid()), seriesIds: z.array(z.uuid()) });
+export type Entitlements = z.infer<typeof Entitlements>;
+
 export const MyPurchase = z.object({
   id: z.uuid(),
   itemType: PurchaseItemType,

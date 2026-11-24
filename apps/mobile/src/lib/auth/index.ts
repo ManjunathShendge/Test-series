@@ -1,5 +1,7 @@
 import {
+  EmailAuthProvider,
   createUserWithEmailAndPassword,
+  reauthenticateWithCredential,
   onAuthStateChanged,
   reload,
   sendEmailVerification,
@@ -9,7 +11,7 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { firebaseAuth } from './firebase';
-import { signOutOfGoogle } from './google';
+import { googleCredential, signOutOfGoogle } from './google';
 import { toUser, type AuthUser } from './user';
 
 export { authErrorMessage } from './errors';
@@ -68,6 +70,31 @@ export async function sendPasswordReset(email: string): Promise<void> {
 /** A fresh-enough ID token for the API, or null when signed out. */
 export async function idToken(): Promise<string | null> {
   return (await firebaseAuth().currentUser?.getIdToken()) ?? null;
+}
+
+/** How the current user signs in, for re-authentication prompts. */
+export function signInMethod(): 'google' | 'password' | 'other' | null {
+  const user = firebaseAuth().currentUser;
+  if (!user) return null;
+  const ids = user.providerData.map((p) => p.providerId);
+  return ids.includes('google.com') ? 'google' : ids.includes('password') ? 'password' : 'other';
+}
+
+/**
+ * Confirms identity again before a sensitive action (account deletion): the API accepts it
+ * only with a sign-in from the last few minutes. Returns false when the student cancels.
+ * Sign in with Apple, when added, gets its own branch here.
+ */
+export async function reauthenticate(password?: string): Promise<boolean> {
+  const user = firebaseAuth().currentUser;
+  if (!user) return false;
+  const method = signInMethod();
+  const credential =
+    method === 'google' ? await googleCredential() : method === 'password' && user.email && password ? EmailAuthProvider.credential(user.email, password) : null;
+  if (!credential) return false;
+  await reauthenticateWithCredential(user, credential);
+  await user.getIdToken(true);
+  return true;
 }
 
 export async function signOutOfFirebase(): Promise<void> {

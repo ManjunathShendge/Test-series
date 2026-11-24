@@ -1,6 +1,6 @@
 import { Alert, View } from 'react-native';
 import { useDevices, useRevokeDevice } from '@/lib/api/account';
-import { DEVICE_LIMIT } from '@/lib/demo';
+import { DEVICE_LIMIT } from '@/lib/policy';
 import { formatRelative } from '@/lib/format';
 import { Button, Card, Chip, ListRow, Screen, Skeleton, StateView, Text } from '@/ui/primitives';
 import { space } from '@/ui/tokens';

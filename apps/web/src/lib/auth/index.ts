@@ -1,7 +1,10 @@
 'use client';
 
 import {
+  EmailAuthProvider,
   GoogleAuthProvider,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
   createUserWithEmailAndPassword,
   getRedirectResult,
   onIdTokenChanged,
@@ -123,6 +126,35 @@ export async function sendPasswordReset(email: string): Promise<void> {
 /** A fresh-enough ID token for the API, or null when signed out. Firebase refreshes it. */
 export async function idToken(): Promise<string | null> {
   return (await firebaseAuth().currentUser?.getIdToken()) ?? null;
+}
+
+/** How the current user signs in, for re-authentication prompts. */
+export function signInMethod(): 'google' | 'password' | 'other' | null {
+  const user = firebaseAuth().currentUser;
+  if (!user) return null;
+  const ids = user.providerData.map((p) => p.providerId);
+  return ids.includes('google.com') ? 'google' : ids.includes('password') ? 'password' : 'other';
+}
+
+/**
+ * Confirms identity again before a sensitive action (account deletion): the API accepts it
+ * only with a sign-in from the last few minutes. Returns false when the person cancels.
+ */
+export async function reauthenticate(password?: string): Promise<boolean> {
+  const user = firebaseAuth().currentUser;
+  if (!user) return false;
+  const method = signInMethod();
+  try {
+    if (method === 'google') await reauthenticateWithPopup(user, googleProvider());
+    else if (method === 'password' && user.email && password) await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+    else return false;
+  } catch (error) {
+    const code = (error as { code?: string } | null)?.code ?? '';
+    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request' || code === 'auth/user-cancelled') return false;
+    throw error;
+  }
+  await user.getIdToken(true);
+  return true;
 }
 
 export async function signOutOfFirebase(): Promise<void> {

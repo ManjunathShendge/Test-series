@@ -1,8 +1,12 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { DELETION_GRACE_DAYS, deletionDate } from '@/lib/demo';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { shareMyData } from '@/features/account/export';
+import { useDeletion } from '@/lib/api/account';
+import { ApiRequestError } from '@/lib/api/http';
+import { authErrorMessage, reauthenticate, signInMethod } from '@/lib/auth';
 import { formatDate } from '@/lib/format';
+import { DELETION_GRACE_DAYS, deletionDate } from '@/lib/policy';
 import { useAppStore } from '@/lib/store/app';
 import { Button, Card, Icon, Screen, Text, TextField, type IconName } from '@/ui/primitives';
 import { colors, space, touch } from '@/ui/tokens';
@@ -23,12 +27,14 @@ const REMOVED: { icon: IconName; text: string }[] = [
  */
 export default function DeleteAccountScreen() {
   const router = useRouter();
-  const requestedAt = useAppStore((s) => s.deletionRequestedAt);
-  const requestDeletion = useAppStore((s) => s.requestDeletion);
-  const cancelDeletion = useAppStore((s) => s.cancelDeletion);
+  const requestedAt = useAppStore((s) => s.profile.deletionRequestedAt);
+  const deletion = useDeletion();
+  const method = signInMethod();
   const [typed, setTyped] = useState('');
+  const [password, setPassword] = useState('');
   const [understood, setUnderstood] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (requestedAt) {
     return (
@@ -46,19 +52,34 @@ export default function DeleteAccountScreen() {
             </Text>
           </View>
         </Card>
-        <Button label="Cancel deletion" icon="arrow-undo-outline" fullWidth size="lg" onPress={cancelDeletion} />
+        <Button
+          label="Cancel deletion"
+          icon="arrow-undo-outline"
+          fullWidth
+          size="lg"
+          loading={deletion.cancel.isPending}
+          onPress={() => deletion.cancel.mutate(undefined, { onError: () => Alert.alert('Could not cancel', 'Check your connection and try again.') })}
+        />
         <Button label="Back to Profile" variant="ghost" onPress={() => router.back()} />
       </Screen>
     );
   }
 
-  const ready = understood && typed.trim().toUpperCase() === CONFIRM_WORD;
+  const ready = understood && typed.trim().toUpperCase() === CONFIRM_WORD && (method !== 'password' || password.length > 0);
 
+  // Re-sign-in first: the server schedules deletion only after a sign-in in the last 5 minutes.
   const submit = async () => {
-    if (!ready) return;
+    if (!ready || busy) return;
     setBusy(true);
-    await requestDeletion();
-    setBusy(false);
+    setError(null);
+    try {
+      if (!(await reauthenticate(password))) return;
+      await deletion.request.mutateAsync();
+    } catch (e) {
+      setError(e instanceof ApiRequestError ? e.message : authErrorMessage(e));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -97,6 +118,10 @@ export default function DeleteAccountScreen() {
         <Text style={{ flex: 1 }}>I understand purchased tests cannot be restored after deletion.</Text>
       </Pressable>
 
+      {method === 'password' ? (
+        <TextField label="Your password" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" autoCorrect={false} />
+      ) : null}
+
       <TextField
         label={`Type ${CONFIRM_WORD} to confirm`}
         value={typed}
@@ -106,10 +131,25 @@ export default function DeleteAccountScreen() {
         placeholder={CONFIRM_WORD}
       />
 
-      <Button label="Confirm with Google and delete" variant="danger" icon="trash-outline" fullWidth size="lg" disabled={!ready} loading={busy} onPress={() => void submit()} />
+      {error ? (
+        <Text tone="error" accessibilityLiveRegion="polite">
+          {error}
+        </Text>
+      ) : null}
+      <Button
+        label={method === 'google' ? 'Confirm with Google and delete' : 'Confirm and delete'}
+        variant="danger"
+        icon="trash-outline"
+        fullWidth
+        size="lg"
+        disabled={!ready}
+        loading={busy}
+        onPress={() => void submit()}
+      />
       <Text variant="caption" tone="secondary" align="center">
         For your security you sign in again before deletion is scheduled.
       </Text>
+      <Button label="Download my data first" icon="download-outline" variant="ghost" onPress={() => void shareMyData()} />
     </Screen>
   );
 }

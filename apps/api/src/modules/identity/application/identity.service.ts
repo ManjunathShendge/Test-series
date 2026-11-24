@@ -1,7 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { withUser, type Database, type DatabaseClient } from '@exam-prep/db';
+import { DELETION_GRACE_DAYS, DELETION_REAUTH_SECONDS } from '@exam-prep/contracts';
 import type {
+  AccountExport,
   CreateSessionRequest,
+  DeletionStatus,
   Device,
   DeviceLimitDetails,
   Profile,
@@ -23,6 +26,12 @@ export interface AccessContext {
   admin: Record<AdminPermission, boolean>;
 }
 
+const DAY_MS = 86_400_000;
+const deletionStatus = (at: Date | null): DeletionStatus => ({
+  requestedAt: at?.toISOString() ?? null,
+  scheduledFor: at ? new Date(at.getTime() + DELETION_GRACE_DAYS * DAY_MS).toISOString() : null,
+});
+
 const pgCode = (error: unknown) => (error as { code?: unknown } | null)?.code;
 
 function toProfile(row: ProfileRow): Profile {
@@ -40,6 +49,7 @@ function toProfile(row: ProfileRow): Profile {
       : { ops: false, finance: false, super: false },
     ageConfirmed: row.is_age_verified_18_plus,
     onboarded: row.preparation_stage !== null && row.is_age_verified_18_plus,
+    deletionRequestedAt: row.deletion_requested_at?.toISOString() ?? null,
   };
 }
 
@@ -117,6 +127,36 @@ export class IdentityService {
       await this.requireUsableProfile(client, profileId);
       if (!(await repo.deactivateDevice(client, profileId, deviceId))) throw notFound('Device');
     });
+  }
+
+  /**
+   * Starts account deletion after a recent sign-in (docs/SECURITY.md). Examiner and staff
+   * accounts carry payouts, content and audit duties, so support handles those.
+   */
+  async requestDeletion(identity: VerifiedIdentity, deviceId: string | undefined): Promise<DeletionStatus> {
+    if (Date.now() / 1000 - identity.authTime > DELETION_REAUTH_SECONDS) {
+      throw new ApiError(401, 'REAUTH_REQUIRED', 'Sign in again to confirm it is you, then delete your account.');
+    }
+    return this.asRegisteredDevice(identity, deviceId, async (client, profile) => {
+      if (profile.roles.some((r) => r !== 'student')) {
+        throw new ApiError(409, 'DELETION_NEEDS_SUPPORT', 'Examiner and staff accounts are deleted by support. Contact us to continue.');
+      }
+      return deletionStatus(await repo.requestDeletion(client, profile.id));
+    });
+  }
+
+  async cancelDeletion(identity: VerifiedIdentity, deviceId: string | undefined): Promise<DeletionStatus> {
+    return this.asRegisteredDevice(identity, deviceId, async (client, profile) => {
+      await repo.cancelDeletion(client, profile.id);
+      return deletionStatus(null);
+    });
+  }
+
+  async exportData(identity: VerifiedIdentity, deviceId: string | undefined): Promise<AccountExport> {
+    return this.asRegisteredDevice(identity, deviceId, async (client, profile) => ({
+      exportedAt: new Date().toISOString(),
+      ...(await repo.exportData(client, profile.id)),
+    }));
   }
 
   private async resolveProfileId(identity: VerifiedIdentity): Promise<string> {

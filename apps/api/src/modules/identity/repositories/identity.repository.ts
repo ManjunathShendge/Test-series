@@ -14,6 +14,7 @@ export interface ProfileRow {
   is_super_admin: boolean;
   is_blocked: boolean;
   deleted_at: Date | null;
+  deletion_requested_at: Date | null;
 }
 
 export interface AccessRow {
@@ -33,7 +34,7 @@ export interface DeviceRow {
 }
 
 const PROFILE_COLUMNS =
-  'id, email, full_name, preferred_language, preparation_stage, is_age_verified_18_plus, target_exam_ids, roles::text[] AS roles, is_ops_admin, is_finance_admin, is_super_admin, is_blocked, deleted_at';
+  'id, email, full_name, preferred_language, preparation_stage, is_age_verified_18_plus, target_exam_ids, roles::text[] AS roles, is_ops_admin, is_finance_admin, is_super_admin, is_blocked, deleted_at, deletion_requested_at';
 const DEVICE_COLUMNS = 'id, device_name, platform, is_active, last_active_at';
 
 /** Parameterised SQL only. Authorization is decided by the service, with RLS as a second barrier. */
@@ -134,5 +135,56 @@ export const identityRepository = {
       [deviceId, userId],
     );
     return result.rowCount === 1;
+  },
+
+  /** Starts (or keeps) a deletion request; an existing request keeps its original time. */
+  async requestDeletion(db: Queryable, id: string): Promise<Date> {
+    const { rows } = await db.query<{ at: Date }>(
+      `UPDATE profiles SET deletion_requested_at = COALESCE(deletion_requested_at, NOW())
+        WHERE id = $1 AND deleted_at IS NULL RETURNING deletion_requested_at AS at`,
+      [id],
+    );
+    return rows[0]!.at;
+  },
+
+  async cancelDeletion(db: Queryable, id: string): Promise<void> {
+    await db.query('UPDATE profiles SET deletion_requested_at = NULL WHERE id = $1 AND deleted_at IS NULL', [id]);
+  },
+
+  /** The account's own records for a data export. Every query is scoped to the student. */
+  async exportData(db: Queryable, id: string) {
+    const all = async (sql: string) => (await db.query<Record<string, unknown>>(sql, [id])).rows;
+    const [profile] = await all(
+      `SELECT id, email, phone, full_name, preferred_language, preparation_stage, target_exam_ids,
+              is_age_verified_18_plus, deletion_requested_at, created_at, updated_at
+         FROM profiles WHERE id = $1`,
+    );
+    return {
+      profile: profile ?? {},
+      devices: await all(
+        'SELECT id, device_name, platform, is_active, last_active_at, created_at FROM user_devices WHERE user_id = $1 ORDER BY created_at',
+      ),
+      follows: await all('SELECT examiner_id, created_at FROM examiner_followers WHERE student_id = $1 ORDER BY created_at'),
+      attempts: await all(
+        `SELECT a.id, t.title AS test_title, a.attempt_number, a.status, a.started_at, a.submitted_at,
+                a.total_questions, a.attempted_count, a.correct_count, a.incorrect_count, a.skipped_count,
+                a.total_score, a.rank, a.percentile
+           FROM student_attempts a JOIN tests t ON t.id = a.test_id
+          WHERE a.student_id = $1 ORDER BY a.started_at`,
+      ),
+      savedQuestions: await all(
+        `SELECT question_id, test_id, is_bookmarked, is_in_mistake_notebook, last_wrong_at, created_at
+           FROM student_saved_questions WHERE student_id = $1 ORDER BY created_at`,
+      ),
+      reports: await all(
+        `SELECT id, question_id, attempt_id, reason, student_comment, status, examiner_response, resolved_at, created_at
+           FROM question_reports WHERE student_id = $1 ORDER BY created_at`,
+      ),
+      purchases: await all(
+        `SELECT id, invoice_number, item_type, test_id, series_id, pass_plan_id, gross_amount_paise, discount_paise,
+                gst_amount_paise, total_paid_paise, payment_channel, status, refunded_at, created_at, captured_at
+           FROM purchases WHERE student_id = $1 ORDER BY created_at`,
+      ),
+    };
   },
 };

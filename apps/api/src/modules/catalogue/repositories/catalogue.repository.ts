@@ -88,6 +88,7 @@ export interface ExaminerCardRow {
 export interface TestFilters {
   exam?: string | undefined;
   examiner?: string | undefined;
+  examiners?: string[] | undefined;
   series?: string | undefined;
   type?: string | undefined;
   access?: 'free' | 'paid' | undefined;
@@ -176,6 +177,7 @@ export const catalogueRepository = {
     const add = (value: unknown) => `$${params.push(value)}`;
     if (f.exam) where.push(BY_KEY('e', add(f.exam)));
     if (f.examiner) where.push(`t.examiner_id = ${add(f.examiner)}`);
+    if (f.examiners) where.push(`t.examiner_id = ANY(${add(f.examiners)}::uuid[])`);
     if (f.series) where.push(`t.series_id = ${add(f.series)}`);
     if (f.type) where.push(`t.test_type = ${add(f.type)}`);
     if (f.access === 'free') where.push(`t.access_type = 'free'`);
@@ -246,5 +248,22 @@ export const catalogueRepository = {
       [limit],
     );
     return rows;
+  },
+
+  // Follows: run inside withUser; RLS limits every row to the signed-in student.
+  async followedIds(db: Queryable, studentId: string): Promise<string[]> {
+    const { rows } = await db.query<{ examiner_id: string }>(
+      'SELECT examiner_id FROM examiner_followers WHERE student_id = $1 ORDER BY created_at DESC',
+      [studentId],
+    );
+    return rows.map((r) => r.examiner_id);
+  },
+
+  async follow(db: Queryable, studentId: string, examinerId: string): Promise<void> {
+    await db.query('INSERT INTO examiner_followers (student_id, examiner_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [studentId, examinerId]);
+  },
+
+  async unfollow(db: Queryable, studentId: string, examinerId: string): Promise<void> {
+    await db.query('DELETE FROM examiner_followers WHERE student_id = $1 AND examiner_id = $2', [studentId, examinerId]);
   },
 };

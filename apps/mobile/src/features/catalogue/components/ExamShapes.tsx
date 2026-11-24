@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import type { Exam } from '@/lib/demo';
+import type { Exam } from '@/lib/catalogue/types';
 import { Text } from '@/ui/primitives';
 import { palette, space } from '@/ui/tokens';
 

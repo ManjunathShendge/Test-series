@@ -1,6 +1,16 @@
 'use client';
 
-import { DeviceLimitDetails, DeviceList, Profile, SessionResponse, type Device, type UpdateMeRequest } from '@exam-prep/contracts';
+import {
+  AccountExport,
+  DeletionStatus,
+  DeviceLimitDetails,
+  DeviceList,
+  FollowingFeed,
+  Profile,
+  SessionResponse,
+  type Device,
+  type UpdateMeRequest,
+} from '@exam-prep/contracts';
 import { getDeviceId, setDeviceId } from '@/lib/storage/device';
 import { apiRequest, ApiRequestError } from './http';
 
@@ -41,3 +51,14 @@ export function deviceLimitDevices(error: unknown): Device[] | null {
   const parsed = DeviceLimitDetails.safeParse(error.details);
   return parsed.success ? parsed.data.activeDevices : [];
 }
+
+// Following, entitlements, account deletion and data export -------------------------------
+
+export const accountApi = {
+  following: () => apiRequest('GET', '/me/following', { schema: FollowingFeed }),
+  follow: (examinerId: string) => apiRequest('PUT', `/me/following/${encodeURIComponent(examinerId)}`),
+  unfollow: (examinerId: string) => apiRequest('DELETE', `/me/following/${encodeURIComponent(examinerId)}`),
+  requestDeletion: () => apiRequest('POST', '/me/deletion', { schema: DeletionStatus }),
+  cancelDeletion: () => apiRequest('DELETE', '/me/deletion', { schema: DeletionStatus }),
+  exportData: () => apiRequest('GET', '/me/export', { schema: AccountExport, timeoutMs: 30000 }),
+};

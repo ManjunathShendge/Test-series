@@ -32,6 +32,8 @@ export const Profile = z.object({
   ageConfirmed: z.boolean(),
   /** True once onboarding is complete: a preparation stage is set and 18+ is confirmed. */
   onboarded: z.boolean(),
+  /** Set while an account deletion request is in its grace period; the student may cancel. */
+  deletionRequestedAt: z.iso.datetime({ offset: true }).nullable().optional(),
 });
 export type Profile = z.infer<typeof Profile>;
 
@@ -82,3 +84,31 @@ export type UpdateMeRequest = z.infer<typeof UpdateMeRequest>;
 
 export const DeviceList = z.object({ items: z.array(Device) });
 export type DeviceList = z.infer<typeof DeviceList>;
+
+// Account deletion and data export (docs/SECURITY.md "Privacy and deletion workflow") -------
+
+/** Days between a deletion request and its finalization; the student can cancel until then. */
+export const DELETION_GRACE_DAYS = 7;
+/** Deletion needs a recent sign-in: the ID token's auth_time must be this fresh. */
+export const DELETION_REAUTH_SECONDS = 300;
+
+export const DeletionStatus = z.object({
+  requestedAt: z.iso.datetime({ offset: true }).nullable(),
+  /** When the account is deleted unless the request is cancelled first. */
+  scheduledFor: z.iso.datetime({ offset: true }).nullable(),
+});
+export type DeletionStatus = z.infer<typeof DeletionStatus>;
+
+const Rows = z.array(z.record(z.string(), z.unknown()));
+/** GET /v1/me/export: what the account holds about the student, as JSON. */
+export const AccountExport = z.object({
+  exportedAt: z.iso.datetime({ offset: true }),
+  profile: z.record(z.string(), z.unknown()),
+  devices: Rows,
+  follows: Rows,
+  attempts: Rows,
+  savedQuestions: Rows,
+  reports: Rows,
+  purchases: Rows,
+});
+export type AccountExport = z.infer<typeof AccountExport>;

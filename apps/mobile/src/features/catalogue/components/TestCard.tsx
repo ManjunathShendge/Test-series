@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
-import { getExam, getExaminer, type TestSummary } from '@/lib/demo';
+import { shortExamName } from '@/lib/api/queries';
+import type { TestSummary } from '@/lib/catalogue/types';
 import { formatCount, formatDuration, formatPaise } from '@/lib/format';
 import { Card, Chip, Icon, Text } from '@/ui/primitives';
 import { colors, space } from '@/ui/tokens';
@@ -24,19 +25,18 @@ const kindLabel: Record<TestSummary['kind'], string> = {
  * tap target and its accessible name summarises everything a sighted user sees.
  */
 export function TestCard({ test, hasAccess, onPress, compact = false }: TestCardProps) {
-  const exam = getExam(test.examId);
-  const examiner = getExaminer(test.examinerId);
+  const examLabel = shortExamName(test.examName);
   const price = formatPaise(test.pricePaise);
   const access = test.pricePaise === 0 ? 'Free' : hasAccess ? 'Owned' : price;
 
-  const a11y = `${test.title}. ${exam?.shortName ?? ''}. ${test.questionCount} questions, ${formatDuration(
+  const a11y = `${test.title}. ${examLabel}. ${test.questionCount} questions, ${formatDuration(
     test.durationMinutes,
-  )}. ${access}. By ${examiner?.name ?? 'unknown examiner'}.`;
+  )}. ${access}. By ${test.examinerName}.`;
 
   return (
     <Card onPress={onPress} accessibilityLabel={a11y} style={compact ? styles.compact : undefined}>
       <View style={styles.top}>
-        <Chip label={exam?.shortName ?? 'Exam'} tone="primary" />
+        <Chip label={examLabel} tone="primary" />
         <Chip label={kindLabel[test.kind]} />
         {test.languages.includes('hi') ? <Chip label="EN · HI" icon="language-outline" /> : <Chip label="EN" />}
       </View>
@@ -45,7 +45,7 @@ export function TestCard({ test, hasAccess, onPress, compact = false }: TestCard
         {test.title}
       </Text>
       <Text variant="bodySmall" tone="secondary" numberOfLines={1}>
-        {examiner?.name}
+        {test.examinerName}
       </Text>
 
       <View style={styles.meta}>

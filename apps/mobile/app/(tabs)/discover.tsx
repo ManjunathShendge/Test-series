@@ -6,11 +6,10 @@ import { ExamShapes } from '@/features/catalogue/components/ExamShapes';
 import { SectionHeader } from '@/features/catalogue/components/SectionHeader';
 import { TestCard } from '@/features/catalogue/components/TestCard';
 import { TestListSkeleton } from '@/features/catalogue/components/TestCardSkeleton';
+import { useAccess, useFollow } from '@/lib/api/account';
 import { useIsOnline } from '@/lib/api/client';
 import { useExaminers, useExams, useSearch } from '@/lib/api/queries';
-import type { SearchFilters, TestSummary } from '@/lib/demo';
-import { formatCount } from '@/lib/format';
-import { useAppStore } from '@/lib/store/app';
+import type { SearchFilters, TestSummary } from '@/lib/catalogue/types';
 import { Card, Chip, Icon, Screen, StateView, Text, TextField, type IconName } from '@/ui/primitives';
 import { colors, fonts, layout, space } from '@/ui/tokens';
 
@@ -37,17 +36,15 @@ export default function DiscoverScreen() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<SearchFilters>({});
-  const owned = useAppStore((s) => s.ownedTestIds);
-  const ownedSeries = useAppStore((s) => s.ownedSeriesIds);
-  const followed = useAppStore((s) => s.followedExaminerIds);
-  const toggleFollow = useAppStore((s) => s.toggleFollow);
+  const hasAccess = useAccess();
+  const follow = useFollow();
   const examsQuery = useExams();
   const examinersQuery = useExaminers();
   const exams = examsQuery.data ?? [];
   const examiners = examinersQuery.data ?? [];
 
   const active = query.trim().length > 0 || Object.values(filters).some(Boolean);
-  // Debounce typing so each keystroke is not a request once this is a real API.
+  // Debounce typing so each keystroke is not a request.
   const [debounced, setDebounced] = useState(query);
   useEffect(() => {
     const t = setTimeout(() => setDebounced(query), 250);
@@ -65,7 +62,6 @@ export default function DiscoverScreen() {
     : stale ? 'refreshing'
     : 'loading';
   const results = listState === 'ready' || listState === 'refreshing' ? (search.data ?? []) : [];
-  const hasAccess = (t: TestSummary) => t.pricePaise === 0 || owned.includes(t.id) || (t.seriesId !== undefined && ownedSeries.includes(t.seriesId));
 
   const set = <K extends keyof SearchFilters>(key: K, value: SearchFilters[K]) =>
     setFilters((f) => (f[key] === value ? { ...f, [key]: undefined } : { ...f, [key]: value }));
@@ -124,7 +120,7 @@ export default function DiscoverScreen() {
           <ExamShapes exams={exams} onOpen={(id) => router.push({ pathname: '/exam/[id]', params: { id } })} />
           <View style={styles.examGrid}>
             {exams.slice(3).map((e) => (
-              <Card key={e.id} onPress={() => router.push({ pathname: '/exam/[id]', params: { id: e.id } })} accessibilityLabel={`${e.name}, ${e.testCount} tests, ${formatCount(e.followerCount)} following`} style={styles.examCard}>
+              <Card key={e.id} onPress={() => router.push({ pathname: '/exam/[id]', params: { id: e.id } })} accessibilityLabel={`${e.name}, ${e.testCount} tests`} style={styles.examCard}>
                 <View style={styles.examIcon}>
                   <Icon name="school-outline" size={22} color={colors.primary} />
                 </View>
@@ -132,7 +128,7 @@ export default function DiscoverScreen() {
                   {e.name}
                 </Text>
                 <Text variant="caption" tone="secondary">
-                  {e.testCount} tests · {formatCount(e.followerCount)} following
+                  {e.testCount} tests · {e.category}
                 </Text>
               </Card>
             ))}
@@ -141,7 +137,7 @@ export default function DiscoverScreen() {
           <SectionHeader title="Examiners" subtitle="Follow to see new tests on Home" />
           <View style={styles.stack}>
             {examiners.map((e) => (
-              <ExaminerCard key={e.id} examiner={e} isFollowed={followed.includes(e.id)} onPress={() => router.push({ pathname: '/examiner/[id]', params: { id: e.id } })} onToggleFollow={() => toggleFollow(e.id)} />
+              <ExaminerCard key={e.id} examiner={e} isFollowed={follow.isFollowed(e.id)} onPress={() => router.push({ pathname: '/examiner/[id]', params: { id: e.id } })} onToggleFollow={() => follow.toggle(e.id)} />
             ))}
           </View>
 

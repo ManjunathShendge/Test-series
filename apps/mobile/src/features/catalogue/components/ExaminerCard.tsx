@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import type { Examiner, ExaminerTier } from '@/lib/demo';
+import type { Examiner, ExaminerTier } from '@/lib/catalogue/types';
 import { formatCount } from '@/lib/format';
 import { Avatar, Button, Card, Chip, Text, type ChipTone, type IconName } from '@/ui/primitives';
 import { space } from '@/ui/tokens';
@@ -34,7 +34,7 @@ export function ExaminerCard({ examiner, isFollowed, onPress, onToggleFollow }: 
           <View style={styles.meta}>
             <Chip label={tier.label} tone={tier.tone} icon={tier.icon} />
             <Text variant="bodySmall" tone="secondary">
-              {formatCount(examiner.followers)} followers · {examiner.publishedTests} tests
+              {formatCount(examiner.followers)} followers{examiner.publishedTests > 0 ? ` · ${examiner.publishedTests} tests` : ''}
             </Text>
           </View>
         </View>

@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { DELETION_GRACE_DAYS, DEVICE_LIMIT, REFUND_WINDOW_DAYS } from '@/lib/demo';
+import { DELETION_GRACE_DAYS, DEVICE_LIMIT, REFUND_WINDOW_DAYS } from '@/lib/policy';
 import { useAppStore } from '@/lib/store/app';
 import { Card, Chip, Screen, Text, ToggleRow } from '@/ui/primitives';
 import { space } from '@/ui/tokens';

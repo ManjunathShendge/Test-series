@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { catalogue } from '@/lib/api/catalogue';
+import { FollowButton } from '@/features/account/FollowButton';
 import { Reveal } from '@/ui/motion/Reveal';
 import { formatCount, formatPrice } from '@/features/catalogue/format';
 import { Avatar, EmptyState, Facts, PageHero, SectionHead, TestGrid, TierBadge } from '@/features/catalogue/parts';
@@ -42,6 +43,7 @@ export default async function ExaminerPage({ params }: Props) {
         <div className={styles.profileHead}>
           <Avatar name={examiner.name} size={56} />
           <TierBadge tier={examiner.tier} />
+          <FollowButton examinerId={examiner.id} examinerName={examiner.name} path={`/examiners/${examiner.id}`} />
         </div>
         <Facts
           items={[

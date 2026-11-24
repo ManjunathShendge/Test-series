@@ -7,6 +7,8 @@ export interface VerifiedIdentity {
   emailVerified: boolean;
   name: string | null;
   signInProvider: string | null;
+  /** When the user last signed in (epoch seconds); recent sign-in gates sensitive actions. */
+  authTime: number;
 }
 
 export interface IdentityVerifier {
@@ -55,6 +57,7 @@ export class FirebaseIdentityVerifier implements IdentityVerifier {
       emailVerified: payload['email_verified'] === true,
       name: typeof payload['name'] === 'string' ? payload['name'] : null,
       signInProvider: typeof firebase?.sign_in_provider === 'string' ? firebase.sign_in_provider : null,
+      authTime,
     };
   }
 }

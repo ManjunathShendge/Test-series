@@ -3,12 +3,13 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useUpdateProfile } from '@/lib/api/account';
 import { ApiRequestError } from '@/lib/api/http';
-import { exams, type Language, type Profile } from '@/lib/demo';
-import { useAppStore } from '@/lib/store/app';
+import type { PreparationStage } from '@exam-prep/contracts';
+import { useExams } from '@/lib/api/queries';
+import type { Language } from '@/lib/catalogue/types';
 import { Button, Card, Chip, Icon, Screen, Text, type IconName } from '@/ui/primitives';
 import { colors, radius, space } from '@/ui/tokens';
 
-type Stage = Profile['preparationStage'];
+type Stage = PreparationStage;
 const STAGES: { key: Stage; label: string; detail: string; icon: IconName }[] = [
   { key: 'starting', label: 'Just starting', detail: 'Building concepts. Recommend easier sectionals first.', icon: 'leaf-outline' },
   { key: 'revising', label: 'Revising', detail: 'Covered the syllabus once. Mix of mocks and weak-topic drills.', icon: 'refresh-outline' },
@@ -22,7 +23,8 @@ const STAGES: { key: Stage; label: string; detail: string; icon: IconName }[] = 
  */
 export default function OnboardingScreen() {
   const router = useRouter();
-  const complete = useAppStore((s) => s.completeOnboarding);
+  const examsQuery = useExams();
+  const exams = examsQuery.data ?? [];
   const saveProfile = useUpdateProfile();
   const [step, setStep] = useState(0);
   const [examIds, setExamIds] = useState<string[]>([]);
@@ -44,15 +46,11 @@ export default function OnboardingScreen() {
       setStep(step + 1);
       return;
     }
-    // Language and stage are saved on the server; target exams stay on the device until the
-    // catalogue API (milestone B) gives them server ids.
+    // Saved on the server; the profile mirror and the onboarded flag come from its answer.
     saveProfile.mutate(
-      { preferredLanguage: language, preparationStage: stage },
+      { targetExamIds: examIds, preferredLanguage: language, preparationStage: stage },
       {
-        onSuccess: () => {
-          complete({ targetExamIds: examIds, language, preparationStage: stage });
-          router.replace('/');
-        },
+        onSuccess: () => router.replace('/'),
         onError: (e) => setError(e instanceof ApiRequestError ? e.message : 'Could not save your choices. Try again.'),
       },
     );
@@ -76,6 +74,11 @@ export default function OnboardingScreen() {
           <>
             <Text variant="display">Which exams are you preparing for?</Text>
             <Text tone="secondary">Choose one or more. You can change this later in Profile.</Text>
+            {examsQuery.isError ? (
+              <Button label="Could not load exams. Try again" variant="secondary" onPress={() => void examsQuery.refetch()} />
+            ) : !examsQuery.data ? (
+              <Text tone="secondary">Loading exams…</Text>
+            ) : null}
             <View style={styles.list}>
               {exams.map((e) => {
                 const on = examIds.includes(e.id);

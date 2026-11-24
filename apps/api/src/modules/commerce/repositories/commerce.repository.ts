@@ -241,6 +241,21 @@ export const commerceRepository = {
     return rows[0]?.owned === true;
   },
 
+  /** Active entitlements: direct tests, series, and the published tests inside owned series. */
+  async entitlements(db: Queryable, studentId: string): Promise<{ test_ids: string[]; series_ids: string[] }> {
+    const { rows } = await db.query<{ test_ids: string[]; series_ids: string[] }>(
+      `WITH active AS (
+         SELECT test_id, series_id FROM student_entitlements
+          WHERE student_id=$1 AND NOT is_revoked AND (valid_until IS NULL OR valid_until > now()))
+       SELECT ARRAY(SELECT DISTINCT id FROM (
+                SELECT test_id AS id FROM active WHERE test_id IS NOT NULL
+                UNION SELECT t.id FROM tests t JOIN active a ON a.series_id = t.series_id) x)::text[] AS test_ids,
+              ARRAY(SELECT DISTINCT series_id FROM active WHERE series_id IS NOT NULL)::text[] AS series_ids`,
+      [studentId],
+    );
+    return rows[0] ?? { test_ids: [], series_ids: [] };
+  },
+
   async myPurchases(db: Queryable, studentId: string): Promise<MyPurchaseRow[]> {
     const { rows } = await db.query<MyPurchaseRow>(
       `${PURCHASE_SELECT} WHERE p.student_id=$1 AND p.status IN ('captured','refunded') AND p.item_type<>'pass'

@@ -1,10 +1,10 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { TestCard } from '@/features/catalogue/components/TestCard';
-import type { ExaminerTier, TestSummary } from '@/lib/demo';
+import type { ExaminerTier } from '@/lib/catalogue/types';
 import { useExaminerDetail } from '@/lib/api/queries';
 import { formatCount, formatPaise } from '@/lib/format';
-import { useAppStore } from '@/lib/store/app';
+import { useAccess, useEntitlements, useFollow } from '@/lib/api/account';
 import { Avatar, Button, Card, Chip, Screen, StateView, Text, type ChipTone, type IconName } from '@/ui/primitives';
 import { space } from '@/ui/tokens';
 
@@ -20,10 +20,10 @@ export default function ExaminerScreen() {
   const router = useRouter();
   const detail = useExaminerDetail(id);
   const examiner = detail.data?.examiner;
-  const followed = useAppStore((s) => s.followedExaminerIds.includes(id));
-  const toggleFollow = useAppStore((s) => s.toggleFollow);
-  const owned = useAppStore((s) => s.ownedTestIds);
-  const ownedSeries = useAppStore((s) => s.ownedSeriesIds);
+  const follow = useFollow();
+  const followed = follow.isFollowed(id);
+  const hasAccess = useAccess();
+  const ownedSeries = useEntitlements().data?.seriesIds ?? [];
 
   if (detail.isError) {
     return (
@@ -44,7 +44,6 @@ export default function ExaminerScreen() {
   const tests = detail.data?.tests ?? [];
   const series = detail.data?.series ?? [];
   const exams = detail.data?.exams ?? [];
-  const hasAccess = (t: TestSummary) => t.pricePaise === 0 || owned.includes(t.id) || (t.seriesId !== undefined && ownedSeries.includes(t.seriesId));
 
   return (
     <>
@@ -63,7 +62,7 @@ export default function ExaminerScreen() {
         <View style={styles.stats}>
           <View style={styles.stat} accessible accessibilityLabel={`${formatCount(examiner.followers)} followers`}>
             <Text variant="title" tabular>
-              {formatCount(examiner.followers + (followed && !examiner.isFollowed ? 1 : 0))}
+              {formatCount(examiner.followers)}
             </Text>
             <Text variant="caption" tone="secondary">
               Followers
@@ -92,7 +91,7 @@ export default function ExaminerScreen() {
           variant={followed ? 'secondary' : 'primary'}
           icon={followed ? 'checkmark' : 'add'}
           fullWidth
-          onPress={() => toggleFollow(examiner.id)}
+          onPress={() => follow.toggle(examiner.id)}
           accessibilityLabel={followed ? `Unfollow ${examiner.name}` : `Follow ${examiner.name}`}
         />
 

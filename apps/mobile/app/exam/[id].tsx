@@ -2,10 +2,9 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { TestCard } from '@/features/catalogue/components/TestCard';
-import type { TestSummary } from '@/lib/demo';
 import { useExamDetail } from '@/lib/api/queries';
 import { formatCount, formatDate, formatPaise } from '@/lib/format';
-import { useAppStore } from '@/lib/store/app';
+import { useAccess, useEntitlements } from '@/lib/api/account';
 import { Card, Chip, Icon, Screen, StateView, Text, type IconName } from '@/ui/primitives';
 import { colors, radius, space } from '@/ui/tokens';
 
@@ -17,8 +16,8 @@ export default function ExamScreen() {
   const router = useRouter();
   const detail = useExamDetail(id);
   const exam = detail.data?.exam;
-  const owned = useAppStore((s) => s.ownedTestIds);
-  const ownedSeries = useAppStore((s) => s.ownedSeriesIds);
+  const hasAccess = useAccess();
+  const ownedSeries = useEntitlements().data?.seriesIds ?? [];
   const [tab, setTab] = useState<Tab>('tests');
 
   if (detail.isError) {
@@ -38,7 +37,6 @@ export default function ExamScreen() {
 
   const tests = detail.data?.tests ?? [];
   const series = detail.data?.series ?? [];
-  const hasAccess = (t: TestSummary) => t.pricePaise === 0 || owned.includes(t.id) || (t.seriesId !== undefined && ownedSeries.includes(t.seriesId));
 
   const tabs: { key: Tab; label: string; count: number }[] = [
     { key: 'tests', label: 'Tests', count: tests.length },
@@ -57,7 +55,7 @@ export default function ExamScreen() {
         <View style={styles.facts}>
           <Fact icon="calendar-outline" label="Next exam" value={exam.nextDate ? formatDate(exam.nextDate) : 'To be announced'} />
           <Fact icon="flag-outline" label="Last cutoff" value={exam.lastCutoff ? String(exam.lastCutoff) : '—'} />
-          <Fact icon="people-outline" label="Following" value={formatCount(exam.followerCount)} />
+          <Fact icon="document-text-outline" label="Live tests" value={formatCount(exam.testCount)} />
         </View>
 
         <View style={styles.tabs} accessibilityRole="tablist">

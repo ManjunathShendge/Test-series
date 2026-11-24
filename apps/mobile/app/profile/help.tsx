@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { LayoutAnimation, Pressable, StyleSheet, View } from 'react-native';
-import { DEVICE_LIMIT, REFUND_WINDOW_DAYS } from '@/lib/demo';
+import { DEVICE_LIMIT, REFUND_WINDOW_DAYS } from '@/lib/policy';
 import { useReducedMotion } from '@/lib/a11y';
 import { useAppStore } from '@/lib/store/app';
 import { Button, Card, Chip, Icon, Screen, Text, TextField } from '@/ui/primitives';

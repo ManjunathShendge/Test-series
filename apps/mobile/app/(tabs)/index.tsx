@@ -4,11 +4,11 @@ import { ExaminerCard } from '@/features/catalogue/components/ExaminerCard';
 import { SectionHeader } from '@/features/catalogue/components/SectionHeader';
 import { TestCard } from '@/features/catalogue/components/TestCard';
 import { TestListSkeleton } from '@/features/catalogue/components/TestCardSkeleton';
-import { useExams, useHomeFeed } from '@/lib/api/queries';
-import type { TestSummary } from '@/lib/demo';
+import { useAccess, useFollow, useFollowing } from '@/lib/api/account';
+import { toTestSummary, useExaminers, useExams, useHomeFeed } from '@/lib/api/queries';
 import { formatClock, formatDate } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
-import { useRunningAttempt } from '@/features/attempt/queries';
+import { useMyAttempts, useRunningAttempt } from '@/features/attempt/queries';
 import { usePractice, useProgress } from '@/features/results/queries';
 import { Avatar, Button, Card, Chip, FeatureTile, Icon, IconButton, Screen, StateView, Text } from '@/ui/primitives';
 import { ProgressRing } from '@/ui/patterns/ProgressRing';
@@ -30,22 +30,20 @@ function greeting(): string {
 export default function HomeScreen() {
   const router = useRouter();
   const profile = useAppStore((s) => s.profile);
-  const attempted = useAppStore((s) => s.attemptedTestIds);
-  const followed = useAppStore((s) => s.followedExaminerIds);
-  const owned = useAppStore((s) => s.ownedTestIds);
-  const ownedSeries = useAppStore((s) => s.ownedSeriesIds);
-  const toggleFollow = useAppStore((s) => s.toggleFollow);
+  const attempted = [...new Set((useMyAttempts().data ?? []).map((a) => a.testId))];
+  const hasAccess = useAccess();
+  const follow = useFollow();
+  const following = useFollowing().data;
+  const examiners = useExaminers().data ?? [];
 
-  const hasAccess = (t: TestSummary) =>
-    t.pricePaise === 0 || owned.includes(t.id) || (t.seriesId !== undefined && ownedSeries.includes(t.seriesId));
-
-  const feed = useHomeFeed(profile.targetExamIds, attempted, followed);
+  const feed = useHomeFeed(profile.targetExamIds, attempted);
   const examsQuery = useExams();
   const realExams = examsQuery.data ?? [];
   const recommended = feed.data?.recommended ?? [];
-  const fromFollowed = feed.data?.fromFollowed ?? [];
   const featured = feed.data?.featured ?? [];
-  const suggestedExaminers = feed.data?.suggestedExaminers ?? [];
+  // New from followed examiners (PRD 6.2), straight from the server's follow list.
+  const fromFollowed = (following?.tests ?? []).map(toTestSummary);
+  const suggestedExaminers = examiners.filter((e) => !follow.isFollowed(e.id)).slice(0, 2);
   // No data yet: first load, or waiting for a connection with nothing cached.
   const feedState = feed.data ? 'ready' : feed.isError ? 'error' : feed.fetchStatus === 'paused' ? 'offline' : 'loading';
 
@@ -70,13 +68,13 @@ export default function HomeScreen() {
     <Screen padded={false} contentStyle={styles.content}>
       <View style={[styles.gutter, styles.header]}>
         <View style={styles.identity}>
-          <Avatar name={profile.name} size={44} />
+          <Avatar name={profile.name || 'Student'} size={44} />
           <View style={styles.headerText}>
             <Text variant="caption" tone="secondary">
               {greeting()}
             </Text>
             <Text variant="heading" numberOfLines={1}>
-              Hello, {profile.name.split(' ')[0]}!
+              Hello{profile.name ? `, ${profile.name.split(' ')[0]}` : ''}!
             </Text>
           </View>
         </View>
@@ -309,7 +307,7 @@ export default function HomeScreen() {
           </View>
           <View style={[styles.gutter, styles.stack]}>
             {suggestedExaminers.map((e) => (
-              <ExaminerCard key={e.id} examiner={e} isFollowed={false} onPress={() => router.push({ pathname: '/examiner/[id]', params: { id: e.id } })} onToggleFollow={() => toggleFollow(e.id)} />
+              <ExaminerCard key={e.id} examiner={e} isFollowed={false} onPress={() => router.push({ pathname: '/examiner/[id]', params: { id: e.id } })} onToggleFollow={() => follow.toggle(e.id)} />
             ))}
           </View>
         </View>

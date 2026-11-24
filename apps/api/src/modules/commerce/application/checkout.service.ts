@@ -3,6 +3,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { transaction, withUser, type Database } from '@exam-prep/db';
 import type {
   CheckoutOrder,
+  Entitlements,
   MyPurchaseList,
   OrderQuote,
   OrderRequest,
@@ -224,6 +225,11 @@ export class CheckoutService {
   async ownership(access: AccessContext, itemType: PurchaseItemType, itemId: string): Promise<Ownership> {
     const owned = await withUser(this.db, access.profileId, (client) => repo.owns(client, access.profileId, itemType, itemId));
     return { owned, paymentsEnabled: this.razorpay !== null };
+  }
+
+  async entitlements(access: AccessContext): Promise<Entitlements> {
+    const row = await withUser(this.db, access.profileId, (client) => repo.entitlements(client, access.profileId));
+    return { testIds: row.test_ids, seriesIds: row.series_ids };
   }
 
   async myPurchases(access: AccessContext): Promise<MyPurchaseList> {

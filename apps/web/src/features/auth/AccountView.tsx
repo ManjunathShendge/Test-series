@@ -11,6 +11,8 @@ import { useAuth } from './AuthProvider';
 import { DeviceRows } from './DeviceRows';
 import { PurchasesPanel } from '@/features/commerce/PurchasesPanel';
 import { AttemptsPanel } from '@/features/attempt/AttemptsPanel';
+import { FollowingPanel } from '@/features/account/FollowingPanel';
+import { PrivacyPanel } from '@/features/account/PrivacyPanel';
 import { RequireSession } from './RequireSession';
 import { Alert, BusyButton, Notice, Waiting } from './ui';
 import styles from './auth.module.css';
@@ -131,6 +133,8 @@ function Account({ profile }: { profile: Profile }) {
 
         <AttemptsPanel />
         <PurchasesPanel />
+        <FollowingPanel />
+        <PrivacyPanel profile={profile} />
       </div>
     </div>
   );

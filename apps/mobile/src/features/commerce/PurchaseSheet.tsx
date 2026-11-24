@@ -1,11 +1,14 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { applyPercentOff, GST_RATE_PERCENT, resolveCoupon, splitGst, type CouponResolution } from '@/lib/demo';
+import { Entitlements } from '@exam-prep/contracts';
+import { accountKeys } from '@/lib/api/account';
+import { apiRequest } from '@/lib/api/http';
 import { formatPaise } from '@/lib/format';
-import { useAppStore, type PurchaseStatus } from '@/lib/store/app';
-import { Button, Chip, Icon, Text, TextField, type ChipTone, type IconName } from '@/ui/primitives';
+import { Button, Chip, Icon, Text, type ChipTone, type IconName } from '@/ui/primitives';
 import { colors, radius, space } from '@/ui/tokens';
+import { getBillingAdapter } from './billing';
 
 export interface PurchaseSheetProps {
   visible: boolean;
@@ -14,64 +17,67 @@ export interface PurchaseSheetProps {
   onUnlocked: () => void;
 }
 
-const statusMeta: Record<Exclude<PurchaseStatus, 'idle'>, { label: string; tone: ChipTone; icon: IconName }> = {
-  pending: { label: 'Payment pending', tone: 'warning', icon: 'hourglass-outline' },
-  verifying: { label: 'Verifying with Google Play', tone: 'warning', icon: 'shield-checkmark-outline' },
+type Status = 'idle' | 'pending' | 'verifying' | 'confirmed' | 'deferred' | 'failed';
+
+const statusMeta: Record<Exclude<Status, 'idle'>, { label: string; tone: ChipTone; icon: IconName }> = {
+  pending: { label: 'Payment in progress', tone: 'warning', icon: 'hourglass-outline' },
+  verifying: { label: 'Confirming your purchase', tone: 'warning', icon: 'shield-checkmark-outline' },
   confirmed: { label: 'Purchase confirmed', tone: 'success', icon: 'checkmark-circle-outline' },
-  failed: { label: 'Payment failed', tone: 'error', icon: 'alert-circle-outline' },
+  deferred: { label: 'Waiting for the store', tone: 'warning', icon: 'time-outline' },
+  failed: { label: 'Payment not completed', tone: 'error', icon: 'alert-circle-outline' },
 };
 
+const STORE = Platform.OS === 'ios' ? 'the App Store' : 'Google Play';
+/** How long to wait for the server to list the item after the store reports success. */
+const VERIFY_TRIES = 10;
+
 /**
- * Store-billing purchase sheet (PRD 6.3). The three states are kept visibly
- * distinct: pending, verifying and confirmed (MASTER: never show "purchased"
- * for an unverified transaction). Coupons and examiner codes are previewed on
- * the client and re-validated by the server; the price shows GST included.
- * The server decides entitlement, so unlocking happens only after "confirmed".
+ * In-app purchase sheet (PRD 6.3). Payment runs through the store billing adapter the client
+ * registers (see ./billing). Pending, verifying and confirmed stay visibly distinct, and access
+ * unlocks only when the server's entitlements list the item. Without an adapter the item is
+ * shown as available soon: no purchase button and no link to pay outside the app.
  */
 export function PurchaseSheet({ visible, item, onClose, onUnlocked }: PurchaseSheetProps) {
   const insets = useSafeAreaInsets();
-  const status = useAppStore((s) => s.purchaseStatus);
-  const purchase = useAppStore((s) => s.purchase);
-  const reset = useAppStore((s) => s.resetPurchaseStatus);
+  const queryClient = useQueryClient();
+  const adapter = getBillingAdapter();
+  const [status, setStatus] = useState<Status>('idle');
   const busy = status === 'pending' || status === 'verifying';
 
-  const [codeOpen, setCodeOpen] = useState(false);
-  const [code, setCode] = useState('');
-  const [codeError, setCodeError] = useState<string | null>(null);
-  const [coupon, setCoupon] = useState<CouponResolution | null>(null);
-
   useEffect(() => {
-    if (!visible) {
-      reset();
-      setCodeOpen(false);
-      setCode('');
-      setCodeError(null);
-      setCoupon(null);
-    }
-  }, [visible, reset]);
+    if (!visible) setStatus('idle');
+  }, [visible]);
 
   if (!item) return null;
   const meta = status === 'idle' ? null : statusMeta[status];
-  const payable = coupon ? applyPercentOff(item.pricePaise, coupon.percentOff) : item.pricePaise;
-  const { gstPaise } = splitGst(payable);
 
-  const applyCode = () => {
-    const outcome = resolveCoupon(code, { kind: item.kind, id: item.id });
-    if (!outcome.ok) {
-      setCoupon(null);
-      setCodeError(outcome.reason);
-      return;
+  async function owned(): Promise<boolean> {
+    const e = await apiRequest('GET', '/me/entitlements', { schema: Entitlements });
+    queryClient.setQueryData(accountKeys.entitlements, e);
+    return item!.kind === 'test' ? e.testIds.includes(item!.id) : e.seriesIds.includes(item!.id);
+  }
+
+  async function buy() {
+    if (!adapter || !item || busy) return;
+    setStatus('pending');
+    try {
+      const outcome = await adapter.purchase({ kind: item.kind, id: item.id, title: item.title, pricePaise: item.pricePaise });
+      if (outcome === 'cancelled') return setStatus('idle');
+      if (outcome === 'pending') return setStatus('deferred');
+      setStatus('verifying');
+      for (let i = 0; i < VERIFY_TRIES; i++) {
+        if (await owned()) {
+          void queryClient.invalidateQueries({ queryKey: accountKeys.purchases });
+          return setStatus('confirmed');
+        }
+        await new Promise<void>((r) => setTimeout(r, 1500));
+      }
+      // Paid but not yet listed: the server keeps verifying; access appears once it does.
+      setStatus('deferred');
+    } catch {
+      setStatus('failed');
     }
-    setCodeError(null);
-    setCoupon(outcome.coupon);
-    setCodeOpen(false);
-  };
-
-  const removeCode = () => {
-    setCoupon(null);
-    setCode('');
-    setCodeError(null);
-  };
+  }
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={busy ? undefined : onClose} statusBarTranslucent>
@@ -94,111 +100,52 @@ export function PurchaseSheet({ visible, item, onClose, onUnlocked }: PurchaseSh
           </View>
 
           <View style={styles.priceBox}>
-            <View style={styles.priceRow}>
-              <View>
-                <Text variant="bodySmall" tone="secondary">
-                  {coupon ? 'You pay' : 'Google Play price'}
-                </Text>
-                <View style={styles.priceLine}>
-                  <Text variant="display" tabular>
-                    {formatPaise(payable)}
-                  </Text>
-                  {coupon ? (
-                    <Text variant="bodySmall" tone="secondary" style={styles.struck} accessibilityLabel={`Was ${formatPaise(item.pricePaise)}`}>
-                      {formatPaise(item.pricePaise)}
-                    </Text>
-                  ) : null}
-                </View>
-              </View>
-              <View style={styles.channel}>
-                <Icon name="logo-google-playstore" size={18} color={colors.textSecondary} />
-                <Text variant="bodySmall" tone="secondary">
-                  Billed by Google Play
-                </Text>
-              </View>
-            </View>
+            <Text variant="bodySmall" tone="secondary">
+              Price
+            </Text>
+            <Text variant="display" tabular>
+              {formatPaise(item.pricePaise)}
+            </Text>
             <Text variant="caption" tone="secondary">
-              Includes {formatPaise(gstPaise)} GST ({GST_RATE_PERCENT}%). Invoice shows the full breakdown.
+              Includes GST. {adapter ? `Billed by ${STORE}; the final price is shown by the store.` : ''}
             </Text>
           </View>
 
-          {status === 'idle' || status === 'failed' ? (
-            <View style={styles.couponBlock}>
-              {coupon ? (
-                <View style={styles.appliedRow}>
-                  <Chip label={`${coupon.code} applied`} tone="success" icon="pricetag-outline" />
-                  <Text variant="bodySmall" tone="secondary" style={{ flex: 1 }}>
-                    {coupon.label}
-                  </Text>
-                  <Pressable onPress={removeCode} accessibilityRole="button" accessibilityLabel={`Remove code ${coupon.code}`} hitSlop={8} style={styles.remove}>
-                    <Text variant="bodySmall" tone="primary">
-                      Remove
-                    </Text>
-                  </Pressable>
-                </View>
-              ) : codeOpen ? (
-                <View style={styles.couponForm}>
-                  <View style={{ flex: 1 }}>
-                    <TextField
-                      label="Coupon or examiner code"
-                      placeholder="e.g. WELCOME20"
-                      value={code}
-                      onChangeText={(v) => {
-                        setCode(v.toUpperCase());
-                        if (codeError) setCodeError(null);
-                      }}
-                      onClear={() => setCode('')}
-                      autoCapitalize="characters"
-                      autoCorrect={false}
-                      returnKeyType="done"
-                      onSubmitEditing={applyCode}
-                      {...(codeError ? { error: codeError } : {})}
-                    />
-                  </View>
-                  <Button label="Apply" variant="secondary" onPress={applyCode} />
-                </View>
-              ) : (
-                <Pressable onPress={() => setCodeOpen(true)} accessibilityRole="button" accessibilityLabel="Add a coupon or examiner code" style={styles.couponToggle}>
-                  <Icon name="pricetag-outline" size={18} color={colors.primary} />
-                  <Text variant="bodyStrong" tone="primary">
-                    Have a coupon or examiner code?
-                  </Text>
-                </Pressable>
-              )}
+          {!adapter ? (
+            <View style={styles.soon} accessibilityLiveRegion="polite">
+              <Chip label="Available soon" tone="primary" icon="time-outline" />
+              <Text variant="bodySmall" tone="secondary">
+                Buying in the app is coming soon. Free tests are open to everyone in the meantime.
+              </Text>
             </View>
-          ) : null}
-
-          {meta ? (
+          ) : meta ? (
             <View style={styles.status} accessibilityLiveRegion="polite">
               <Chip label={meta.label} tone={meta.tone} icon={meta.icon} />
-              {status === 'verifying' ? (
-                <Text variant="bodySmall" tone="secondary">
-                  Confirming the receipt with our server. Access unlocks only after this completes.
-                </Text>
-              ) : null}
-              {status === 'failed' ? (
-                <Text variant="bodySmall" tone="secondary">
-                  Nothing was charged. Check your payment method and try again.
-                </Text>
-              ) : null}
+              <Text variant="bodySmall" tone="secondary">
+                {status === 'verifying'
+                  ? 'Checking the receipt with our server. Access unlocks only after this completes.'
+                  : status === 'deferred'
+                    ? 'Your payment is still being processed. Access unlocks automatically once it is confirmed.'
+                    : status === 'failed'
+                      ? 'Nothing was charged. Check your payment method and try again.'
+                      : status === 'confirmed'
+                        ? 'You now have access. The receipt is in Profile > Purchases.'
+                        : `Complete the payment in ${STORE}.`}
+              </Text>
             </View>
           ) : (
             <Text variant="bodySmall" tone="secondary">
-              Instant access after confirmation. The receipt is saved to your profile. Refunds for in-app purchases are handled by Google Play.
+              Access unlocks after the purchase is confirmed. Refunds for in-app purchases are handled by {STORE}.
             </Text>
           )}
 
           <View style={styles.actions}>
-            {status === 'confirmed' ? (
+            {!adapter || status === 'deferred' ? (
+              <Button label="Close" variant="secondary" fullWidth size="lg" onPress={onClose} />
+            ) : status === 'confirmed' ? (
               <Button label="Start now" icon="play" fullWidth size="lg" onPress={onUnlocked} />
             ) : (
-              <Button
-                label={status === 'failed' ? 'Try again' : `Pay ${formatPaise(payable)}`}
-                fullWidth
-                size="lg"
-                loading={busy}
-                onPress={() => void purchase({ kind: item.kind, id: item.id, ...(coupon ? { couponCode: coupon.code } : {}) })}
-              />
+              <Button label={status === 'failed' ? 'Try again' : `Buy for ${formatPaise(item.pricePaise)}`} fullWidth size="lg" loading={busy} onPress={() => void buy()} />
             )}
           </View>
         </View>
@@ -222,16 +169,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -space.md },
   product: { gap: space.xs },
-  priceBox: { padding: space.lg, borderRadius: radius.lg, backgroundColor: colors.surfaceMuted, gap: space.sm },
-  priceRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  priceLine: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
-  struck: { textDecorationLine: 'line-through' },
-  channel: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  couponBlock: { gap: space.sm },
-  couponToggle: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 44 },
-  couponForm: { flexDirection: 'row', alignItems: 'flex-end', gap: space.sm },
-  appliedRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  remove: { minHeight: 44, justifyContent: 'center' },
+  priceBox: { padding: space.lg, borderRadius: radius.lg, backgroundColor: colors.surfaceMuted, gap: space.xs },
+  soon: { gap: space.sm },
   status: { gap: space.sm },
   actions: { marginTop: space.xs },
 });

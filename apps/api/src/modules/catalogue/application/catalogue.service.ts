@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { Database, Queryable } from '@exam-prep/db';
+import { withUser, type Database, type Queryable } from '@exam-prep/db';
 import type {
+  FollowingFeed,
   ExamDetail,
   ExaminerCard,
   ExaminerDetail,
@@ -26,6 +27,7 @@ import {
   type TestRow,
 } from '../repositories/catalogue.repository.js';
 
+const FEED_TESTS = 20;
 const RECENT_TESTS = 12;
 const num = (v: string | null): number | null => (v === null ? null : Number(v));
 
@@ -222,6 +224,34 @@ export class CatalogueService {
       series: series.map(toSeriesSummary),
       recentTests: tests.slice(0, RECENT_TESTS).map((t) => toTestSummary(t, examiner)),
     };
+  }
+
+  /** Examiners the student follows (still public ones only) and their newest published tests. */
+  async following(studentId: string): Promise<FollowingFeed> {
+    return withUser(this.db, studentId, async (client) => {
+      const ids = await repo.followedIds(client, studentId);
+      if (ids.length === 0) return { examiners: [], tests: [] };
+      const cards = await repo.examinerCards(client, ids);
+      const order = new Map(ids.map((id, i) => [id, i]));
+      const rows = await repo.listTests(client, { examiners: cards.map((c) => c.examiner_id), limit: FEED_TESTS });
+      return {
+        examiners: cards.sort((a, b) => order.get(a.examiner_id)! - order.get(b.examiner_id)!).map(toCard),
+        tests: await this.withExaminers(client, rows.slice(0, FEED_TESTS)),
+      };
+    });
+  }
+
+  /** Follows an approved, public examiner. Idempotent; following yourself is refused. */
+  async follow(studentId: string, examinerId: string): Promise<void> {
+    if (studentId === examinerId) throw new ApiError(400, 'VALIDATION_FAILED', 'You cannot follow yourself');
+    await withUser(this.db, studentId, async (client) => {
+      if ((await repo.examinerCards(client, [examinerId])).length === 0) throw notFound('Examiner');
+      await repo.follow(client, studentId, examinerId);
+    });
+  }
+
+  async unfollow(studentId: string, examinerId: string): Promise<void> {
+    await withUser(this.db, studentId, (client) => repo.unfollow(client, studentId, examinerId));
   }
 
   /** Attaches public examiner cards; a test whose examiner is no longer public is left out. */

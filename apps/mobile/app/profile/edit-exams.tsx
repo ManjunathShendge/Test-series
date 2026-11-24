@@ -2,13 +2,16 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { exams, type Profile } from '@/lib/demo';
+import type { PreparationStage } from '@exam-prep/contracts';
 import { announce } from '@/lib/a11y';
+import { useUpdateProfile } from '@/lib/api/account';
+import { ApiRequestError } from '@/lib/api/http';
+import { useExams } from '@/lib/api/queries';
 import { useAppStore } from '@/lib/store/app';
 import { Button, Icon, Screen, Text, type IconName } from '@/ui/primitives';
 import { colors, radius, space } from '@/ui/tokens';
 
-type Stage = Profile['preparationStage'];
+type Stage = PreparationStage;
 const STAGES: { key: Stage; label: string; detail: string; icon: IconName }[] = [
   { key: 'starting', label: 'Just starting', detail: 'Building concepts. Easier sectionals first.', icon: 'leaf-outline' },
   { key: 'revising', label: 'Revising', detail: 'Syllabus covered once. Mocks plus weak-topic drills.', icon: 'refresh-outline' },
@@ -23,9 +26,10 @@ export default function EditExamsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const profile = useAppStore((s) => s.profile);
-  const update = useAppStore((s) => s.updatePreferences);
+  const saveProfile = useUpdateProfile();
+  const exams = useExams().data ?? [];
   const [examIds, setExamIds] = useState<string[]>(profile.targetExamIds);
-  const [stage, setStage] = useState<Stage>(profile.preparationStage);
+  const [stage, setStage] = useState<Stage>(profile.preparationStage ?? 'revising');
   const [error, setError] = useState<string | null>(null);
 
   const dirty = stage !== profile.preparationStage || examIds.length !== profile.targetExamIds.length || examIds.some((id) => !profile.targetExamIds.includes(id));
@@ -40,9 +44,16 @@ export default function EditExamsScreen() {
       setError('Keep at least one exam so Home can recommend tests.');
       return;
     }
-    update({ targetExamIds: examIds, preparationStage: stage });
-    announce('Preferences saved');
-    router.back();
+    saveProfile.mutate(
+      { targetExamIds: examIds, preparationStage: stage },
+      {
+        onSuccess: () => {
+          announce('Preferences saved');
+          router.back();
+        },
+        onError: (e) => setError(e instanceof ApiRequestError ? e.message : 'Could not save. Check your connection and try again.'),
+      },
+    );
   };
 
   return (
@@ -106,7 +117,7 @@ export default function EditExamsScreen() {
 
       <View style={[styles.bar, { paddingBottom: insets.bottom + space.md }]}>
         <Button label="Cancel" variant="ghost" onPress={() => router.back()} />
-        <Button label="Save changes" icon="checkmark" size="lg" disabled={!dirty} onPress={save} />
+        <Button label="Save changes" icon="checkmark" size="lg" disabled={!dirty} loading={saveProfile.isPending} onPress={save} />
       </View>
     </>
   );

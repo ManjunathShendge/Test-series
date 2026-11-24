@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PurchaseSheet } from '@/features/commerce/PurchaseSheet';
 import { useSeriesDetail } from '@/lib/api/queries';
 import { formatDuration, formatPaise } from '@/lib/format';
-import { useAppStore } from '@/lib/store/app';
+import { useEntitlements } from '@/lib/api/account';
+import { useMyAttempts } from '@/features/attempt/queries';
 import { Avatar, Button, Card, Chip, Icon, ProgressBar, Screen, StateView, Text } from '@/ui/primitives';
 import { colors, radius, space } from '@/ui/tokens';
 
@@ -16,8 +17,8 @@ export default function SeriesScreen() {
   const insets = useSafeAreaInsets();
   const detail = useSeriesDetail(id);
   const series = detail.data?.series;
-  const owned = useAppStore((s) => s.ownedSeriesIds.includes(id));
-  const attempted = useAppStore((s) => s.attemptedTestIds);
+  const owned = !!useEntitlements().data?.seriesIds.includes(id);
+  const attempted = (useMyAttempts().data ?? []).filter((a) => a.status !== 'in_progress').map((a) => a.testId);
   const [buying, setBuying] = useState(false);
 
   if (detail.isError) {

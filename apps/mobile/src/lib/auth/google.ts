@@ -1,5 +1,5 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithCredential, type AuthCredential } from 'firebase/auth';
 import { Platform } from 'react-native';
 import { config } from '@/lib/config';
 import { firebaseAuth } from './firebase';
@@ -58,6 +58,16 @@ export async function signInWithGoogle(): Promise<AuthUser | null> {
   const { user } = await signInWithCredential(firebaseAuth(), GoogleAuthProvider.credential(token));
   return toUser(user);
 }
+
+/** Google picker for a fresh credential (re-authentication); null when the student cancels. */
+export async function googleCredential(): Promise<AuthCredential | null> {
+  const mod = await google();
+  if (!mod) throw Object.assign(new Error('Google sign-in unavailable'), { code: 'google/unavailable' });
+  const response = await mod.GoogleSignin.signIn();
+  if (response.type !== 'success' || !response.data.idToken) return null;
+  return GoogleAuthProvider.credential(response.data.idToken);
+}
+
 
 /** Clears the cached Google account so the picker shows again after sign-out. Best effort. */
 export async function signOutOfGoogle(): Promise<void> {

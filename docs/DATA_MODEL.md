@@ -204,3 +204,9 @@ Row-level security: every public table has RLS. `exam_worker` has full row acces
 - `student_attempt_events` (attempt, epoch, seq, payload, accepted, reason, received_at): append-only log of every received event, including rejected late ones with the reason (`time_up`, `section_closed`, `attempt_closed`, `unknown_question`).
 - `protect_answer_authority` trigger: answers change only through the API functions, inside an open window, with a valid option.
 - Scoring uses the latest corrected key; `sectional_scores` is keyed by section; ranks and test statistics count first attempts only.
+
+## Student account (C2, 24 November 2026; migration 021)
+
+- `examiner_followers`: owner-only policy "Students manage own follows"; trigger `examiner_followers_count` keeps `examiner_profiles.follower_count` (SECURITY DEFINER), recomputed once on migration.
+- `profiles.deletion_requested_at` (partial index on pending requests). `finalize_account_deletions(p_grace interval)` (SECURITY DEFINER, worker only: the profile privilege guard refuses it inside a user request) anonymizes due profiles (name "Deleted user", email/phone/avatar cleared, `firebase_uid = 'deleted:<id>'`, `deleted_at`), deletes devices, follows and saved questions, keeps attempts, purchases, ledger and audit rows, and returns `(profile_id, firebase_uid)` for identity deletion.
+

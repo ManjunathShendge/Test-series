@@ -1,9 +1,11 @@
-import { Body, Controller, Delete, Get, Headers, HttpCode, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Headers, HttpCode, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import {
   CreateSessionRequest,
   DEVICE_ID_HEADER,
   UpdateMeRequest,
+  type AccountExport,
+  type DeletionStatus,
   type DeviceList,
   type Profile,
   type SessionResponse,
@@ -50,5 +52,24 @@ export class IdentityController {
   @HttpCode(204)
   async revokeDevice(@CurrentIdentity() who: VerifiedIdentity, @Param('id') id: string): Promise<void> {
     await this.identity.revokeDevice(who, parseContract(DeviceIdParam, id));
+  }
+
+  /** Starts the deletion grace period; requires a sign-in within the last five minutes. */
+  @Post('me/deletion')
+  @HttpCode(200)
+  requestDeletion(@CurrentIdentity() who: VerifiedIdentity, @Headers(DEVICE_ID_HEADER) device?: string): Promise<DeletionStatus> {
+    return this.identity.requestDeletion(who, parseContract(DeviceIdHeader, device));
+  }
+
+  @Delete('me/deletion')
+  cancelDeletion(@CurrentIdentity() who: VerifiedIdentity, @Headers(DEVICE_ID_HEADER) device?: string): Promise<DeletionStatus> {
+    return this.identity.cancelDeletion(who, parseContract(DeviceIdHeader, device));
+  }
+
+  @Get('me/export')
+  @Header('Cache-Control', 'no-store')
+  @Header('Content-Disposition', 'attachment; filename="my-data.json"')
+  exportData(@CurrentIdentity() who: VerifiedIdentity, @Headers(DEVICE_ID_HEADER) device?: string): Promise<AccountExport> {
+    return this.identity.exportData(who, parseContract(DeviceIdHeader, device));
   }
 }

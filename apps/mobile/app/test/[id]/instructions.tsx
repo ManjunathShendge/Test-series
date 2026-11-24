@@ -3,7 +3,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { Language } from '@/lib/demo';
+import type { Language } from '@/lib/catalogue/types';
 import { useTestDetail } from '@/lib/api/queries';
 import { formatDuration } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';

@@ -149,3 +149,10 @@ export const ExaminerDetail = ExaminerCard.extend({
   recentTests: z.array(TestSummary),
 });
 export type ExaminerDetail = z.infer<typeof ExaminerDetail>;
+
+/** GET /v1/me/following: examiners the student follows and their newest published tests. */
+export const FollowingFeed = z.object({
+  examiners: z.array(ExaminerCard),
+  tests: z.array(TestSummary),
+});
+export type FollowingFeed = z.infer<typeof FollowingFeed>;

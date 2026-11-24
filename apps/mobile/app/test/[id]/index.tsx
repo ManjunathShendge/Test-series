@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PurchaseSheet } from '@/features/commerce/PurchaseSheet';
 import { useTestDetail } from '@/lib/api/queries';
 import { formatCount, formatDuration, formatPaise } from '@/lib/format';
-import { useAppStore, useHasAccess } from '@/lib/store/app';
+import { useAccess } from '@/lib/api/account';
 import { useMyAttempts, useRunningAttempt } from '@/features/attempt/queries';
 import { Avatar, Button, Card, Chip, Icon, Screen, Skeleton, StateView, Text, type IconName } from '@/ui/primitives';
 import { colors, radius, space } from '@/ui/tokens';
@@ -17,9 +17,10 @@ export default function TestDetailScreen() {
   const insets = useSafeAreaInsets();
   const detail = useTestDetail(id);
   const test = detail.data?.test;
-  const hasAccess = useHasAccess(id);
+  const access = useAccess();
+  const hasAccess = test ? access(test) : false;
   const mine = useMyAttempts().data;
-  const attempted = useAppStore((s) => s.attemptedTestIds.includes(id)) || !!mine?.some((x) => x.testId === id && x.status !== 'in_progress');
+  const attempted = !!mine?.some((x) => x.testId === id && x.status !== 'in_progress');
   const [buying, setBuying] = useState(false);
   const running = useRunningAttempt();
 

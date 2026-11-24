@@ -1,4 +1,4 @@
-import { Controller, Get, Header, Param, Query } from '@nestjs/common';
+import { Controller, Delete, Get, Header, HttpCode, Param, Put, Query, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import {
   TestListQuery,
@@ -6,11 +6,15 @@ import {
   type ExamDetail,
   type ExaminerDetail,
   type ExamList,
+  type FollowingFeed,
   type SeriesDetail,
   type TestDetail,
   type TestList,
 } from '@exam-prep/contracts';
+import { FirebaseAuthGuard } from '../../../common/guards/firebase-auth.guard.js';
 import { parseContract } from '../../../common/pipes/parse-contract.js';
+import type { AccessContext } from '../../identity/application/identity.service.js';
+import { CurrentAccess, RolesGuard } from '../../identity/http/roles.guard.js';
 import { CatalogueService } from '../application/catalogue.service.js';
 
 /** UUID or slug. */
@@ -65,5 +69,30 @@ export class CatalogueController {
   @Header('Cache-Control', PUBLIC_CACHE)
   getExaminer(@Param('id') id: string): Promise<ExaminerDetail> {
     return this.catalogue.getExaminer(parseContract(ExaminerId, id));
+  }
+}
+
+/** Following examiners (PRD 6.2): signed in, on a registered device; the student's own rows only. */
+@Controller('me')
+@UseGuards(FirebaseAuthGuard, RolesGuard)
+export class FollowController {
+  constructor(private readonly catalogue: CatalogueService) {}
+
+  @Get('following')
+  @Header('Cache-Control', 'private, no-store')
+  following(@CurrentAccess() access: AccessContext): Promise<FollowingFeed> {
+    return this.catalogue.following(access.profileId);
+  }
+
+  @Put('following/:examinerId')
+  @HttpCode(204)
+  async follow(@CurrentAccess() access: AccessContext, @Param('examinerId') id: string): Promise<void> {
+    await this.catalogue.follow(access.profileId, parseContract(ExaminerId, id));
+  }
+
+  @Delete('following/:examinerId')
+  @HttpCode(204)
+  async unfollow(@CurrentAccess() access: AccessContext, @Param('examinerId') id: string): Promise<void> {
+    await this.catalogue.unfollow(access.profileId, parseContract(ExaminerId, id));
   }
 }

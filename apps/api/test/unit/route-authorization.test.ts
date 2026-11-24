@@ -6,6 +6,8 @@ import type { Role } from '@exam-prep/contracts';
 import { AuthoringController } from '../../src/modules/authoring/http/authoring.controller.js';
 import { ExaminerTestsController } from '../../src/modules/authoring/http/examiner-tests.controller.js';
 import { AdminCatalogueController } from '../../src/modules/catalogue/http/admin-catalogue.controller.js';
+import { FollowController } from '../../src/modules/catalogue/http/catalogue.controller.js';
+import { FirebaseAuthGuard } from '../../src/common/guards/firebase-auth.guard.js';
 import {
   AdminCommerceController,
   AdminPayoutsController,
@@ -62,6 +64,7 @@ const cases: [string, Ctor, string, (keyof typeof who)[]][] = [
   ['examiner sales', ExaminerEarningsController, 'sales', ['examiner']],
   ['examiner quality', ExaminerQualityController, 'quality', ['examiner']],
   ['examiner application (anyone signed in)', AuthoringController, 'createApplication', Object.keys(who) as (keyof typeof who)[]],
+  ['follow an examiner (anyone signed in)', FollowController, 'follow', Object.keys(who) as (keyof typeof who)[]],
 ];
 
 describe('route authorization', () => {
@@ -72,4 +75,11 @@ describe('route authorization', () => {
       }
     });
   }
+});
+
+describe('signed-in student routes', () => {
+  it('following routes require a verified token and a registered device', () => {
+    const guards = Reflect.getMetadata('__guards__', FollowController) as unknown[];
+    expect(guards).toEqual([FirebaseAuthGuard, RolesGuard]);
+  });
 });
