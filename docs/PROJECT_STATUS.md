@@ -209,6 +209,15 @@ M3 remains in progress: validate browser-based upload and grouped-import preview
 - Not verified: a complete browser upload-to-preview-to-commit journey, browser PUT/CORS against MinIO, or clean-checkout MinIO startup. Parser and commit are tested separately, not as one real archive upload journey.
 - Blocking dependencies: owner/legal-approved examiner agreement and KYC document/verification/retention/sales policy; a private production ClamAV endpoint with maintained signatures; an accessible, pinned, clean-checkout-compatible local S3 image; and browser upload validation. M3 and launch readiness remain incomplete.
 
+## 24 November 2026: M3 browser acceptance attempt
+- Started the API and web development stack and attempted `/examiner/apply`.
+- Verified MinIO browser CORS preflight accepts `http://localhost:3000` for `PUT` and `content-type`.
+- Verified `pnpm test:int`: 41 database integration tests and 25 API integration tests passed, including authoring/import commit and idempotent commit coverage.
+- Verified `pnpm test:e2e`: API, worker, web and CORS smoke checks passed.
+- The browser upload → preview → commit acceptance did not complete. No local Firebase Auth emulator or synthetic signed-in examiner fixture is configured, so the web remained at the sign-in gate.
+- The 100-question parser unit fixture and integration commit path pass separately. They do not establish one end-to-end browser result.
+- M3 engineering browser acceptance remains blocked locally by missing synthetic authentication; owner agreement/KYC text and a production malware scanner remain external blockers.
+
 ## Update template
 
 ```text
