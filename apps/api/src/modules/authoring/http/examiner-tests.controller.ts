@@ -17,7 +17,7 @@ import {
 import { FirebaseAuthGuard, CurrentIdentity } from '../../../common/guards/firebase-auth.guard.js';
 import { parseContract } from '../../../common/pipes/parse-contract.js';
 import type { VerifiedIdentity } from '../../../providers/firebase/identity-verifier.js';
-import { RolesGuard } from '../../identity/http/roles.guard.js';
+import { Roles, RolesGuard } from '../../identity/http/roles.guard.js';
 import { ExaminerTestsService } from '../application/examiner-tests.service.js';
 
 const Id = z.uuid();
@@ -25,6 +25,7 @@ const Id = z.uuid();
 /** Examiner-owned draft tests and series (API_CONTRACTS "/examiner/tests"). */
 @Controller('examiner')
 @UseGuards(FirebaseAuthGuard, RolesGuard)
+@Roles('examiner')
 export class ExaminerTestsController {
   constructor(private readonly service: ExaminerTestsService) {}
 

@@ -2,9 +2,11 @@
 
 import { errorKind } from '@/ui/errors/ErrorScreen';
 import Link from 'next/link';
-import { createContext, Suspense, useCallback, useContext, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { createContext, Suspense, useCallback, useContext, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import type { ExaminerApplication, ExaminerAuthoringOptions, Profile } from '@exam-prep/contracts';
 import { adminApi } from '@/lib/api/admin';
+import { isExaminer } from '@/lib/auth/access';
 import { ApiRequestError } from '@/lib/api/http';
 import { updateMe } from '@/lib/api/identity';
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -35,6 +37,13 @@ export function useExaminer(): ExaminerContextValue {
 }
 
 /** PRD 4.4 examiner dashboard modules plus authoring. Phase 2 (question stats, ratings) is not listed. */
+const APPLY = '/examiner/apply';
+
+/** Applicants see only their application, not the examiner tools. */
+const APPLICANT_MENU: ConsoleMenuGroup[] = [
+  { group: 'Account', items: [{ href: APPLY, label: 'Application', icon: 'user', open: true, lead: 'Apply to teach on MakeMePrepare' }] },
+];
+
 const MENU: ConsoleMenuGroup[] = [
   {
     group: 'Workspace',
@@ -79,18 +88,35 @@ export function ExaminerShell({ children }: { children: ReactNode }) {
   return (
     <Suspense fallback={<Waiting label="Checking your sign-in…" />}>
       <RequireSession allowIncompleteOnboarding>
-        {(profile) =>
-          profile.ageConfirmed ? (
-            <ExaminerData profile={profile}>{children}</ExaminerData>
-          ) : (
-            <Frame profile={profile} approved={false}>
-              <AgeConfirmation />
-            </Frame>
-          )
-        }
+        {(profile) => (
+          <ApplicantRedirect profile={profile}>
+            {profile.ageConfirmed ? (
+              <ExaminerData profile={profile}>{children}</ExaminerData>
+            ) : (
+              <Frame profile={profile} approved={false}>
+                <AgeConfirmation />
+              </Frame>
+            )}
+          </ApplicantRedirect>
+        )}
       </RequireSession>
     </Suspense>
   );
+}
+
+/**
+ * Only approved examiners (examiner role) use the workspace. Everyone else, including students
+ * and staff, can open just the application page; any other examiner address sends them there.
+ */
+function ApplicantRedirect({ profile, children }: { profile: Profile; children: ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const outside = !isExaminer(profile) && pathname !== APPLY;
+  useEffect(() => {
+    if (outside) router.replace(APPLY);
+  }, [outside, router]);
+  if (outside) return <Waiting label="Opening the examiner application…" />;
+  return <>{children}</>;
 }
 
 function ExaminerData({ profile, children }: { profile: Profile; children: ReactNode }) {
@@ -145,14 +171,15 @@ function ExaminerData({ profile, children }: { profile: Profile; children: React
 }
 
 function Frame({ profile, approved, children }: { profile: Profile; approved: boolean; children: ReactNode }) {
+  const examiner = isExaminer(profile) && approved;
   return (
     <ConsoleFrame
-      menu={MENU}
-      home="/examiner"
-      workspace="Examiner workspace"
+      menu={examiner ? MENU : APPLICANT_MENU}
+      home={examiner ? '/examiner' : APPLY}
+      workspace={examiner ? 'Examiner workspace' : 'Become an examiner'}
       profile={profile}
-      status={approved ? 'Approved examiner' : 'Examiner applicant'}
-      enabled={approved}
+      status={examiner ? 'Approved examiner' : 'Examiner applicant'}
+      enabled={examiner}
       lockedHint="Opens after your application is approved"
     >
       {children}

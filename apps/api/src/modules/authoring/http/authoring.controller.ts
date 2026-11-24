@@ -41,6 +41,7 @@ import type { AccessContext } from '../../identity/application/identity.service.
 import {
   CurrentAccess,
   RequireAdminPermission,
+  Roles,
   RolesGuard,
 } from '../../identity/http/roles.guard.js';
 import { AuthoringService } from '../application/authoring.service.js';
@@ -143,6 +144,7 @@ export class AuthoringController {
 
   @Get('examiner/questions')
   @UseGuards(FirebaseAuthGuard, RolesGuard)
+  @Roles('examiner')
   listQuestions(
     @CurrentIdentity() identity: VerifiedIdentity,
     @Query() query: unknown,
@@ -161,6 +163,7 @@ export class AuthoringController {
 
   @Post('examiner/questions')
   @UseGuards(FirebaseAuthGuard, RolesGuard)
+  @Roles('examiner')
   createQuestion(
     @CurrentIdentity() identity: VerifiedIdentity,
     @Body() body: unknown,
@@ -170,6 +173,7 @@ export class AuthoringController {
 
   @Patch('examiner/questions/:id')
   @UseGuards(FirebaseAuthGuard, RolesGuard)
+  @Roles('examiner')
   updateQuestion(
     @CurrentIdentity() identity: VerifiedIdentity,
     @Param('id') id: string,
@@ -184,6 +188,7 @@ export class AuthoringController {
 
   @Get('examiner/imports/template')
   @UseGuards(FirebaseAuthGuard, RolesGuard)
+  @Roles('examiner')
   @Header('content-type', XLSX_MIME)
   @Header('content-disposition', 'attachment; filename="question-import-template.xlsx"')
   @Header('cache-control', 'no-store')
@@ -198,6 +203,7 @@ export class AuthoringController {
 
   @Post('examiner/imports/preview')
   @UseGuards(FirebaseAuthGuard, RolesGuard)
+  @Roles('examiner')
   previewImport(
     @CurrentIdentity() identity: VerifiedIdentity,
     @Body() body: unknown,
@@ -207,6 +213,7 @@ export class AuthoringController {
 
   @Post('examiner/imports/:id/commit')
   @UseGuards(FirebaseAuthGuard, RolesGuard)
+  @Roles('examiner')
   commitImport(
     @CurrentIdentity() identity: VerifiedIdentity,
     @Param('id') id: string,

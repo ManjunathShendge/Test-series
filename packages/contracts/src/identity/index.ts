@@ -23,6 +23,11 @@ export const Profile = z.object({
   preparationStage: PreparationStage.nullable(),
   targetExamIds: z.array(z.uuid()),
   roles: z.array(Role),
+  /**
+   * Admin permission flags (all false without the admin role). Staff screens use them to show
+   * only the sections a person may use; the API authorizes every call on its own.
+   */
+  adminAccess: z.object({ ops: z.boolean(), finance: z.boolean(), super: z.boolean() }).optional(),
   /** The person has confirmed they are 18 or older (recorded with a time on the server). */
   ageConfirmed: z.boolean(),
   /** True once onboarding is complete: a preparation stage is set and 18+ is confirmed. */

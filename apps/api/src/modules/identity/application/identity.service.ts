@@ -34,6 +34,10 @@ function toProfile(row: ProfileRow): Profile {
     preparationStage: row.preparation_stage as Profile['preparationStage'],
     targetExamIds: row.target_exam_ids ?? [],
     roles: row.roles as Profile['roles'],
+    // Admin flags only mean something with the admin role; the API checks them again on every call.
+    adminAccess: row.roles.includes('admin')
+      ? { ops: row.is_ops_admin, finance: row.is_finance_admin, super: row.is_super_admin }
+      : { ops: false, finance: false, super: false },
     ageConfirmed: row.is_age_verified_18_plus,
     onboarded: row.preparation_stage !== null && row.is_age_verified_18_plus,
   };

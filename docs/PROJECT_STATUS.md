@@ -15,6 +15,11 @@ The development foundation runs on PostgreSQL 17 (Docker locally and in CI; Supa
 
 ## Log
 
+## 24 November 2026: staff area authorization
+- Website: the admin console opens only for admins with a permission (operations, finance or super); each admin sees only the sections their permission covers (payouts need finance, the rest operations) and gets an in-console notice for anything else. The QC review area opens only for QC reviewers and operations admins. Anyone else gets a full-page "no access" screen with no console or staff menu. The examiner workspace opens only for approved examiners; everyone else can reach only the application page, and other examiner addresses redirect there.
+- API: examiner-only routes (tests, series, question bank, imports, sales, earnings, coupons, quality, reports) now require the examiner role at the route as well as approval in the service; the profile carries admin permission flags for navigation.
+- Checks: route-authorization unit tests for students, examiners, reviewers, operations, finance, super and permission-less admins (9 passed); workspace typecheck, lint and tests; web and API builds; staff API routes return 401 signed out.
+
 ## 24 November 2026: test engine (M7 database, API, web and mobile players) and error screens
 - Database (019) and engine as in TEST_ENGINE "Implementation". API: start (entitlement, one running attempt, resume), state, takeover, paper without keys, attempt-scoped images, numbered sync, submit, summary, my attempts; finalizer times out attempts past their deadline.
 - Web: instructions page with the acceptance box (`/attempt/start/[slug]`), CBT player (`/attempt/[id]`) with five-state palette, section tabs, overall and section timers, Save & Next, Mark for Review & Next, Clear Response, finish-section and submit dialogs with counts, English/Hindi, text size, watermark, offline and takeover handling; score summary (`/attempt/[id]/summary`); "My tests" on the account page; "Start free test" and "Start test" (owned) link to the instructions.

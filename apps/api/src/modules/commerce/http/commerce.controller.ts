@@ -33,7 +33,7 @@ import { FirebaseAuthGuard, CurrentIdentity } from '../../../common/guards/fireb
 import { parseContract } from '../../../common/pipes/parse-contract.js';
 import type { VerifiedIdentity } from '../../../providers/firebase/identity-verifier.js';
 import type { AccessContext } from '../../identity/application/identity.service.js';
-import { CurrentAccess, RequireAdminPermission, RolesGuard } from '../../identity/http/roles.guard.js';
+import { CurrentAccess, RequireAdminPermission, Roles, RolesGuard } from '../../identity/http/roles.guard.js';
 import { AdminCommerceService } from '../application/admin-commerce.service.js';
 import { CheckoutService } from '../application/checkout.service.js';
 import { EarningsService } from '../application/earnings.service.js';
@@ -100,6 +100,7 @@ export class RazorpayWebhookController {
 /** Examiner dashboard: sales, earnings and payouts, coupon codes (PRD 4.4). */
 @Controller('examiner')
 @UseGuards(FirebaseAuthGuard, RolesGuard)
+@Roles('examiner')
 export class ExaminerEarningsController {
   constructor(private readonly service: EarningsService) {}
 

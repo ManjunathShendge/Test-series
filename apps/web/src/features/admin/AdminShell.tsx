@@ -1,8 +1,11 @@
 'use client';
 
-import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
+import type { Profile } from '@exam-prep/contracts';
+import { hasAdminPermission, isAdmin, type AdminPermission } from '@/lib/auth/access';
 import { RequireSession } from '@/features/auth/RequireSession';
+import { StaffDenied } from '@/features/auth/StaffDenied';
 import { Waiting } from '@/features/auth/ui';
 import { ConsoleFrame, type ConsoleMenuGroup } from '@/ui/console/ConsoleFrame';
 import { State } from './ui';
@@ -40,47 +43,51 @@ const MENU: ConsoleMenuGroup[] = [
   },
 ];
 
+/** Permission each section needs (the same one its API endpoints check); the dashboard needs any. */
+function needFor(href: string): AdminPermission | null {
+  if (href === '/admin') return null;
+  return href === '/admin/payouts' || href.startsWith('/admin/payouts/') ? 'finance' : 'ops';
+}
+
+const allowed = (profile: Profile, href: string) => {
+  const need = needFor(href);
+  return need ? hasAdminPermission(profile, need) : isAdmin(profile);
+};
+
 /**
- * Staff console frame. Shows the console only to signed-in accounts with the admin role; the
- * API still checks the role and the ops permission on every call, so this is navigation only.
+ * Admin console. Accounts without an admin permission get a full-page "no access" screen and never
+ * see the console; admins see only the sections their permissions cover. The API checks the same
+ * role and permission on every call.
  */
 export function AdminShell({ children }: { children: ReactNode }) {
   return (
     // RequireSession reads the query string, which needs a Suspense boundary when prerendered.
     <Suspense fallback={<Waiting label="Checking your sign-in…" />}>
       <RequireSession allowIncompleteOnboarding>
-        {(profile) => {
-          const isAdmin = profile.roles.includes('admin');
-          return (
-            <ConsoleFrame
-              menu={MENU}
-              home="/admin"
-              workspace="Admin console"
-              profile={profile}
-              status={isAdmin ? 'Admin' : 'No admin access'}
-              enabled={isAdmin}
-              lockedHint="Needs the admin role"
-            >
-              {isAdmin ? (
-                children
-              ) : (
-                <State
-                  kind="forbidden"
-                  title="This area is for MakeMePrepare staff"
-                  action={
-                    <Link className="btn btn-secondary" href="/">
-                      Go to the website
-                    </Link>
-                  }
-                >
-                  Your account does not have admin access. If you should have it, ask a super admin to grant it to{' '}
-                  {profile.email ?? 'your account'}.
-                </State>
-              )}
-            </ConsoleFrame>
-          );
-        }}
+        {(profile) => (isAdmin(profile) ? <Console profile={profile}>{children}</Console> : <StaffDenied profile={profile} area="admin console" />)}
       </RequireSession>
     </Suspense>
+  );
+}
+
+function Console({ profile, children }: { profile: Profile; children: ReactNode }) {
+  const pathname = usePathname() ?? '/admin';
+  const menu = MENU.map((group) => ({ ...group, items: group.items.filter((item) => allowed(profile, item.href)) })).filter(
+    (group) => group.items.length,
+  );
+  const a = profile.adminAccess;
+  const status = a?.super ? 'Super admin' : [a?.ops ? 'Operations' : null, a?.finance ? 'Finance' : null].filter(Boolean).join(' and ') + ' admin';
+  return (
+    <ConsoleFrame menu={menu} home="/admin" workspace="Admin console" profile={profile} status={status} enabled lockedHint="">
+      {allowed(profile, pathname) ? (
+        children
+      ) : (
+        <State kind="forbidden" title="Your admin account can’t open this section">
+          {needFor(pathname) === 'finance'
+            ? 'Payouts need the finance permission. A super admin can add it to your account.'
+            : 'This section needs the operations permission. A super admin can add it to your account.'}
+        </State>
+      )}
+    </ConsoleFrame>
   );
 }

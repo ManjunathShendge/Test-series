@@ -9,6 +9,9 @@ export interface ProfileRow {
   is_age_verified_18_plus: boolean;
   target_exam_ids: string[] | null;
   roles: string[];
+  is_ops_admin: boolean;
+  is_finance_admin: boolean;
+  is_super_admin: boolean;
   is_blocked: boolean;
   deleted_at: Date | null;
 }
@@ -30,7 +33,7 @@ export interface DeviceRow {
 }
 
 const PROFILE_COLUMNS =
-  'id, email, full_name, preferred_language, preparation_stage, is_age_verified_18_plus, target_exam_ids, roles::text[] AS roles, is_blocked, deleted_at';
+  'id, email, full_name, preferred_language, preparation_stage, is_age_verified_18_plus, target_exam_ids, roles::text[] AS roles, is_ops_admin, is_finance_admin, is_super_admin, is_blocked, deleted_at';
 const DEVICE_COLUMNS = 'id, device_name, platform, is_active, last_active_at';
 
 /** Parameterised SQL only. Authorization is decided by the service, with RLS as a second barrier. */

@@ -122,6 +122,7 @@ export class QcReviewController {
 /** Examiner dashboard: tier and quality inputs, and student reports to answer (PRD 4.4). */
 @Controller('examiner')
 @UseGuards(FirebaseAuthGuard, RolesGuard)
+@Roles('examiner')
 export class ExaminerQualityController {
   constructor(private readonly service: QcService) {}
 
