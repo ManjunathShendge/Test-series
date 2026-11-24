@@ -35,6 +35,17 @@ export function AttemptsPanel() {
           My tests
         </h2>
         <p className="t-small t-secondary">Tests you have started or finished.</p>
+        <p className="t-small" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, margin: 0 }}>
+          <Link href="/progress" className="u-link">
+            My progress
+          </Link>
+          <Link href="/practice/mistakes" className="u-link">
+            Mistake notebook
+          </Link>
+          <Link href="/practice/bookmarks" className="u-link">
+            Bookmarks
+          </Link>
+        </p>
       </div>
       {error ? (
         <Alert>{error}</Alert>
@@ -51,7 +62,7 @@ export function AttemptsPanel() {
                 </Link>
               ) : (
                 <Link href={`/attempt/${a.attemptId}/summary`} className={listStyles.amount}>
-                  Score {a.score.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                  Result · {a.score.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                 </Link>
               )}
               <small>{line(a)}</small>

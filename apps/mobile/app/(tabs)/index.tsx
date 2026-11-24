@@ -1,16 +1,15 @@
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { ExaminerCard } from '@/features/catalogue/components/ExaminerCard';
 import { SectionHeader } from '@/features/catalogue/components/SectionHeader';
 import { TestCard } from '@/features/catalogue/components/TestCard';
 import { TestListSkeleton } from '@/features/catalogue/components/TestCardSkeleton';
 import { useExams, useHomeFeed } from '@/lib/api/queries';
-import { getTest, topicStrengths, type TestSummary } from '@/lib/demo';
+import type { TestSummary } from '@/lib/demo';
 import { formatClock, formatDate } from '@/lib/format';
 import { useAppStore } from '@/lib/store/app';
 import { useRunningAttempt } from '@/features/attempt/queries';
-import { practiceEntries, useResultsList } from '@/lib/store/results';
+import { usePractice, useProgress } from '@/features/results/queries';
 import { Avatar, Button, Card, Chip, FeatureTile, Icon, IconButton, Screen, StateView, Text } from '@/ui/primitives';
 import { ProgressRing } from '@/ui/patterns/ProgressRing';
 import { colors, layout, radius, space } from '@/ui/tokens';
@@ -56,11 +55,12 @@ export default function HomeScreen() {
   const totalSeconds = continueTest ? Math.max(1, (Date.parse(continueTest.expiresAt) - Date.parse(continueTest.startedAt)) / 1000) : 1;
   const targetExams = profile.targetExamIds.map((id) => realExams.find((exam) => exam.id === id)).filter((e): e is NonNullable<typeof e> => !!e);
 
-  const results = useResultsList();
-  const latest = results[0];
-  const mistakes = useMemo(() => practiceEntries(results, 'mistakes').length, [results]);
-  const bookmarks = useMemo(() => practiceEntries(results, 'bookmarks').length, [results]);
-  const weakest = useMemo(() => [...topicStrengths].sort((a, b) => a.accuracy - b.accuracy)[0], []);
+  // Results come from the server; nothing is scored on the phone.
+  const progress = useProgress().data;
+  const latest = progress?.trend[progress.trend.length - 1];
+  const mistakes = usePractice('mistakes').data?.length ?? 0;
+  const bookmarks = usePractice('bookmarks').data?.length ?? 0;
+  const weakest = progress?.weakest ?? null;
   const firstFree = featured[0];
 
   const openTest = (id: string) => router.push({ pathname: '/test/[id]', params: { id } });
@@ -128,9 +128,9 @@ export default function HomeScreen() {
           </Pressable>
         ) : latest ? (
           <Pressable
-            onPress={() => router.push({ pathname: '/result/[attemptId]', params: { attemptId: latest.attemptId } })}
+            onPress={() => router.push({ pathname: '/attempt/[id]/summary', params: { id: latest.attemptId } })}
             accessibilityRole="button"
-            accessibilityLabel={`Your progress. Last test ${getTest(latest.testId)?.title ?? ''}: ${Math.round((latest.score / latest.maxScore) * 100)} percent, ${latest.percentile.toFixed(0)}th percentile. Opens the result.`}
+            accessibilityLabel={`Your progress. Last test ${latest.testTitle}: ${latest.percentage} percent. Opens the result.`}
             style={({ pressed }) => [styles.hero, pressed && styles.heroPressed]}
           >
             <View style={styles.heroRow}>
@@ -144,18 +144,18 @@ export default function HomeScreen() {
                   </Text>
                 </View>
                 <Text variant="metric" tone="inverse" tabular>
-                  {Math.round((latest.score / latest.maxScore) * 100)}%
+                  {Math.round(latest.percentage)}%
                 </Text>
                 <Text variant="caption" tone="inverseSecondary" numberOfLines={2}>
-                  Score in your last test · {formatDate(latest.completedAt)}
+                  {latest.testTitle} · {formatDate(latest.submittedAt)}
                 </Text>
               </View>
-              <ProgressRing value={latest.percentile / 100} label={`${latest.percentile.toFixed(0)}th percentile`}>
+              <ProgressRing value={Math.max(0, latest.percentage) / 100} label={`${progress?.totals.tests ?? 0} tests finished`}>
                 <Text variant="title" tone="inverse" tabular>
-                  {latest.percentile.toFixed(0)}
+                  {progress?.totals.tests ?? 0}
                 </Text>
                 <Text variant="caption" tone="inverseSecondary">
-                  percentile
+                  tests
                 </Text>
               </ProgressRing>
             </View>

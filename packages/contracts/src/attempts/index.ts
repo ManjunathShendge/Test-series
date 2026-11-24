@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ReportReason } from '../qc/index.js';
 
 // Attempt engine (PRD 6.4, TEST_ENGINE.md). The server decides time, section windows and score;
 // the paper never carries keys or solutions.
@@ -177,3 +178,142 @@ export const MyAttempt = z.object({
 export type MyAttempt = z.infer<typeof MyAttempt>;
 export const MyAttemptList = z.object({ items: z.array(MyAttempt) });
 export type MyAttemptList = z.infer<typeof MyAttemptList>;
+
+// ---------------------------------------------------------------------------------------------
+// Results, solution review, progress and practice lists (M8, docs/RESULTS.md). Only closed
+// attempts open these; keys and solutions never travel before the attempt is closed.
+
+export const ReviewQuestion = z.object({
+  testQuestionId: z.uuid(),
+  questionId: z.uuid(),
+  sectionId: z.uuid(),
+  number: z.number().int(),
+  subject: z.string().nullable(),
+  topic: z.string().nullable(),
+  stemEn: z.string(),
+  stemHi: z.string().nullable(),
+  passageEn: z.string().nullable(),
+  passageHi: z.string().nullable(),
+  options: z.array(PaperOption),
+  imageAssetIds: z.array(z.uuid()),
+  positiveMarks: z.number(),
+  negativeMarks: z.number(),
+  selected: AttemptOption.nullable(),
+  /** Null when not answered. */
+  isCorrect: z.boolean().nullable(),
+  marksAwarded: z.number(),
+  timeSeconds: z.number().int(),
+  marked: z.boolean(),
+  correctOption: AttemptOption,
+  /** The key was corrected after the test was published; the score uses the corrected key. */
+  keyCorrected: z.boolean(),
+  solutionEn: z.string().nullable(),
+  solutionHi: z.string().nullable(),
+  /** First attempts by all students: how many answered, how many were right, average time. */
+  cohort: z.object({ attempted: z.number().int(), correct: z.number().int(), avgSeconds: z.number().nullable() }),
+  bookmarked: z.boolean(),
+  inNotebook: z.boolean(),
+  reported: z.boolean(),
+});
+export type ReviewQuestion = z.infer<typeof ReviewQuestion>;
+
+/** Fewer first attempts than this and comparisons show "not enough data yet". */
+export const MIN_COHORT = 3;
+
+export const AttemptReview = z.object({
+  summary: AttemptSummary,
+  /** Seconds the student spent from start to submit. */
+  timeSeconds: z.number().int(),
+  cohort: z.object({
+    size: z.number().int(),
+    averageScore: z.number().nullable(),
+    topperScore: z.number().nullable(),
+    averageSeconds: z.number().nullable(),
+  }),
+  questions: z.array(ReviewQuestion),
+});
+export type AttemptReview = z.infer<typeof AttemptReview>;
+
+export const SaveQuestionRequest = z
+  .strictObject({ bookmarked: z.boolean().optional(), inNotebook: z.boolean().optional() })
+  .refine((v) => v.bookmarked !== undefined || v.inNotebook !== undefined, 'Nothing to change');
+export type SaveQuestionRequest = z.infer<typeof SaveQuestionRequest>;
+
+export const PracticeKind = z.enum(['mistakes', 'bookmarks']);
+export type PracticeKind = z.infer<typeof PracticeKind>;
+
+export const PracticeItem = z.object({
+  questionId: z.uuid(),
+  testId: z.uuid(),
+  testTitle: z.string(),
+  /** The student's latest closed attempt with this question (for images and reports). */
+  attemptId: z.uuid(),
+  subject: z.string().nullable(),
+  topic: z.string().nullable(),
+  stemEn: z.string(),
+  stemHi: z.string().nullable(),
+  passageEn: z.string().nullable(),
+  passageHi: z.string().nullable(),
+  options: z.array(PaperOption),
+  imageAssetIds: z.array(z.uuid()),
+  selected: AttemptOption.nullable(),
+  correctOption: AttemptOption,
+  solutionEn: z.string().nullable(),
+  solutionHi: z.string().nullable(),
+  bookmarked: z.boolean(),
+  inNotebook: z.boolean(),
+  savedAt: IsoTime,
+});
+export type PracticeItem = z.infer<typeof PracticeItem>;
+export const PracticeList = z.object({ items: z.array(PracticeItem) });
+export type PracticeList = z.infer<typeof PracticeList>;
+
+export const TopicAccuracy = z.object({
+  subject: z.string(),
+  topic: z.string(),
+  attempted: z.number().int(),
+  correct: z.number().int(),
+  total: z.number().int(),
+  /** Correct out of attempted, 0-100; null before any attempt in the topic. */
+  accuracy: z.number().nullable(),
+});
+export type TopicAccuracy = z.infer<typeof TopicAccuracy>;
+
+export const MyProgress = z.object({
+  totals: z.object({ tests: z.number().int(), questions: z.number().int(), attempted: z.number().int(), correct: z.number().int() }),
+  topics: z.array(TopicAccuracy),
+  /** Lowest accuracy among topics with at least 3 attempted questions. */
+  weakest: TopicAccuracy.nullable(),
+  trend: z.array(
+    z.object({
+      attemptId: z.uuid(),
+      testTitle: z.string(),
+      testSlug: z.string(),
+      submittedAt: IsoTime,
+      score: z.number(),
+      maxScore: z.number(),
+      percentage: z.number(),
+    }),
+  ),
+  recommended: z.array(
+    z.object({
+      testId: z.uuid(),
+      slug: z.string(),
+      title: z.string(),
+      examName: z.string(),
+      totalQuestions: z.number().int(),
+      durationSeconds: z.number().int(),
+      pricePaise: z.number().int(),
+    }),
+  ),
+});
+export type MyProgress = z.infer<typeof MyProgress>;
+
+export const ReportQuestionRequest = z.strictObject({
+  attemptId: z.uuid(),
+  reason: ReportReason,
+  comment: z.string().trim().max(500).optional(),
+});
+export type ReportQuestionRequest = z.infer<typeof ReportQuestionRequest>;
+export const ReportQuestionResponse = z.object({ reportId: z.uuid() });
+export type ReportQuestionResponse = z.infer<typeof ReportQuestionResponse>;

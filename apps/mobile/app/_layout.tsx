@@ -13,7 +13,6 @@ import { onAuthChange } from '@/lib/auth';
 import { missingConfig } from '@/lib/config';
 import { useAppStore } from '@/lib/store/app';
 import { resetLocalSession } from '@/lib/store/session';
-import { useResultsStore } from '@/lib/store/results';
 import { useHydrated } from '@/lib/store/storage';
 import { Text } from '@/ui/primitives';
 import { colors, space, typography } from '@/ui/tokens';
@@ -31,7 +30,7 @@ void SplashScreen.preventAutoHideAsync();
  * exit path (docs/TEST_ENGINE.md).
  */
 export default function RootLayout() {
-  const storesHydrated = useHydrated([useAppStore, useResultsStore]);
+  const storesHydrated = useHydrated([useAppStore]);
   // Bundled with the JS, so this resolves offline. On a load error the app still starts
   // and React Native falls back to the system face.
   const [fontsLoaded, fontError] = useFonts({
@@ -93,10 +92,10 @@ export default function RootLayout() {
         <Stack.Screen name="examiner/[id]" options={{ title: 'Examiner' }} />
         <Stack.Screen name="series/[id]" options={{ title: 'Series' }} />
         <Stack.Screen name="test/[id]/index" options={{ title: 'Test' }} />
-        <Stack.Screen name="result/[attemptId]" options={{ title: 'Result' }} />
         <Stack.Screen name="test/[id]/instructions" options={{ title: 'Instructions' }} />
         <Stack.Screen name="attempt/[id]/index" options={{ headerShown: false, gestureEnabled: false }} />
-        <Stack.Screen name="attempt/[id]/summary" options={{ title: 'Score' }} />
+        <Stack.Screen name="attempt/[id]/summary" options={{ title: 'Result' }} />
+        <Stack.Screen name="attempt/[id]/review" options={{ title: 'Solutions' }} />
         <Stack.Screen name="profile/edit-exams" options={{ title: 'Target exams' }} />
         <Stack.Screen name="practice/[list]" options={{ title: 'Practice' }} />
         <Stack.Screen name="purchase/[id]" options={{ title: 'Purchase' }} />

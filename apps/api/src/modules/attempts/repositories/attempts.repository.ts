@@ -239,4 +239,142 @@ export const attemptsRepository = {
     );
     return rows;
   },
+
+  // Results (M8) ---------------------------------------------------------------------------------
+
+  async review(db: Queryable, attemptId: string) {
+    const { rows } = await db.query<ReviewRow>('SELECT * FROM public.attempt_review($1)', [attemptId]);
+    return rows;
+  },
+
+  async cohort(db: Queryable, attemptId: string) {
+    const { rows } = await db.query<{ cohort_size: number; average_score: string | null; topper_score: string | null; average_seconds: string | null }>(
+      'SELECT * FROM public.attempt_cohort($1)',
+      [attemptId],
+    );
+    return rows[0]!;
+  },
+
+  async saveQuestion(db: Queryable, questionId: string, bookmarked: boolean | null, notebook: boolean | null): Promise<void> {
+    await db.query('SELECT public.set_saved_question($1,$2,$3)', [questionId, bookmarked, notebook]);
+  },
+
+  async practice(db: Queryable, kind: 'mistakes' | 'bookmarks') {
+    const { rows } = await db.query<PracticeRow>('SELECT * FROM public.practice_list($1)', [kind]);
+    return rows;
+  },
+
+  async topicAccuracy(db: Queryable) {
+    const { rows } = await db.query<{ subject_name: string; topic_name: string; attempted: number; correct: number; total: number }>(
+      'SELECT * FROM public.my_topic_accuracy() ORDER BY subject_name, topic_name',
+    );
+    return rows;
+  },
+
+  async trend(db: Queryable, studentId: string) {
+    const { rows } = await db.query<{
+      id: string;
+      test_title: string;
+      test_slug: string;
+      submitted_at: Date;
+      total_score: string;
+      max_score: string;
+      total_questions: number;
+      attempted_count: number;
+      correct_count: number;
+    }>(
+      `SELECT sa.id,t.title AS test_title,t.slug AS test_slug,sa.submitted_at,sa.total_score,t.total_marks AS max_score,
+              sa.total_questions,sa.attempted_count,sa.correct_count
+         FROM student_attempts sa JOIN tests t ON t.id=sa.test_id
+        WHERE sa.student_id=$1 AND sa.status IN ('submitted','timed_out') AND sa.submitted_at IS NOT NULL
+        ORDER BY sa.submitted_at DESC LIMIT 30`,
+      [studentId],
+    );
+    return rows;
+  },
+
+  /** Live tests in the student's target exams they have not attempted; free and popular first. */
+  async recommended(db: Queryable, studentId: string) {
+    const { rows } = await db.query<{
+      id: string;
+      slug: string;
+      title: string;
+      exam_name: string;
+      total_questions: number;
+      total_duration_seconds: number;
+      price_paise: number;
+    }>(
+      `SELECT t.id,t.slug,t.title,e.name AS exam_name,t.total_questions,t.total_duration_seconds,t.price_paise
+         FROM tests t JOIN exams e ON e.id=t.exam_id
+         JOIN profiles p ON p.id=$1
+        WHERE t.status='live'
+          AND (cardinality(COALESCE(p.target_exam_ids,'{}'))=0 OR t.exam_id=ANY(p.target_exam_ids))
+          AND NOT EXISTS (SELECT 1 FROM student_attempts sa WHERE sa.student_id=$1 AND sa.test_id=t.id)
+        ORDER BY (t.price_paise=0) DESC, t.attempts_count DESC, t.published_at DESC NULLS LAST
+        LIMIT 6`,
+      [studentId],
+    );
+    return rows;
+  },
+
+  async report(db: Queryable, attemptId: string, questionId: string, reason: string, comment: string | null): Promise<string> {
+    const { rows } = await db.query<{ id: string }>('SELECT public.report_question($1,$2,$3,$4) AS id', [attemptId, questionId, reason, comment]);
+    return rows[0]!.id;
+  },
 };
+
+type OptionRow = { id: 'A' | 'B' | 'C' | 'D'; textEn: string; textHi?: string };
+
+export interface ReviewRow {
+  test_question_id: string;
+  question_id: string;
+  section_id: string;
+  display_order: number;
+  subject_name: string | null;
+  topic_name: string | null;
+  stem_en: string;
+  stem_hi: string | null;
+  options: OptionRow[];
+  passage_en: string | null;
+  passage_hi: string | null;
+  image_asset_ids: string[];
+  positive_marks: string;
+  negative_marks: string;
+  selected_option: 'A' | 'B' | 'C' | 'D' | null;
+  is_correct: boolean | null;
+  marks_awarded: string;
+  time_spent_seconds: number;
+  marked: boolean;
+  correct_option: 'A' | 'B' | 'C' | 'D';
+  key_corrected: boolean;
+  solution_en: string | null;
+  solution_hi: string | null;
+  cohort_attempted: number;
+  cohort_correct: number;
+  cohort_avg_seconds: string | null;
+  bookmarked: boolean;
+  in_notebook: boolean;
+  reported: boolean;
+}
+
+export interface PracticeRow {
+  question_id: string;
+  test_id: string;
+  test_title: string;
+  attempt_id: string;
+  subject_name: string | null;
+  topic_name: string | null;
+  stem_en: string;
+  stem_hi: string | null;
+  options: OptionRow[];
+  passage_en: string | null;
+  passage_hi: string | null;
+  image_asset_ids: string[];
+  selected_option: 'A' | 'B' | 'C' | 'D' | null;
+  correct_option: 'A' | 'B' | 'C' | 'D';
+  solution_en: string | null;
+  solution_hi: string | null;
+  bookmarked: boolean;
+  in_notebook: boolean;
+  saved_at: Date;
+}

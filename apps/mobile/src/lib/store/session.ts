@@ -4,7 +4,6 @@ import { signOutOfFirebase } from '@/lib/auth';
 import { getDeviceId } from '@/lib/storage/device-id';
 import { useAppStore } from './app';
 import { clearAttempts } from '@/lib/storage/attempt-outbox';
-import { useResultsStore } from './results';
 
 /**
  * Signs the student out of this device. The device's slot is released on the server
@@ -23,6 +22,5 @@ export async function signOutEverywhere(): Promise<void> {
 export function resetLocalSession(): void {
   queryClient.clear();
   void clearAttempts();
-  useResultsStore.getState().reset();
   useAppStore.getState().signOut();
 }

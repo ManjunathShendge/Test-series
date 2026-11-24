@@ -1,11 +1,18 @@
-import { Body, Controller, Get, Headers, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import {
   ATTEMPT_SESSION_HEADER,
+  PracticeKind,
+  ReportQuestionRequest,
+  SaveQuestionRequest,
   StartAttemptRequest,
   SyncAttemptRequest,
   type AssetViewUrl,
   type AttemptPaper,
+  type AttemptReview,
+  type MyProgress,
+  type PracticeList,
+  type ReportQuestionResponse,
   type AttemptSession,
   type AttemptState,
   type AttemptSummary,
@@ -87,5 +94,35 @@ export class AttemptsController {
   @Get('attempts/:id/summary')
   summary(@CurrentAccess() access: AccessContext, @Param('id') id: string): Promise<AttemptSummary> {
     return this.service.summary(access, parseContract(Id, id));
+  }
+
+  @Get('attempts/:id/review')
+  review(@CurrentAccess() access: AccessContext, @Param('id') id: string): Promise<AttemptReview> {
+    return this.service.review(access, parseContract(Id, id));
+  }
+
+  @Get('me/progress')
+  progress(@CurrentAccess() access: AccessContext): Promise<MyProgress> {
+    return this.service.progress(access);
+  }
+
+  @Get('me/practice/:kind')
+  practice(@CurrentAccess() access: AccessContext, @Param('kind') kind: string): Promise<PracticeList> {
+    return this.service.practice(access, parseContract(PracticeKind, kind));
+  }
+
+  @Put('me/saved-questions/:questionId')
+  @HttpCode(204)
+  async saveQuestion(@CurrentAccess() access: AccessContext, @Param('questionId') questionId: string, @Body() body: unknown): Promise<void> {
+    await this.service.saveQuestion(access, parseContract(Id, questionId), parseContract(SaveQuestionRequest, body));
+  }
+
+  @Post('questions/:questionId/reports')
+  report(
+    @CurrentAccess() access: AccessContext,
+    @Param('questionId') questionId: string,
+    @Body() body: unknown,
+  ): Promise<ReportQuestionResponse> {
+    return this.service.report(access, parseContract(Id, questionId), parseContract(ReportQuestionRequest, body));
   }
 }

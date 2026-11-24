@@ -1,30 +1,59 @@
-import { useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { attemptsApi } from '@/lib/api/attempts';
+import { MIN_COHORT } from '@exam-prep/contracts';
+import { useReview } from '@/features/results/queries';
 import { ApiRequestError } from '@/lib/api/http';
 import { Button, Card, Icon, ProgressBar, Screen, StateView, Text } from '@/ui/primitives';
 import { colors, radius, space } from '@/ui/tokens';
 
 const num = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
 const share = (score: number, max: number) => (max > 0 ? Math.max(0, Math.min(1, score / max)) : 0);
+const mins = (s: number) => (s >= 3600 ? `${Math.floor(s / 3600)}h ${Math.round((s % 3600) / 60)}m` : `${Math.round(s / 60)} min`);
 
-/** The server's score for a closed attempt. Nothing here is computed on the phone. */
-export default function AttemptSummaryScreen() {
+/** PRD 6.5 result: the server's score, comparison and analysis. Nothing is scored on the phone. */
+export default function ResultScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const query = useQuery({ queryKey: ['attempt', id, 'summary'], queryFn: () => attemptsApi.summary(id) });
+  const query = useReview(id);
   const data = query.data;
 
+  const topics = useMemo(() => {
+    const map = new Map<string, { topic: string; attempted: number; correct: number; total: number }>();
+    for (const q of data?.questions ?? []) {
+      const key = q.topic ?? 'Other';
+      const t = map.get(key) ?? { topic: key, attempted: 0, correct: 0, total: 0 };
+      t.total++;
+      if (q.selected) t.attempted++;
+      if (q.isCorrect) t.correct++;
+      map.set(key, t);
+    }
+    return [...map.values()].sort((a, b) => a.correct / Math.max(1, a.attempted) - b.correct / Math.max(1, b.attempted));
+  }, [data]);
+
   if (query.isError) {
-    const offline = query.error instanceof ApiRequestError && query.error.code === 'NETWORK';
+    const e = query.error;
+    if (e instanceof ApiRequestError && e.code === 'ATTEMPT_IN_PROGRESS')
+      return (
+        <Screen edges={['left', 'right']}>
+          <Stack.Screen options={{ title: 'Result' }} />
+          <StateView
+            kind="empty"
+            title="This test is still running"
+            message="Your result appears here once you submit or the time runs out."
+            actionLabel="Continue the test"
+            onAction={() => router.replace({ pathname: '/attempt/[id]', params: { id } })}
+          />
+        </Screen>
+      );
+    const offline = e instanceof ApiRequestError && e.code === 'NETWORK';
     return (
       <Screen edges={['left', 'right']}>
-        <Stack.Screen options={{ title: 'Score' }} />
+        <Stack.Screen options={{ title: 'Result' }} />
         <StateView
           kind={offline ? 'offline' : 'error'}
-          title={offline ? 'You’re offline' : 'Couldn’t load your score'}
-          message={offline ? 'Connect to the internet to see your score.' : 'Please try again in a moment.'}
+          title={offline ? 'You’re offline' : 'Couldn’t load your result'}
+          message={offline ? 'Connect to the internet to see your result.' : 'Please try again in a moment.'}
           actionLabel="Try again"
           onAction={() => void query.refetch()}
         />
@@ -34,81 +63,92 @@ export default function AttemptSummaryScreen() {
   if (!data) {
     return (
       <Screen edges={['left', 'right']}>
-        <Stack.Screen options={{ title: 'Score' }} />
-        <StateView kind="empty" title="Loading your score" message="Fetching your result from the server." />
-      </Screen>
-    );
-  }
-  if (data.status === 'in_progress') {
-    return (
-      <Screen edges={['left', 'right']}>
-        <Stack.Screen options={{ title: 'Score' }} />
-        <StateView
-          kind="empty"
-          title="This test is still running"
-          message="Your score appears here once you submit or the time runs out."
-          actionLabel="Continue the test"
-          onAction={() => router.replace({ pathname: '/attempt/[id]', params: { id } })}
-        />
+        <Stack.Screen options={{ title: 'Result' }} />
+        <StateView kind="empty" title="Loading your result" message="Fetching your result from the server." />
       </Screen>
     );
   }
 
-  const accuracy = data.attempted ? Math.round((data.correct / data.attempted) * 100) : 0;
+  const s = data.summary;
+  const accuracy = s.attempted ? Math.round((s.correct / s.attempted) * 100) : 0;
+  const enough = data.cohort.size >= MIN_COHORT;
+
   return (
     <>
-      <Stack.Screen options={{ title: 'Score' }} />
+      <Stack.Screen options={{ title: 'Result' }} />
       <Screen edges={['left', 'right']}>
-        <View style={styles.hero} accessible accessibilityLabel={`You scored ${num(data.score)} out of ${num(data.maxScore)}`}>
-          <Text variant="caption" style={styles.heroLabel}>
-            {data.testTitle}
+        <View style={styles.hero} accessible accessibilityLabel={`You scored ${num(s.score)} out of ${num(s.maxScore)}`}>
+          <Text variant="caption" style={styles.heroLabel} numberOfLines={2}>
+            {s.testTitle}
           </Text>
           <Text variant="display" tabular style={styles.heroScore}>
-            {num(data.score)}
+            {num(s.score)}
             <Text variant="title" style={styles.heroLabel}>
               {' '}
-              / {num(data.maxScore)}
+              / {num(s.maxScore)}
             </Text>
           </Text>
           <Text variant="bodySmall" style={styles.heroLabel}>
-            {data.status === 'timed_out' ? 'Time ran out, so the test was submitted automatically.' : 'Submitted.'}
+            {s.status === 'timed_out' ? 'Time ran out, so the test was submitted automatically.' : 'Submitted.'} Time taken {mins(data.timeSeconds)}.
           </Text>
         </View>
 
         <View style={styles.grid}>
-          <Stat label={data.rank !== null ? `Rank of ${data.rankedAttempts}` : 'Rank counts first attempts only'} value={data.rank !== null ? `#${data.rank}` : '—'} />
-          <Stat label="Percentile" value={data.percentile !== null ? num(data.percentile) : '—'} />
-          <Stat label="Correct" value={String(data.correct)} color={colors.success} />
-          <Stat label="Wrong" value={String(data.incorrect)} color={colors.error} />
-          <Stat label="Not answered" value={String(data.skipped)} />
-          <Stat label={`Accuracy (${data.attempted} attempted)`} value={`${accuracy}%`} />
+          <Stat label={s.rank !== null ? `Rank of ${s.rankedAttempts}` : 'Rank counts first attempts only'} value={s.rank !== null ? `#${s.rank}` : '—'} />
+          <Stat label="Percentile" value={s.percentile !== null ? num(s.percentile) : '—'} />
+          <Stat label="Correct" value={String(s.correct)} color={colors.success} />
+          <Stat label="Wrong" value={String(s.incorrect)} color={colors.error} />
+          <Stat label="Not answered" value={String(s.skipped)} />
+          <Stat label={`Accuracy (${s.attempted} attempted)`} value={`${accuracy}%`} />
         </View>
 
-        {data.lateEvents > 0 ? (
+        {s.lateEvents > 0 ? (
           <View style={styles.warn}>
             <Icon name="time-outline" size={16} color={colors.warning} />
             <Text variant="bodySmall" tone="warning" style={{ flex: 1 }}>
-              {data.lateEvents} change{data.lateEvents === 1 ? '' : 's'} reached us after time was up and {data.lateEvents === 1 ? 'was' : 'were'} not counted.
+              {s.lateEvents} change{s.lateEvents === 1 ? '' : 's'} reached us after time was up and {s.lateEvents === 1 ? 'was' : 'were'} not counted.
             </Text>
           </View>
         ) : null}
 
-        {data.sections.length > 1 ? (
+        <Button label="Review solutions" icon="book-outline" fullWidth onPress={() => router.push({ pathname: '/attempt/[id]/review', params: { id } })} />
+
+        <View style={{ gap: space.md }}>
+          <Text variant="heading">How you compare</Text>
+          <Card>
+            {enough ? (
+              <View style={{ gap: space.md }}>
+                <Compare label="You" value={s.score} max={s.maxScore} color={colors.primary} />
+                <Compare label="Average" value={data.cohort.averageScore ?? 0} max={s.maxScore} color={colors.textSecondary} />
+                <Compare label="Topper" value={data.cohort.topperScore ?? 0} max={s.maxScore} color={colors.success} />
+                <Text variant="caption" tone="secondary">
+                  Based on {data.cohort.size} students’ first attempts.
+                </Text>
+              </View>
+            ) : (
+              <Text tone="secondary">
+                Not enough data yet: {data.cohort.size} student{data.cohort.size === 1 ? ' has' : 's have'} finished this test. Comparisons appear once {MIN_COHORT} have.
+              </Text>
+            )}
+          </Card>
+        </View>
+
+        {s.sections.length > 1 ? (
           <View style={{ gap: space.md }}>
             <Text variant="heading">Section scores</Text>
             <Card>
               <View style={{ gap: space.lg }}>
-                {data.sections.map((s) => (
-                  <View key={s.sectionId} style={{ gap: space.xs }} accessible accessibilityLabel={`${s.name}: ${num(s.score)} of ${num(s.maxScore)}, ${s.correct} correct, ${s.incorrect} wrong`}>
+                {s.sections.map((x) => (
+                  <View key={x.sectionId} style={{ gap: space.xs }} accessible accessibilityLabel={`${x.name}: ${num(x.score)} of ${num(x.maxScore)}`}>
                     <View style={styles.rowBetween}>
-                      <Text variant="bodyStrong">{s.name}</Text>
+                      <Text variant="bodyStrong">{x.name}</Text>
                       <Text variant="bodyStrong" tabular>
-                        {num(s.score)} / {num(s.maxScore)}
+                        {num(x.score)} / {num(x.maxScore)}
                       </Text>
                     </View>
-                    <ProgressBar value={share(s.score, s.maxScore)} label={`${s.name} score`} />
+                    <ProgressBar value={share(x.score, x.maxScore)} label={`${x.name} score`} />
                     <Text variant="caption" tone="secondary">
-                      {s.correct} correct · {s.incorrect} wrong · {s.attempted}/{s.total} attempted
+                      {x.correct} correct · {x.incorrect} wrong · {x.attempted}/{x.total} attempted
                     </Text>
                   </View>
                 ))}
@@ -117,7 +157,32 @@ export default function AttemptSummaryScreen() {
           </View>
         ) : null}
 
-        <Button label="Back to Home" icon="home-outline" fullWidth onPress={() => router.replace('/')} />
+        <View style={{ gap: space.md }}>
+          <Text variant="heading">Topic analysis</Text>
+          <Card>
+            <View style={{ gap: space.md }}>
+              {topics.map((t) => {
+                const acc = t.attempted ? t.correct / t.attempted : 0;
+                return (
+                  <View key={t.topic} style={{ gap: space.xs }}>
+                    <View style={styles.rowBetween}>
+                      <Text variant="bodySmallStrong" style={{ flex: 1 }} numberOfLines={1}>
+                        {t.topic}
+                      </Text>
+                      <Text variant="bodySmall" tone="secondary" tabular>
+                        {t.correct}/{t.attempted} · {t.attempted ? `${Math.round(acc * 100)}%` : '—'}
+                      </Text>
+                    </View>
+                    <ProgressBar value={acc} label={`${t.topic} accuracy`} color={acc >= 0.7 ? colors.success : acc >= 0.4 ? colors.warning : colors.error} />
+                  </View>
+                );
+              })}
+            </View>
+          </Card>
+        </View>
+
+        <Button label="My progress" icon="analytics-outline" variant="secondary" fullWidth onPress={() => router.push('/progress')} />
+        <Button label="Back to Home" icon="home-outline" variant="ghost" fullWidth onPress={() => router.replace('/')} />
       </Screen>
     </>
   );
@@ -132,6 +197,20 @@ function Stat({ label, value, color }: { label: string; value: string; color?: s
       <Text variant="caption" tone="secondary">
         {label}
       </Text>
+    </View>
+  );
+}
+
+function Compare({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  return (
+    <View style={{ gap: space.xs }} accessible accessibilityLabel={`${label}: ${num(value)}`}>
+      <View style={styles.rowBetween}>
+        <Text variant="bodySmallStrong">{label}</Text>
+        <Text variant="bodySmallStrong" tabular>
+          {num(value)}
+        </Text>
+      </View>
+      <ProgressBar value={share(value, max)} label={label} color={color} />
     </View>
   );
 }

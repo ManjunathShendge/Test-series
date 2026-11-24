@@ -8,8 +8,15 @@ import type {
   AttemptSection,
   AttemptSession,
   AttemptState,
+  AttemptReview,
   AttemptSummary,
   MyAttemptList,
+  MyProgress,
+  PracticeKind,
+  PracticeList,
+  ReportQuestionRequest,
+  SaveQuestionRequest,
+  TopicAccuracy,
   SyncAttemptRequest,
   SyncAttemptResponse,
 } from '@exam-prep/contracts';
@@ -352,6 +359,151 @@ export class AttemptsService {
         score: Number(r.total_score),
         totalQuestions: r.total_questions,
       })),
+    }));
+  }
+
+  // Results (M8) ---------------------------------------------------------------------------------
+
+  /** Full result with solutions; the database opens only the caller's closed attempts. */
+  review(access: AccessContext, attemptId: string): Promise<AttemptReview> {
+    return this.as(access, async (client) => {
+      const row = await this.own(client, access, attemptId, false);
+      if (row.status === 'in_progress') throw new ApiError(409, 'ATTEMPT_IN_PROGRESS', 'This test is still in progress.', { attemptId });
+      const [summary, rows, cohort] = await Promise.all([
+        this.summaryOf(client, row),
+        repo.review(client, attemptId),
+        repo.cohort(client, attemptId),
+      ]);
+      const num = (v: string | null) => (v === null ? null : Number(v));
+      return {
+        summary,
+        timeSeconds: row.submitted_at ? Math.max(0, Math.round((row.submitted_at.getTime() - row.started_at.getTime()) / 1000)) : 0,
+        cohort: {
+          size: cohort.cohort_size,
+          averageScore: num(cohort.average_score),
+          topperScore: num(cohort.topper_score),
+          averageSeconds: num(cohort.average_seconds),
+        },
+        questions: rows.map((r) => ({
+          testQuestionId: r.test_question_id,
+          questionId: r.question_id,
+          sectionId: r.section_id,
+          number: r.display_order,
+          subject: r.subject_name,
+          topic: r.topic_name,
+          stemEn: r.stem_en,
+          stemHi: r.stem_hi,
+          passageEn: r.passage_en,
+          passageHi: r.passage_hi,
+          options: r.options,
+          imageAssetIds: r.image_asset_ids,
+          positiveMarks: Number(r.positive_marks),
+          negativeMarks: Number(r.negative_marks),
+          selected: r.selected_option,
+          isCorrect: r.is_correct,
+          marksAwarded: Number(r.marks_awarded),
+          timeSeconds: r.time_spent_seconds,
+          marked: r.marked,
+          correctOption: r.correct_option,
+          keyCorrected: r.key_corrected,
+          solutionEn: r.solution_en,
+          solutionHi: r.solution_hi,
+          cohort: { attempted: r.cohort_attempted, correct: r.cohort_correct, avgSeconds: num(r.cohort_avg_seconds) },
+          bookmarked: r.bookmarked,
+          inNotebook: r.in_notebook,
+          reported: r.reported,
+        })),
+      };
+    });
+  }
+
+  saveQuestion(access: AccessContext, questionId: string, req: SaveQuestionRequest): Promise<void> {
+    return this.as(access, (client) => repo.saveQuestion(client, questionId, req.bookmarked ?? null, req.inNotebook ?? null));
+  }
+
+  practice(access: AccessContext, kind: PracticeKind): Promise<PracticeList> {
+    return this.as(access, async (client) => ({
+      items: (await repo.practice(client, kind)).map((r) => ({
+        questionId: r.question_id,
+        testId: r.test_id,
+        testTitle: r.test_title,
+        attemptId: r.attempt_id,
+        subject: r.subject_name,
+        topic: r.topic_name,
+        stemEn: r.stem_en,
+        stemHi: r.stem_hi,
+        passageEn: r.passage_en,
+        passageHi: r.passage_hi,
+        options: r.options,
+        imageAssetIds: r.image_asset_ids,
+        selected: r.selected_option,
+        correctOption: r.correct_option,
+        solutionEn: r.solution_en,
+        solutionHi: r.solution_hi,
+        bookmarked: r.bookmarked,
+        inNotebook: r.in_notebook,
+        savedAt: r.saved_at.toISOString(),
+      })),
+    }));
+  }
+
+  progress(access: AccessContext): Promise<MyProgress> {
+    return this.as(access, async (client) => {
+      const [topicRows, trendRows, recommendedRows] = await Promise.all([
+        repo.topicAccuracy(client),
+        repo.trend(client, access.profileId),
+        repo.recommended(client, access.profileId),
+      ]);
+      const topics: TopicAccuracy[] = topicRows.map((t) => ({
+        subject: t.subject_name,
+        topic: t.topic_name,
+        attempted: t.attempted,
+        correct: t.correct,
+        total: t.total,
+        accuracy: t.attempted ? Math.round((t.correct / t.attempted) * 1000) / 10 : null,
+      }));
+      const weakest =
+        [...topics].filter((t) => t.attempted >= 3 && t.accuracy !== null).sort((a, b) => a.accuracy! - b.accuracy!)[0] ?? null;
+      return {
+        totals: {
+          tests: trendRows.length,
+          questions: trendRows.reduce((n, r) => n + r.total_questions, 0),
+          attempted: trendRows.reduce((n, r) => n + r.attempted_count, 0),
+          correct: trendRows.reduce((n, r) => n + r.correct_count, 0),
+        },
+        topics,
+        weakest,
+        trend: trendRows
+          .map((r) => {
+            const score = Number(r.total_score);
+            const max = Number(r.max_score);
+            return {
+              attemptId: r.id,
+              testTitle: r.test_title,
+              testSlug: r.test_slug,
+              submittedAt: r.submitted_at.toISOString(),
+              score,
+              maxScore: max,
+              percentage: max > 0 ? Math.round((score / max) * 1000) / 10 : 0,
+            };
+          })
+          .reverse(),
+        recommended: recommendedRows.map((r) => ({
+          testId: r.id,
+          slug: r.slug,
+          title: r.title,
+          examName: r.exam_name,
+          totalQuestions: r.total_questions,
+          durationSeconds: r.total_duration_seconds,
+          pricePaise: r.price_paise,
+        })),
+      };
+    });
+  }
+
+  report(access: AccessContext, questionId: string, req: ReportQuestionRequest): Promise<{ reportId: string }> {
+    return this.as(access, async (client) => ({
+      reportId: await repo.report(client, req.attemptId, questionId, req.reason, req.comment ?? null),
     }));
   }
 }

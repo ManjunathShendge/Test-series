@@ -33,7 +33,7 @@ interface RequestOptions<S extends z.ZodType> {
  * response is validated against its contract before a screen sees it.
  */
 export async function apiRequest<S extends z.ZodType>(
-  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
   { body, schema, timeoutMs = 15000, headers: extra }: RequestOptions<S> = {},
 ): Promise<z.infer<S>> {

@@ -15,6 +15,13 @@ The development foundation runs on PostgreSQL 17 (Docker locally and in CI; Supa
 
 ## Log
 
+## 24 November 2026: C1 results and progress (M8)
+- Database (020): owner-only access on saved questions and question reports (replacing allow-all app policies); SECURITY DEFINER functions that open only the caller's closed attempts: solution review (corrected key in force, solution, own and cohort time, percent correct), cohort comparison (first attempts), practice lists, bookmarks, topic accuracy and question reports (one per student per question). Wrong answers fill the mistake notebook when an attempt closes; earlier attempts were back-filled.
+- API: GET /attempts/:id/review, GET /me/progress, GET /me/practice/:kind, PUT /me/saved-questions/:questionId, POST /questions/:questionId/reports.
+- Web: result page with Overview (rank, percentile, accuracy, comparison with average and topper or "not enough data", section and topic analysis) and Solutions (filters, Hindi, bookmark, remove from notebook, report); /progress (totals, weakest topic, trend chart, topic accuracy, recommended tests); /practice/mistakes and /practice/bookmarks; links from the account page.
+- App: result, solutions, progress tab, practice lists and home progress card read the server; the demo results store and old result screen are removed.
+- Checks: rolled-back service script against the real database (21 passed: no solutions while running, keys after submit, score equals question marks, cohort, notebook, bookmarks, isolation between students, report visibility to the author only, progress and recommendations); workspace typecheck, lint and tests; web build; Android bundle; new endpoints return 401 signed out.
+
 ## 24 November 2026: staff area authorization
 - Website: the admin console opens only for admins with a permission (operations, finance or super); each admin sees only the sections their permission covers (payouts need finance, the rest operations) and gets an in-console notice for anything else. The QC review area opens only for QC reviewers and operations admins. Anyone else gets a full-page "no access" screen with no console or staff menu. The examiner workspace opens only for approved examiners; everyone else can reach only the application page, and other examiner addresses redirect there.
 - API: examiner-only routes (tests, series, question bank, imports, sales, earnings, coupons, quality, reports) now require the examiner role at the route as well as approval in the service; the profile carries admin permission flags for navigation.

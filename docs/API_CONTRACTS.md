@@ -40,10 +40,10 @@ Authenticated requests carry Firebase bearer token, registered device/session pr
 | POST /attempts/:id/sync | Owner + session | {epoch, lastAckSeq, events ≤200}; contiguous seq, replay no-op, SYNC_GAP / SYNC_CONFLICT; late events acknowledged as rejected with a reason |
 | POST /attempts/:id/submit | Owner + session | Final batch and close in one transaction; idempotent, returns the summary |
 | GET /attempts/:id/summary | Owner | Server score, rank (first attempts), percentile, sections, late events |
-| GET /attempts/:id/results, /review | Owner | Terminal/result-release gate, solutions only in review |
-| GET /me/progress, /me/mistakes, /me/bookmarks | Student | Authorized own history and aggregates |
-| PUT/DELETE /me/bookmarks/:questionId | Student | Must have review access |
-| POST /questions/:id/reports | Authorized student | Type/evidence; dedup distinct reporters |
+| GET /attempts/:id/review | Owner, closed attempt | Summary, cohort comparison (first attempts), every question with answer, key in force, solution, time and percent correct |
+| GET /me/progress, /me/practice/:kind | Student | Topic accuracy, weakest topic, trend, recommended tests; mistakes or bookmarks lists |
+| PUT /me/saved-questions/:questionId | Student who met the question in a closed attempt | {bookmarked?, inNotebook?} |
+| POST /questions/:id/reports | Student, own closed attempt | {attemptId, reason, comment?}; one report per student per question |
 | POST /orders | Student | One item per mobile order; server price and provider selection |
 | POST /orders/:id/verify | Owner | Razorpay callback evidence; verify capture before fulfilment |
 | POST /orders/:id/verify-store | Owner | Provider proof/token, bind to exact purchase intent |

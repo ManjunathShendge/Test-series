@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { SummaryView } from '@/features/attempt/SummaryView';
 
-export const metadata: Metadata = { title: 'Your score' };
+export const metadata: Metadata = { title: 'Your result' };
 
 interface Props {
   params: Promise<{ id: string }>;

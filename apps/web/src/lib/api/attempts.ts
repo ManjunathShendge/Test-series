@@ -7,8 +7,15 @@ import {
   AttemptPaper,
   AttemptSession,
   AttemptState,
+  AttemptReview,
   AttemptSummary,
   MyAttemptList,
+  MyProgress,
+  PracticeList,
+  ReportQuestionResponse,
+  type PracticeKind,
+  type ReportQuestionRequest,
+  type SaveQuestionRequest,
   SyncAttemptResponse,
   type SyncAttemptRequest,
 } from '@exam-prep/contracts';
@@ -42,4 +49,11 @@ export const attemptsApi = {
     }),
   summary: (id: string) => apiRequest('GET', `/attempts/${enc(id)}/summary`, { schema: AttemptSummary }),
   mine: async () => (await apiRequest('GET', '/me/attempts', { schema: MyAttemptList })).items,
+  review: (id: string) => apiRequest('GET', `/attempts/${enc(id)}/review`, { schema: AttemptReview, timeoutMs: 30000 }),
+  progress: () => apiRequest('GET', '/me/progress', { schema: MyProgress }),
+  practice: async (kind: PracticeKind) => (await apiRequest('GET', `/me/practice/${kind}`, { schema: PracticeList })).items,
+  saveQuestion: (questionId: string, body: SaveQuestionRequest) =>
+    apiRequest('PUT', `/me/saved-questions/${enc(questionId)}`, { body }),
+  report: (questionId: string, body: ReportQuestionRequest) =>
+    apiRequest('POST', `/questions/${enc(questionId)}/reports`, { schema: ReportQuestionResponse, body }),
 };
